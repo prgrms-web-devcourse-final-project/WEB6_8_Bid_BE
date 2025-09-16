@@ -13,12 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 public class Review extends BaseEntity {
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
-
-    @Column(name = "reviewer_id", nullable = false)
-    private Long reviewerId;
-
     @Column(nullable = false, length = 255)
     private String comment;
 
