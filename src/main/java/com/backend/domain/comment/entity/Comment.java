@@ -13,12 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 public class Comment extends BaseEntity {
 
-    @Column(name = "post_id", nullable = false)
-    private Long postId;
-
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
-
     @Column(nullable = false, length = 255)
     private String content;
 

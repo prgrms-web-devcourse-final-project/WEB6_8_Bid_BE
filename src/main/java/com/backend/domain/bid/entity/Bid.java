@@ -13,12 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 public class Bid extends BaseEntity {
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
-
-    @Column(name = "bidder_id", nullable = false)
-    private Long bidderId;
-
     @Column(name = "bid_price", nullable = false)
     private Long bidPrice;
 

@@ -13,12 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 public class Notification extends BaseEntity {
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
-
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
-
     @Column(nullable = false, length = 255)
     private String message;
 

@@ -17,9 +17,6 @@ import java.util.List;
 @AllArgsConstructor
 public class Product extends BaseEntity {
 
-    @Column(name = "seller_id", nullable = false)
-    private Long sellerId;
-
     @Column(name = "product_name", nullable = false, length = 50)
     private String productName;
 

@@ -12,9 +12,6 @@ import lombok.*;
 @AllArgsConstructor
 public class Payment extends BaseEntity {
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
-
     @Column(nullable = false)
     private Double amount;
 

@@ -11,9 +11,6 @@ import lombok.*;
 @AllArgsConstructor
 public class ProductImage extends BaseEntity {
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
-
     @Column(name = "image_url", nullable = false, length = 50)
     private String imageUrl;
 

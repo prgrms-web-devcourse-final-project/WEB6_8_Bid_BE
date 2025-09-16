@@ -14,9 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 public class Board extends BaseEntity {
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
-
     @Column(nullable = false, length = 50)
     private String title;
 
