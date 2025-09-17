@@ -20,10 +20,10 @@ public class Bid extends BaseEntity {
     private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bidder_id", insertable = false, updatable = false)
+    @JoinColumn(name = "bidder_id")
     private Member member;
 }
