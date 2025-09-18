@@ -41,13 +41,13 @@ public class Product extends BaseEntity {
     private Long currentPrice;
 
     @Column(name = "auction_start_time", nullable = false)
-    private LocalDateTime auctionStartTime;
+    private LocalDateTime startTime;
 
     @Column(name = "auction_end_time", nullable = false)
-    private LocalDateTime auctionEndTime;
+    private LocalDateTime endTime;
 
     @Column(name = "auction_duration", nullable = false)
-    private Integer auctionDuration;
+    private Integer duration;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 50, nullable = false)
