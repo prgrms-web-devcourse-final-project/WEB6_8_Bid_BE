@@ -7,11 +7,11 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface BidRepository extends JpaRepository<Bid,Integer> {
+public interface BidRepository extends JpaRepository<Bid,Long> {
     // 현재 최고 입찰가 조회
     @Query("SELECT MAX(b.bidPrice) FROM Bid b WHERE b.product.id = :productId AND b.status = 'bidding'")
-    Optional<Long> findHighestBidPrice(@Param("productId") Integer productId);
+    Optional<Long> findHighestBidPrice(@Param("productId") Long productId);
     // 이미 입찰했는지 여부
     @Query("SELECT COUNT(b)>0 FROM Bid b WHERE b.product.id = :productId AND b.member.id = :memberId AND b.status = 'bidding'")
-    boolean existsProductBid(@Param("productId") Integer productId,@Param("memberId") Integer memberId,@Param("status") String status);
+    boolean existsProductBid(@Param("productId") Long productId,@Param("memberId") Long memberId,@Param("status") String status);
 }

@@ -22,7 +22,7 @@ public class BidService {
     private final BidRepository bidRepository;
     private final EntityManager entityManager; // product,member 조회용 -> 나중에 머지해서 repsitory 생기면 수정
 
-    public RsData<BidResponseDto> createBid(Integer productId, Integer bidderId, BidRequestDto request){
+    public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request){
         // 1. Product/Member 조회
         Product product = entityManager.find(Product.class, productId);
         Member member = entityManager.find(Member.class, bidderId);
