@@ -26,4 +26,7 @@ public interface BidRepository extends JpaRepository<Bid,Long> {
     // 상품 입찰내역(상위 n개)
     @Query("SELECT b FROM Bid b WHERE b.product.id = :productId AND b.status = 'bidding' ORDER BY b.createDate DESC LIMIT:limit")
     List<Bid> findNBids(@Param("productId") Long productId, @Param("limit") Integer limit);
+    // 내 입찰내역 조회
+    @Query("SELECT b FROM Bid b JOIN FETCH b.product p WHERE b.member.id = :memberId AND b.status = 'bidding' ORDER BY b.createDate DESC")
+    Page<Bid> findMyBids(@Param("memberId") Long memberId, Pageable pageable);
 }
