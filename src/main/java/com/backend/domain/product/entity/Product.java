@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.time.LocalDateTime.now;
@@ -71,10 +72,10 @@ public class Product extends BaseEntity {
     private List<Bid> bids;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ProductImage> productImages;
+    private List<ProductImage> productImages = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private List<Review> reviews;
+    private List<Review> reviews = new ArrayList<>();
 
 
     public Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {

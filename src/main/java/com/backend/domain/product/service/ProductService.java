@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -97,5 +98,9 @@ public class ProductService {
                 throw new ServiceException("400-2", "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
             }
         }
+    }
+
+    public Optional<Product> findLatest() {
+        return productRepository.findFirstByOrderByIdDesc();
     }
 }

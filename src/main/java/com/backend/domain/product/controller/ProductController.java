@@ -1,6 +1,7 @@
 package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductDto;
 import com.backend.domain.product.entity.Product;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductController {
     private final ProductService productService;
+    private final MemberRepository memberRepository;
 
     @PostMapping
     public RsData<ProductDto> createProduct(
@@ -29,7 +31,7 @@ public class ProductController {
     ) {
         // TODO: JWT 토큰에서 사용자 추출
         // Member actor = rq.getActor();
-        Member actor = new Member();
+        Member actor = memberRepository.findAll().getFirst();
 
         Product product = productService.createProduct(actor, request, images);
 

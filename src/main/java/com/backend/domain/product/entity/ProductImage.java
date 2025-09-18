@@ -11,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 public class ProductImage extends BaseEntity {
 
-    @Column(name = "image_url", nullable = false, length = 50)
+    @Column(name = "image_url", nullable = false, length = 255)
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
