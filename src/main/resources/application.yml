@@ -7,6 +7,13 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB            # 개별 파일 최대 크기
+      max-request-size: 25MB        # 전체 요청 최대 크기 (5MB × 5개 = 25MB)
+      file-size-threshold: 2KB      # 메모리 임계값
+      location: ${java.io.tmpdir}   # 임시 파일 저장 위치
 
   jpa:
     show-sql: true

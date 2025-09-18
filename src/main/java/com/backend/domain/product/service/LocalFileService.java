@@ -48,7 +48,7 @@ public class LocalFileService implements FileService {
             return fileUrl;
         } catch (Exception e) {
             log.error("로컬 파일 업로드 실패: {}", file.getOriginalFilename(), e);
-            throw new ServiceException("400-4", "이미지 파일 업로드에 실패했습니다.");
+            throw new ServiceException("400-2", "이미지 파일 업로드에 실패했습니다.");
         }
     }
 
@@ -62,13 +62,24 @@ public class LocalFileService implements FileService {
     @Override
     public void deleteFile(String fileUrl) {
         try {
+            if (!fileUrl.startsWith(baseUrl)) {
+                log.warn("잘못된 파일 URL: {}", fileUrl);
+                return;
+            }
+
             String filePath = fileUrl.replace(baseUrl, uploadPath);
             Path path = Paths.get(filePath);
+
+            // 보안: uploadPath 외부 파일 접근 방지
+            if (!path.normalize().startsWith(Paths.get(uploadPath).normalize())) {
+                log.warn("보안 위반: uploadPath 외부 접근 시도 - {}", fileUrl);
+                return;
+            }
+
             Files.deleteIfExists(path);
             log.info("로컬 파일 삭제 성공: {}", fileUrl);
         } catch (Exception e) {
             log.error("로컬 파일 삭제 실패: {}", fileUrl, e);
-            throw new ServiceException("400-5", "이미지 파일 삭제에 실패했습니다.");
         }
     }
 }
