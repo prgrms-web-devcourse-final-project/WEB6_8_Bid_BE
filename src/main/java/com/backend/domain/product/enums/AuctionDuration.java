@@ -16,11 +16,6 @@ public enum AuctionDuration {
         this.value = value;
         this.hours = hours;
     }
-
-    public static boolean existsByValue(String value) {
-        return Arrays.stream(values())
-                .anyMatch(duration -> duration.value.equals(value));
-    }
     
     // 문자열로 Integer 찾기
     public static Integer fromValue(String value) {

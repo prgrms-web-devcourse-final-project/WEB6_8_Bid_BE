@@ -27,11 +27,6 @@ public enum ProductCategory {
         this.displayName = displayName;
     }
 
-    public static boolean existsById(int id) {
-        return Arrays.stream(values())
-                .anyMatch(category -> category.getId() == id);
-    }
-
     // ID로 enum 찾기
     public static ProductCategory fromId(int id) {
         return Arrays.stream(values())

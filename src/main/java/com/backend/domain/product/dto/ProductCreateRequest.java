@@ -21,7 +21,7 @@ public record ProductCreateRequest(
 
         @NotNull(message = "시작가는 필수입니다.")
         @Min(value = 1000, message = "시작가는 1,000원 이상이어야 합니다.")
-        Integer initialPrice,
+        Long initialPrice,
 
         @NotNull(message = "경매 시작 시간은 필수입니다.")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

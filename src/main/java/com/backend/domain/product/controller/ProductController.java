@@ -1,5 +1,6 @@
 package com.backend.domain.product.controller;
 
+import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductDto;
 import com.backend.domain.product.entity.Product;
@@ -28,7 +29,11 @@ public class ProductController {
     ) {
         validateLocation(request.location(), request.deliveryMethod());
 
-        Product product = productService.createProduct(request, images);
+        // TODO: JWT 토큰에서 사용자 추출
+        // Member actor = rq.getActor();
+        Member actor = new Member();
+
+        Product product = productService.createProduct(actor, request, images);
 
         return new RsData<>("200", "상품이 등록되었습니다.", ProductDto.fromEntity(product));
     }

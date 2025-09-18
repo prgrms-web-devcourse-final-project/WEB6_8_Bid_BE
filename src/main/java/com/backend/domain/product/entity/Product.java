@@ -9,19 +9,16 @@ import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.review.entity.Review;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "products")
-@Getter @Setter
+@Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Product extends BaseEntity {
 
     @Column(name = "product_name", nullable = false, length = 50)
@@ -75,6 +72,22 @@ public class Product extends BaseEntity {
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<Review> reviews;
+
+
+    public Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {
+        this.productName = productName;
+        this.description = description;
+        this.category = category;
+        this.initialPrice = initialPrice;
+        this.currentPrice = initialPrice;
+        this.startTime = startTime;
+        this.endTime = startTime.plusHours(duration);
+        this.duration = duration;
+        this.status = AuctionStatus.BEFORE_START;
+        this.deliveryMethod = deliveryMethod;
+        this.location = location;
+        this.seller = seller;
+    }
 
 
     public Long getBiddersCount() {
