@@ -50,17 +50,18 @@ public class BidService {
     }
 
     @Transactional(readOnly = true)
-    public RsData<BidCurrentResponseDto> getBidStatus(Product product){
+    public RsData<BidCurrentResponseDto> getBidStatus(long productId){
         // 1. 상품 존재 확인
+        Product product = entityManager.find(Product.class, productId);
         if(product == null){
             throw new ServiceException("404", "존재하지 않는 상품입니다.");
         }
         // 2. 현재 최고 입찰가
-        Long currentPrice = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
+        Long currentPrice = bidRepository.findHighestBidPrice(productId).orElse(0L);
         // 3. 입찰 개수
-        Integer bidCount = bidRepository.countProductBid(product.getId());
+        Integer bidCount = bidRepository.countProductBid(productId);
         // 4. 최근 입찰 내역 (상위 5개)
-        List<Bid> recentBids = bidRepository.findNBids(product.getId(),5);
+        List<Bid> recentBids = bidRepository.findNBids(productId,5);
         // 5. 익명화
         AtomicInteger counter = new AtomicInteger(1);
         List<BidCurrentResponseDto.RecentBid> recentBidList = recentBids.stream()
@@ -71,7 +72,7 @@ public class BidService {
                 )).toList();
         // 6. response 생성
         BidCurrentResponseDto response = new BidCurrentResponseDto(
-                product.getId(),
+                productId,
                 product.getProductName(),
                 currentPrice,
                 product.getInitialPrice(),
