@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -47,10 +46,8 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
 
         // 2. 이미지 업로드 및 저장
-        List<String> imageUrls = new ArrayList<>();
         for (MultipartFile image : images) {
             String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-            imageUrls.add(imageUrl);
 
             ProductImage productImage = new ProductImage(imageUrl, savedProduct);
             productImageRepository.save(productImage);
@@ -62,7 +59,7 @@ public class ProductService {
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
         if (deliveryMethod == DeliveryMethod.TRADE || deliveryMethod == DeliveryMethod.BOTH) {
-            if (location.isBlank()) {
+            if (location == null || location.isBlank()) {
                 throw new ServiceException("400-1", "직거래 시 배송지는 필수입니다.");
             }
         }

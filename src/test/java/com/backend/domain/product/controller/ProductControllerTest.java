@@ -1,11 +1,16 @@
 package com.backend.domain.product.controller;
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
 // Controller 테스트는 로그인 기능 구현된 후에 작성
-//@ActiveProfiles("test")
-//@SpringBootTest
-//@AutoConfigureMockMvc
-//@Transactional
-//class ProductControllerTest {
+@ActiveProfiles("test")
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class ProductControllerTest {
 //    @Autowired
 //    private MockMvc mvc;
 //
@@ -73,4 +78,4 @@ package com.backend.domain.product.controller;
 //                argThat(images -> images.size() == 2)
 //        );
 //    }
-//}
+}
