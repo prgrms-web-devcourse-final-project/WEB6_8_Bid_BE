@@ -36,6 +36,12 @@ public class Member extends BaseEntity {
     @Column(length = 50)
     private String authority;
 
+    @Column(name = "credit_score", nullable = false)
+    private Integer creditScore;
+
+    @Column(name = "profile_image_url", length = 255)
+    private String profileImageUrl;
+
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
 

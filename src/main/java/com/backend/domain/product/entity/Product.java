@@ -4,6 +4,7 @@ import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.product.enums.AuctionStatus;
+import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.review.entity.Review;
 import com.backend.global.jpa.entity.BaseEntity;
@@ -52,6 +53,13 @@ public class Product extends BaseEntity {
     @Column(length = 50, nullable = false)
     private AuctionStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_method", nullable = false)
+    private DeliveryMethod deliveryMethod;
+
+    @Column(length = 50, nullable = false)
+    private String location;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private Member seller;
@@ -67,4 +75,14 @@ public class Product extends BaseEntity {
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<Review> reviews;
+
+
+    public Long getBiddersCount() {
+        if (bids == null) return 0L;
+
+        return bids.stream()
+                .map(bid -> bid.getMember().getId())
+                .distinct()
+                .count();
+    }
 }
