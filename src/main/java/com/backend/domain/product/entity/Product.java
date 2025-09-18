@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static java.time.LocalDateTime.now;
+
 @Entity
 @Table(name = "products")
 @Getter
@@ -83,10 +85,15 @@ public class Product extends BaseEntity {
         this.startTime = startTime;
         this.endTime = startTime.plusHours(duration);
         this.duration = duration;
-        this.status = AuctionStatus.BEFORE_START;
         this.deliveryMethod = deliveryMethod;
         this.location = location;
         this.seller = seller;
+
+        if (startTime.isBefore(now()) || startTime.isEqual(now())) {
+            this.status = AuctionStatus.BIDDING;
+        } else {
+            this.status = AuctionStatus.BEFORE_START;
+        }
     }
 
 
@@ -97,5 +104,10 @@ public class Product extends BaseEntity {
                 .map(bid -> bid.getMember().getId())
                 .distinct()
                 .count();
+    }
+
+    public void addProductImage(ProductImage productImage) {
+        this.productImages.add(productImage);
+        productImage.setProduct(this);
     }
 }
