@@ -18,8 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class ApiV1MemberController {
-    @Autowired
-    private MemberService memberService;
+    private final MemberService memberService;
 
     @Operation(summary = "회원가입 API", description = "이메일 비밀번호를 받아 회원가입")
     @PostMapping("/auth/signup")

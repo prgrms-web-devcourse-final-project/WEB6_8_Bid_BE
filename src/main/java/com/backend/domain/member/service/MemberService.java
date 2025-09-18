@@ -21,7 +21,7 @@ public class MemberService {
     public RsData<MemberSignUpResponseDto> signup(MemberSignUpRequestDto memberSignUpRequestDto) {
         // 1. 이메일 중복 체크
         if (memberRepository.findByEmail(memberSignUpRequestDto.email()).isPresent()) {
-            return RsData.of("F-1", "이미 사용중인 이메일입니다.");
+            return new RsData<>("400-1", "이미 사용중인 이메일입니다.");
         }
 
         // 2. 회원 객체 생성 및 비밀번호 암호화
@@ -38,6 +38,6 @@ public class MemberService {
 
         // 4. 응답 DTO 생성 및 반환
         MemberSignUpResponseDto responseDto = new MemberSignUpResponseDto(savedMember.getId(), savedMember.getEmail(), savedMember.getNickname());
-        return RsData.of("S-1", "회원가입이 완료되었습니다.", responseDto);
+        return new RsData<>("200-1", "회원가입이 완료되었습니다.", responseDto);
     }
 }
