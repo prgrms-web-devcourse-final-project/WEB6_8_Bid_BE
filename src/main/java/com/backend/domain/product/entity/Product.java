@@ -11,6 +11,7 @@ import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +37,7 @@ public class Product extends BaseEntity {
     @Column(name = "initial_price", nullable = false)
     private Long initialPrice;
 
+    @Setter
     @Column(name = "current_price")
     private Long currentPrice;
 
@@ -48,9 +50,8 @@ public class Product extends BaseEntity {
     @Column(name = "auction_duration", nullable = false)
     private Integer duration;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 50, nullable = false)
-    private AuctionStatus status;
+    private String status;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "delivery_method", nullable = false)
@@ -90,9 +91,9 @@ public class Product extends BaseEntity {
         this.seller = seller;
 
         if (startTime.isBefore(now()) || startTime.isEqual(now())) {
-            this.status = AuctionStatus.BIDDING;
+            this.status = AuctionStatus.BIDDING.getDisplayName();
         } else {
-            this.status = AuctionStatus.BEFORE_START;
+            this.status = AuctionStatus.BEFORE_START.getDisplayName();
         }
     }
 

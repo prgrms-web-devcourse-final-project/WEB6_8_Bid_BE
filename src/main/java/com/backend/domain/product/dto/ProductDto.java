@@ -36,7 +36,7 @@ public record ProductDto(
                 entity.getStartTime(),
                 entity.getEndTime(),
                 entity.getDuration(),
-                entity.getStatus().getDisplayName(),
+                entity.getStatus(),
                 entity.getBiddersCount(),
                 entity.getDeliveryMethod().name(),
                 entity.getLocation(),
