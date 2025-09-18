@@ -11,7 +11,6 @@ public record BidCurrentResponseDto (
         Integer bidCount,
         String status,
         LocalDateTime endTime,
-        String remainingTime,
         List<RecentBid> recentBids
         ){
     public record RecentBid (
