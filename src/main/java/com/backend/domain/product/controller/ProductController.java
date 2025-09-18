@@ -33,6 +33,6 @@ public class ProductController {
 
         Product product = productService.createProduct(actor, request, images);
 
-        return new RsData<>("200", "상품이 등록되었습니다.", ProductDto.fromEntity(product));
+        return new RsData<>("201-1", "상품이 등록되었습니다.", ProductDto.fromEntity(product));
     }
 }
