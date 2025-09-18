@@ -1,0 +1,74 @@
+package com.backend.domain.product.service;
+
+import com.backend.global.exception.ServiceException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@Profile("dev")
+public class LocalFileService implements FileService {
+    @Value("${file.upload.path}")
+    private String uploadPath;
+
+    @Value("${file.upload.base-url}")
+    private String baseUrl;
+
+    @Override
+    public String uploadFile(MultipartFile file, String directory) {
+        try {
+            // 디렉토리 생성
+            String fullPath = uploadPath + "/" + directory;
+            Path dir = Paths.get(fullPath);
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
+            }
+
+            // 고유한 파일명 생성
+            String originalFilename = file.getOriginalFilename();
+            String extension = getFileExtension(originalFilename);
+            String uniqueFilename = UUID.randomUUID() + extension;
+
+            // 파일 저장
+            Path targetPath = Paths.get(fullPath, uniqueFilename);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            // 반환할 URL 생성
+            String fileUrl = baseUrl + "/" + directory + "/" + uniqueFilename;
+            log.info("로컬 파일 업로드 성공: {}", fileUrl);
+            return fileUrl;
+        } catch (Exception e) {
+            log.error("로컬 파일 업로드 실패: {}", file.getOriginalFilename(), e);
+            throw new ServiceException("400-4", "이미지 파일 업로드에 실패했습니다.");
+        }
+    }
+
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
+        }
+        return filename.substring(filename.lastIndexOf("."));
+    }
+
+    @Override
+    public void deleteFile(String fileUrl) {
+        try {
+            String filePath = fileUrl.replace(baseUrl, uploadPath);
+            Path path = Paths.get(filePath);
+            Files.deleteIfExists(path);
+            log.info("로컬 파일 삭제 성공: {}", fileUrl);
+        } catch (Exception e) {
+            log.error("로컬 파일 삭제 실패: {}", fileUrl, e);
+            throw new ServiceException("400-5", "이미지 파일 삭제에 실패했습니다.");
+        }
+    }
+}

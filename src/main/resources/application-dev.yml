@@ -4,3 +4,8 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+
+file:
+  upload:
+    path: ./uploads
+    base-url: http://localhost:8080/uploads
