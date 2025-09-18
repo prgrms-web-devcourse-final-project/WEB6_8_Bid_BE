@@ -1,9 +1,18 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:db_test;MODE=MySQL
+    url: jdbc:h2:./db_dev;MODE=MySQL
     username: sa
     password:
     driver-class-name: org.h2.Driver
+#  cloud:
+#    aws:
+#      credentials:
+#        access-key: ${AWS_ACCESS_KEY_ID}
+#        secret-key: ${AWS_SECRET_ACCESS_KEY}
+#      region:
+#        static: ${AWS_REGION}
+#      s3:
+#        bucket: ${S3_BUCKET_NAME}
 
 file:
   upload:

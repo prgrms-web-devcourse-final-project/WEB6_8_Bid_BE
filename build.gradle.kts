@@ -36,6 +36,9 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+
+    implementation(platform("software.amazon.awssdk:bom:2.33.6"))
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.0")
 }
 
 tasks.withType<Test> {

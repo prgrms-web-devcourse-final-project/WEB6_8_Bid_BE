@@ -4,3 +4,12 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+
+  cloud:
+    aws:
+      credentials:
+        instance-profile: true
+      region:
+        static: ${AWS_REGION}
+      s3:
+        bucket: ${S3_BUCKET_NAME}
