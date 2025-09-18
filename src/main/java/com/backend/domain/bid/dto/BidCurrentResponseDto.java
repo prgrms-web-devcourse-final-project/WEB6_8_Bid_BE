@@ -8,7 +8,7 @@ public record BidCurrentResponseDto (
         String productName,
         Long currentPrice,
         Long initialPrice,
-        Long bidCount,
+        Integer bidCount,
         String status,
         LocalDateTime endTime,
         String remainingTime,
