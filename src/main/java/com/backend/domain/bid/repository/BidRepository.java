@@ -1,10 +1,13 @@
 package com.backend.domain.bid.repository;
 
 import com.backend.domain.bid.entity.Bid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface BidRepository extends JpaRepository<Bid,Long> {
@@ -14,4 +17,13 @@ public interface BidRepository extends JpaRepository<Bid,Long> {
     // 이미 입찰했는지 여부
     @Query("SELECT COUNT(b)>0 FROM Bid b WHERE b.product.id = :productId AND b.member.id = :memberId AND b.status = 'bidding'")
     boolean existsProductBid(@Param("productId") Long productId,@Param("memberId") Long memberId,@Param("status") String status);
+    // 입찰 개수 조회
+    @Query("SELECT COUNT(b) FROM Bid b WHERE b.product.id = :productId AND b.status = 'bidding'")
+    Integer countProductBid(@Param("productId") Long productId);
+    // 상품 입찰내역(페이징)
+    @Query("SELECT b FROM Bid b WHERE b.product.id = :productId AND b.status = 'bidding' ORDER BY b.createDate DESC")
+    Page<Bid> findAllBids(@Param("productId") Long productId, Pageable pageable);
+    // 상품 입찰내역(상위 n개)
+    @Query("SELECT b FROM Bid b WHERE b.product.id = :productId AND b.status = 'bidding' ORDER BY b.createDate DESC LIMIT:limit")
+    List<Bid> findNBids(@Param("productId") Long productId, @Param("limit") Integer limit);
 }

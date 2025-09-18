@@ -1,0 +1,21 @@
+package com.backend.domain.bid.dto;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record BidCurrentResponseDto (
+        Long productId,
+        String productName,
+        Long currentPrice,
+        Long initialPrice,
+        Integer bidCount,
+        String status,
+        LocalDateTime endTime,
+        List<RecentBid> recentBids
+        ){
+    public record RecentBid (
+            Long bidPrice,
+            LocalDateTime bidTime,
+            String bidder // 익명화
+    ){}
+}

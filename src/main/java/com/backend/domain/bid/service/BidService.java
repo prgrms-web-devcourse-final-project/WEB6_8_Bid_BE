@@ -1,5 +1,6 @@
 package com.backend.domain.bid.service;
 
+import com.backend.domain.bid.dto.BidCurrentResponseDto;
 import com.backend.domain.bid.dto.BidRequestDto;
 import com.backend.domain.bid.dto.BidResponseDto;
 import com.backend.domain.bid.entity.Bid;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Transactional
@@ -45,6 +48,42 @@ public class BidService {
         return new RsData<>("201","입찰이 완료되었습니다.",bidResponse);
 
     }
+
+    @Transactional(readOnly = true)
+    public RsData<BidCurrentResponseDto> getBidStatus(long productId){
+        // 1. 상품 존재 확인
+        Product product = entityManager.find(Product.class, productId);
+        if(product == null){
+            throw new ServiceException("404", "존재하지 않는 상품입니다.");
+        }
+        // 2. 현재 최고 입찰가
+        Long currentPrice = bidRepository.findHighestBidPrice(productId).orElse(0L);
+        // 3. 입찰 개수
+        Integer bidCount = bidRepository.countProductBid(productId);
+        // 4. 최근 입찰 내역 (상위 5개)
+        List<Bid> recentBids = bidRepository.findNBids(productId,5);
+        // 5. 익명화
+        AtomicInteger counter = new AtomicInteger(1);
+        List<BidCurrentResponseDto.RecentBid> recentBidList = recentBids.stream()
+                .map(bid -> new BidCurrentResponseDto.RecentBid(
+                        bid.getBidPrice(),
+                        bid.getCreateDate(),
+                        "익명"+counter.getAndIncrement()
+                )).toList();
+        // 6. response 생성
+        BidCurrentResponseDto response = new BidCurrentResponseDto(
+                productId,
+                product.getProductName(),
+                currentPrice,
+                product.getInitialPrice(),
+                bidCount,
+                product.getStatus(),
+                product.getEndTime(),
+                recentBidList
+        );
+        return new RsData<>("200","입찰 현황이 조회되었습니다.",response);
+    }
+
     private void validateBid(Product product,Member member, Long bidPrice){
         // 1. 상품 존재 확인
         if(product == null){
