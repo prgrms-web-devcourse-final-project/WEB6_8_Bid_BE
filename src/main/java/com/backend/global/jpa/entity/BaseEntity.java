@@ -23,7 +23,7 @@ public abstract class BaseEntity {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Setter(PROTECTED)
-    private int id;
+    private long id;
 
     @CreatedDate
     private LocalDateTime createDate;
