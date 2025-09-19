@@ -50,7 +50,8 @@ class ApiV1ProductControllerTest {
     void setUp() {
         // 테스트용 회원 생성 및 DB에 저장
         Member member = new Member(
-                "test@example.com", "password", "testUser", "01000000000", "서울 강남구", "USER", 50, "url",
+                "test@example.com", "password", "testUser", "01000000000", "서울 강남구", "USER",
+//                50, "url",
                 new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>()
         );
         memberRepository.save(member);
