@@ -50,10 +50,10 @@ public class ApiV1ProductController {
     public RsData<PageDto<ProductDto>> getProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "") Integer category,
-            @RequestParam(defaultValue = "") Location[] location,
-            @RequestParam(defaultValue = "") Boolean isDelivery,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer[] category,
+            @RequestParam(required = false) String[] location,
+            @RequestParam(required = false) Boolean isDelivery,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
         ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery);
