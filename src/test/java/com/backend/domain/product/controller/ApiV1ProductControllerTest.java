@@ -5,8 +5,6 @@ import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.repository.ProductImageRepository;
-import com.backend.domain.product.repository.ProductRepository;
 import com.backend.domain.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -35,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-class ProductControllerTest {
+class ApiV1ProductControllerTest {
     @Autowired
     private MockMvc mvc;
 
@@ -44,12 +42,6 @@ class ProductControllerTest {
 
     @Autowired
     private ProductService productService;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private ProductImageRepository productImageRepository;
 
     @Autowired
     private MemberRepository memberRepository;
@@ -76,7 +68,7 @@ class ProductControllerTest {
 
         // when
         ResultActions resultActions = mvc
-                .perform(multipart("/products")
+                .perform(multipart("/api/v1/products")
                         .file(requestPart)
                         .file(image1)
                         .file(image2)
@@ -87,7 +79,7 @@ class ProductControllerTest {
 
         // then
         resultActions
-                .andExpect(handler().handlerType(ProductController.class))
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.resultCode").value("201-1"))
@@ -125,13 +117,13 @@ class ProductControllerTest {
         }
 
         // when
-        var requestBuilder = multipart("/products").file(requestPart);
+        var requestBuilder = multipart("/api/v1/products").file(requestPart);
         for (MockMultipartFile image : images) requestBuilder.file(image);
         ResultActions resultActions = mvc.perform(requestBuilder).andDo(print());
 
         // then
         resultActions
-                .andExpect(handler().handlerType(ProductController.class))
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-2"))
@@ -149,14 +141,14 @@ class ProductControllerTest {
         MockMultipartFile largeImage = new MockMultipartFile("images", "large.jpg", "image/jpeg", largeContent);
 
         // when
-        ResultActions resultActions = mvc.perform(multipart("/products")
+        ResultActions resultActions = mvc.perform(multipart("/api/v1/products")
                         .file(requestPart)
                         .file(largeImage))
                 .andDo(print());
 
         // then
         resultActions
-                .andExpect(handler().handlerType(ProductController.class))
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-2"))
@@ -174,14 +166,14 @@ class ProductControllerTest {
         MockMultipartFile pdfFile = new MockMultipartFile("images", "document.pdf", "application/pdf", "pdf content".getBytes());
 
         // when
-        ResultActions resultActions = mvc.perform(multipart("/products")
+        ResultActions resultActions = mvc.perform(multipart("/api/v1/products")
                         .file(requestPart)
                         .file(pdfFile))
                 .andDo(print());
 
         // then
         resultActions
-                .andExpect(handler().handlerType(ProductController.class))
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-2"))

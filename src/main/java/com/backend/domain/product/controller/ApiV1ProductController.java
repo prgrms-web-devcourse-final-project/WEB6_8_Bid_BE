@@ -18,9 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/products")
+@RequestMapping("api/v1/products")
 @RequiredArgsConstructor
-public class ProductController {
+public class ApiV1ProductController {
     private final ProductService productService;
     private final MemberRepository memberRepository;
 
