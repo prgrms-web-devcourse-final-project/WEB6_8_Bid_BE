@@ -8,6 +8,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.rsData.RsData;
 import com.backend.global.security.JwtUtil;
+import com.backend.global.util.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RedisUtil redisUtil;
 
     public RsData<MemberSignUpResponseDto> signup(MemberSignUpRequestDto memberSignUpRequestDto) {
         checkEmailDuplication(memberSignUpRequestDto.email());
@@ -47,9 +49,14 @@ public class MemberService {
         String accessToken = jwtUtil.generateAccessToken(member.getEmail());
         String refreshToken = jwtUtil.generateRefreshToken(member.getEmail());
 
-        member.updateRefreshToken(refreshToken);
+        member.updateRefreshToken( refreshToken);
 
         return new RsData<>("200-2", "로그인 성공", new LoginResponseDto(accessToken, refreshToken));
+    }
+
+    public void logout(String accessToken) {
+        long remainingExpirationMillis = jwtUtil.getRemainingExpirationMillis(accessToken);
+        redisUtil.setData(accessToken, "logout", remainingExpirationMillis);
     }
 
     private void checkEmailDuplication(String email) {
