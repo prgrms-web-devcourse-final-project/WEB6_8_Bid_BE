@@ -12,16 +12,20 @@ public enum ProductSearchSortType {
     POPULAR("bidderCount", "DESC", "인기순");
 
     private final String fieldName;
-    private final String direction;
+    private final String direct;
     private final String description;
 
-    ProductSearchSortType(String fieldName, String direction, String description) {
+    ProductSearchSortType(String fieldName, String direct, String description) {
         this.fieldName = fieldName;
-        this.direction = direction;
+        this.direct = direct;
         this.description = description;
     }
 
+    private Sort.Direction getDirection() {
+        return (direct.equals("ASC")) ? Sort.Direction.ASC : Sort.Direction.DESC;
+    }
+
     public Sort toSort() {
-        return Sort.by(direction, fieldName);
+        return Sort.by(getDirection(), fieldName);
     }
 }

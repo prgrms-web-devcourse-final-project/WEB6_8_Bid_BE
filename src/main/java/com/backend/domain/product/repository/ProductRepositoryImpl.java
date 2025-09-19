@@ -5,14 +5,19 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.Location;
 import com.backend.domain.product.enums.ProductCategory;
+import com.backend.standard.util.QueryDslUtil;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 
 import java.util.Arrays;
 
+import static com.backend.domain.bid.entity.QBid.bid;
 import static com.backend.domain.product.entity.QProduct.product;
 
 @RequiredArgsConstructor
@@ -25,6 +30,22 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         // 필터 적용
         applyFilters(builder, search);
+
+        // Query 생성
+        JPAQuery<Product> productsQuery = createProductsQuery(builder);
+
+        // sort
+        applySorting(productsQuery, pageable);
+
+        // paging
+        productsQuery
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+
+        // total
+        JPAQuery<Long> totalQuery = createTotalQuery(builder);
+
+        return PageableExecutionUtils.getPage(productsQuery.fetch(), pageable, totalQuery::fetchOne);
     }
 
     private void applyFilters(BooleanBuilder builder, ProductSearchDto search) {
@@ -57,5 +78,33 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         if (search.isDelivery() != null && search.isDelivery()) {
             builder.and(product.deliveryMethod.eq(DeliveryMethod.DELIVERY));
         }
+    }
+
+    private JPAQuery<Product> createProductsQuery(BooleanBuilder builder) {
+        return queryFactory
+                .selectFrom(product)
+                .where(builder);
+    }
+
+    private void applySorting(JPAQuery<Product> query, Pageable pageable) {
+        QueryDslUtil.applySorting(query, pageable, property ->
+            switch (property) {
+                case "createDate" -> product.createDate;
+                case "price" -> product.currentPrice;
+                case "endTime" -> product.endTime;
+                case "bidderCount" -> JPAExpressions
+                        .select(bid.member.id.countDistinct())
+                        .from(bid)
+                        .where(bid.product.eq(product));
+                default -> null;
+            }
+        );
+    }
+
+    private JPAQuery<Long> createTotalQuery(BooleanBuilder builder) {
+        return queryFactory
+                .select(product.count())
+                .from(product)
+                .where(builder);
     }
 }
