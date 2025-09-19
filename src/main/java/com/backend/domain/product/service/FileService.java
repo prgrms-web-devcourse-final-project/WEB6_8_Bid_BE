@@ -45,7 +45,7 @@ public class FileService {
             return fileUrl;
         } catch (Exception e) {
             log.error("로컬 파일 업로드 실패: {}", file.getOriginalFilename(), e);
-            throw new ServiceException("400-2", "이미지 파일 업로드에 실패했습니다.");
+            throw new ServiceException("400-8", "이미지 파일 업로드에 실패했습니다.");
         }
     }
 

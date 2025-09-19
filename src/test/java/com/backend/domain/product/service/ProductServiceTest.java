@@ -122,7 +122,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-2")
+                .hasFieldOrPropertyWithValue("resultCode", "400-3")
                 .hasFieldOrPropertyWithValue("msg", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
     }
 
@@ -139,7 +139,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-2")
+                .hasFieldOrPropertyWithValue("resultCode", "400-4")
                 .hasFieldOrPropertyWithValue("msg", "빈 파일은 업로드할 수 없습니다.");
     }
 
@@ -159,7 +159,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-2")
+                .hasFieldOrPropertyWithValue("resultCode", "400-5")
                 .hasFieldOrPropertyWithValue("msg", "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
     }
 
@@ -176,7 +176,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-2")
+                .hasFieldOrPropertyWithValue("resultCode", "400-7")
                 .hasFieldOrPropertyWithValue("msg", "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
     }
 
@@ -193,7 +193,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-2")
+                .hasFieldOrPropertyWithValue("resultCode", "400-6")
                 .hasFieldOrPropertyWithValue("msg", "올바른 파일명이 아닙니다.");
     }
 

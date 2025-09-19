@@ -72,30 +72,30 @@ public class ProductService {
         }
 
         if (images.size() > 5) {
-            throw new ServiceException("400-2", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
+            throw new ServiceException("400-3", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
         }
 
         Set<String> allowedExtensions = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
 
         for (MultipartFile image : images) {
             if (image.isEmpty()) {
-                throw new ServiceException("400-2", "빈 파일은 업로드할 수 없습니다.");
+                throw new ServiceException("400-4", "빈 파일은 업로드할 수 없습니다.");
             }
 
             // 파일 크기 검증
             if (image.getSize() > 5 * 1024 * 1024) {
-                throw new ServiceException("400-2", "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
+                throw new ServiceException("400-5", "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
             }
 
             // 파일 확장자 검증
             String filename = image.getOriginalFilename();
             if (filename == null || !filename.contains(".")) {
-                throw new ServiceException("400-2", "올바른 파일명이 아닙니다.");
+                throw new ServiceException("400-6", "올바른 파일명이 아닙니다.");
             }
 
             String extension = filename.substring(filename.lastIndexOf(".")).toLowerCase();
             if (!allowedExtensions.contains(extension)) {
-                throw new ServiceException("400-2", "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
+                throw new ServiceException("400-7", "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
             }
         }
     }

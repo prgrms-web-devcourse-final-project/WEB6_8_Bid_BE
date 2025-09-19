@@ -82,7 +82,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.resultCode").value("201-1"))
+                .andExpect(jsonPath("$.resultCode").value("201"))
                 .andExpect(jsonPath("$.msg").value("상품이 등록되었습니다."))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
@@ -126,7 +126,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.resultCode").value("400-2"))
+                .andExpect(jsonPath("$.resultCode").value("400-3"))
                 .andExpect(jsonPath("$.msg").value("이미지는 최대 5개까지만 업로드할 수 있습니다."));
     }
 
@@ -151,7 +151,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.resultCode").value("400-2"))
+                .andExpect(jsonPath("$.resultCode").value("400-5"))
                 .andExpect(jsonPath("$.msg").value("이미지 파일 크기는 5MB를 초과할 수 없습니다."));
     }
 
@@ -176,7 +176,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.resultCode").value("400-2"))
+                .andExpect(jsonPath("$.resultCode").value("400-7"))
                 .andExpect(jsonPath("$.msg").value("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)"));
     }
 
