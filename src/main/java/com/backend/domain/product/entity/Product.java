@@ -112,4 +112,8 @@ public class Product extends BaseEntity {
         this.productImages.add(productImage);
         productImage.setProduct(this);
     }
+
+    public String getThumbnail() {
+        return productImages.stream().findFirst().get().getImageUrl();
+    }
 }
