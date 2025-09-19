@@ -4,3 +4,8 @@ spring:
     username: sa
     password:
     driver-class-name: org.h2.Driver
+
+file:
+  upload:
+    path: ${user.home}/uploads
+    base-url: ${BACKEND_BASE_URL}/uploads

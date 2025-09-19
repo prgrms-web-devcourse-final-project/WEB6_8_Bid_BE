@@ -1,6 +1,11 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:db_test;MODE=MySQL
+    url: jdbc:h2:./db_dev;MODE=MySQL
     username: sa
     password:
     driver-class-name: org.h2.Driver
+
+file:
+  upload:
+    path: ./uploads
+    base-url: http://localhost:8080/uploads
