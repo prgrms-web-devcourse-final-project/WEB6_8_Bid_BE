@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional // 테스트 후 데이터 롤백
@@ -79,11 +80,10 @@ class MemberServiceTest {
                 "010-2222-2222",
                 "Incheon, South Korea"
         );
-        RsData<MemberSignUpResponseDto> rsData = memberService.signup(duplicateRequest);
 
-        // Then: 실패 응답을 받아야 한다.
-        assertThat(rsData.resultCode()).isEqualTo("400-1");
-        assertThat(rsData.msg()).isEqualTo("이미 사용중인 이메일입니다.");
-        assertThat(rsData.data()).isNull();
+        // Then: IllegalArgumentException이 발생해야 한다.
+        assertThatThrownBy(() -> memberService.signup(duplicateRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("이미 사용중인 이메일입니다.");
     }
 }

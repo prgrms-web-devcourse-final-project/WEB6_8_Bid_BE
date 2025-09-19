@@ -1,10 +1,13 @@
 package com.backend.domain.member.service;
 
+import com.backend.domain.member.dto.LoginRequestDto;
+import com.backend.domain.member.dto.LoginResponseDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.dto.MemberSignUpResponseDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.rsData.RsData;
+import com.backend.global.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,27 +20,52 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public RsData<MemberSignUpResponseDto> signup(MemberSignUpRequestDto memberSignUpRequestDto) {
-        // 1. 이메일 중복 체크
-        if (memberRepository.findByEmail(memberSignUpRequestDto.email()).isPresent()) {
-            return new RsData<>("400-1", "이미 사용중인 이메일입니다.");
-        }
+        checkEmailDuplication(memberSignUpRequestDto.email());
 
-        // 2. 회원 객체 생성 및 비밀번호 암호화
-        Member member = new Member();
-        member.setEmail(memberSignUpRequestDto.email());
-        member.setPassword(passwordEncoder.encode(memberSignUpRequestDto.password()));
-        member.setNickname(memberSignUpRequestDto.nickname());
-        member.setPhoneNumber(memberSignUpRequestDto.phone());
-        member.setAddress(memberSignUpRequestDto.address());
-        member.setAuthority("ROLE_USER"); // 기본 권한 설정
+        Member member = Member.builder()
+                .email(memberSignUpRequestDto.email())
+                .password(passwordEncoder.encode(memberSignUpRequestDto.password()))
+                .nickname(memberSignUpRequestDto.nickname())
+                .phoneNumber(memberSignUpRequestDto.phone())
+                .address(memberSignUpRequestDto.address())
+                .authority("ROLE_USER")
+                .build();
 
-        // 3. 회원 정보 저장
         Member savedMember = memberRepository.save(member);
 
-        // 4. 응답 DTO 생성 및 반환
         MemberSignUpResponseDto responseDto = new MemberSignUpResponseDto(savedMember.getId(), savedMember.getEmail(), savedMember.getNickname());
         return new RsData<>("200-1", "회원가입이 완료되었습니다.", responseDto);
+    }
+
+    public RsData<LoginResponseDto> login(LoginRequestDto loginRequestDto) {
+        Member member = findMemberByEmail(loginRequestDto.email());
+        verifyPassword(loginRequestDto.password(), member.getPassword());
+
+        String accessToken = jwtUtil.generateAccessToken(member.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(member.getEmail());
+
+        member.updateRefreshToken(refreshToken);
+
+        return new RsData<>("200-2", "로그인 성공", new LoginResponseDto(accessToken, refreshToken));
+    }
+
+    private void checkEmailDuplication(String email) {
+        if (memberRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("이미 사용중인 이메일입니다.");
+        }
+    }
+
+    private Member findMemberByEmail(String email) {
+        return memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
+    }
+
+    private void verifyPassword(String rawPassword, String encodedPassword) {
+        if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
     }
 }

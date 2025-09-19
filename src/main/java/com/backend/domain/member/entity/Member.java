@@ -12,11 +12,15 @@ import lombok.*;
 import java.util.List;
 
 @Entity
-@Table(name = "members")
-@Getter @Setter
-@NoArgsConstructor
+@Getter
+@Setter
+@Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class Member extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false, length = 50)
     private String email;
@@ -35,6 +39,16 @@ public class Member extends BaseEntity {
 
     @Column(length = 50)
     private String authority;
+
+    private String profileImageUrl;
+
+    private String refreshToken;
+
+    private int creditScore;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
