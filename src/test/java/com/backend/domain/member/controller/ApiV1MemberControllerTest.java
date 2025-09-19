@@ -1,5 +1,6 @@
 package com.backend.domain.member.controller;
 
+import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.repository.MemberRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -100,9 +101,82 @@ class ApiV1MemberControllerTest {
 
         // Then
         resultActions
-                .andExpect(status().isBadRequest()) // 컨트롤러가 RsData의 statusCode에 따라 400을 반환
+                .andExpect(status().isConflict()) // GlobalExceptionHandler에 의해 409 Conflict
                 .andExpect(jsonPath("$.resultCode").value("400-1"))
                 .andExpect(jsonPath("$.msg").value("이미 사용중인 이메일입니다."))
                 .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("로그인 성공")
+    void t3() throws Exception {
+        // Given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "test@example.com", "password123", "testUser", "01012345678", "Test Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        LoginRequestDto loginDto = new LoginRequestDto("test@example.com", "password123");
+
+        // When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-2"))
+                .andExpect(jsonPath("$.msg").value("로그인 성공"))
+                .andExpect(jsonPath("$.data.accessToken").exists())
+                .andExpect(jsonPath("$.data.refreshToken").exists());
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 잘못된 비밀번호")
+    void t4() throws Exception {
+        // Given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "test@example.com", "password123", "testUser", "01012345678", "Test Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        LoginRequestDto loginDto = new LoginRequestDto("test@example.com", "wrong_password");
+
+        // When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isConflict()) // GlobalExceptionHandler에 의해 409 Conflict
+                .andExpect(jsonPath("$.resultCode").value("400-1"))
+                .andExpect(jsonPath("$.msg").value("비밀번호가 일치하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 존재하지 않는 이메일")
+    void t5() throws Exception {
+        // Given
+        LoginRequestDto loginDto = new LoginRequestDto("nonexistent@example.com", "password123");
+
+        // When
+        ResultActions resultActions = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isConflict()) // GlobalExceptionHandler에 의해 409 Conflict
+                .andExpect(jsonPath("$.resultCode").value("400-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 이메일입니다."));
     }
 }
