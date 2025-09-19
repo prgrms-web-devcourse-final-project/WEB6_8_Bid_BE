@@ -17,7 +17,7 @@ public record NotificationListResponseDto (
             String message,
             String type,
             Boolean isRead,
-            Integer productId,
+            Long productId,
             String productName,
             LocalDateTime createDate
     ) {}
