@@ -16,14 +16,17 @@ public class Notification extends BaseEntity {
     @Column(nullable = false, length = 255)
     private String message;
 
+    @Column(name = "notification_type",nullable = false,length = 50)
+    private String notificationType;
+
     @Column(name = "is_read", nullable = false)
     private Boolean isRead;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", insertable = false, updatable = false)
+    @JoinColumn(name = "member_id")
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 }
