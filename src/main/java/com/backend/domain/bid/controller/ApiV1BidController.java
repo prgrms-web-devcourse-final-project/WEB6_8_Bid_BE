@@ -3,6 +3,7 @@ package com.backend.domain.bid.controller;
 import com.backend.domain.bid.dto.BidCurrentResponseDto;
 import com.backend.domain.bid.dto.BidRequestDto;
 import com.backend.domain.bid.dto.BidResponseDto;
+import com.backend.domain.bid.dto.MyBidResponseDto;
 import com.backend.domain.bid.service.BidService;
 import com.backend.global.rsData.RsData;
 import jakarta.validation.Valid;
@@ -32,6 +33,16 @@ public class ApiV1BidController {
             @PathVariable Long productId
     ){
         return bidService.getBidStatus(productId);
+    }
+
+    @GetMapping("/me")
+    public RsData<MyBidResponseDto> getMyBids(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        // TODO: JWT 토큰에서 사용자 추출
+        Long memberId = 1L;
+        return bidService.getMyBids(memberId,page,size);
     }
 
 }
