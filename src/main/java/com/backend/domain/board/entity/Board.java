@@ -1,5 +1,6 @@
 package com.backend.domain.board.entity;
 
+import com.backend.domain.board.constant.BoardType;
 import com.backend.domain.comment.entity.Comment;
 import com.backend.domain.member.entity.Member;
 import com.backend.global.jpa.entity.BaseEntity;
@@ -20,8 +21,9 @@ public class Board extends BaseEntity {
     @Column(nullable = false, length = 255)
     private String content;
 
+    @Enumerated(EnumType.STRING) // Enum 타입을 DB에 문자열로 저장..
     @Column(name = "board_type", length = 50)
-    private String boardType;
+    private BoardType boardType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", insertable = false, updatable = false)
