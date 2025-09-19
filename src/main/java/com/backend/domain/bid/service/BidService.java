@@ -3,6 +3,7 @@ package com.backend.domain.bid.service;
 import com.backend.domain.bid.dto.BidCurrentResponseDto;
 import com.backend.domain.bid.dto.BidRequestDto;
 import com.backend.domain.bid.dto.BidResponseDto;
+import com.backend.domain.bid.dto.MyBidResponseDto;
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
@@ -11,12 +12,18 @@ import com.backend.global.exception.ServiceException;
 import com.backend.global.rsData.RsData;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -82,6 +89,74 @@ public class BidService {
                 recentBidList
         );
         return new RsData<>("200","입찰 현황이 조회되었습니다.",response);
+    }
+
+    @Transactional(readOnly = true)
+    public RsData<MyBidResponseDto> getMyBids(Long memberId, int page, int size){
+        // 1. page 설정
+        Pageable pageable = PageRequest.of(page, size);
+        // 2. 내 입찰내역 조회
+        Page<Bid> bidPage = bidRepository.findMyBids(memberId, pageable);
+        if(bidPage.isEmpty()){
+            MyBidResponseDto emptyBids = new MyBidResponseDto(
+                    List.of(),0,0,page,size,false
+            );
+            return new RsData<>("200","내 빈 입찰내역 조회 성공.",emptyBids);
+        }
+        Set<Long> productIds = bidPage.getContent().stream().map(Bid::getId).collect(Collectors.toSet());
+        Map<Long,Long> currentPricesMap = getCurrentPrices(productIds);
+        // 3. 입찰에서 이긴 것들 조회
+        List<Bid> myWinningBids = bidRepository.findWinningBids(memberId);
+        Set<Long> winningBidIds = myWinningBids.stream().map(Bid::getId).collect(Collectors.toSet());
+        // 4. response 데이터 생성
+        List<MyBidResponseDto.MyBidItem> myBidItems = bidPage.getContent().stream()
+                .map(bid -> {
+                    Product product = bid.getProduct();
+
+                    boolean isWinning = winningBidIds.contains(bid.getId());
+                    Long currentPrice = currentPricesMap.getOrDefault(product.getId(),bid.getBidPrice());
+
+                    MyBidResponseDto.SellerInfo sellerInfo = null;
+                    if(product.getSeller() != null){
+                        sellerInfo = new MyBidResponseDto.SellerInfo(product.getSeller().getId(),product.getSeller().getNickname());
+                    }
+                    return new MyBidResponseDto.MyBidItem(
+                            bid.getId(),
+                            product.getId(),
+                            product.getProductName(),
+                            //product.getThumbnail(),
+                            bid.getBidPrice(),
+                            currentPrice,
+                            bid.getStatus(),
+                            isWinning,
+                            bid.getCreateDate(),
+                            product.getEndTime(),
+                            product.getStatus(),
+                            sellerInfo
+                    );
+                }).toList();
+
+        MyBidResponseDto response = new MyBidResponseDto(
+                myBidItems,
+                (int) bidPage.getTotalElements(),
+                bidPage.getTotalPages(),
+                bidPage.getNumber(),
+                bidPage.getSize(),
+                bidPage.hasNext()
+        );
+        return new RsData<>("200","내 입찰 내역이 조회되었습니다.",response);
+    }
+
+    private Map<Long, Long> getCurrentPrices(Set<Long> productIds) {
+        if(productIds.isEmpty()){
+            return Map.of();
+        }
+        List<Object[]> results = bidRepository.findCurrentPricesForProducts(productIds);
+
+        return results.stream().collect(Collectors.toMap(
+                row -> (Long) row[0],
+                row -> (Long) row[1]
+        ));
     }
 
     private void validateBid(Product product,Member member, Long bidPrice){

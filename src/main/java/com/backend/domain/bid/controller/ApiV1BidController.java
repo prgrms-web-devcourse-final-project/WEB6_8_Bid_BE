@@ -10,9 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/bids")
+@RequestMapping("/api/v1/bids")
 @RequiredArgsConstructor
-public class BidController {
+public class ApiV1BidController {
 
     private final BidService bidService;
 

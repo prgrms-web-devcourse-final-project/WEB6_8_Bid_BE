@@ -15,7 +15,7 @@ public record MyBidResponseDto (
             Long bidId,
             Long productId,
             String productName,
-            String thumbnailUrl,
+//            String thumbnailUrl,
             Long myBidPrice,
             Long currentPrice,
             String status,
@@ -26,7 +26,7 @@ public record MyBidResponseDto (
             SellerInfo Seller
     ) {}
     public record SellerInfo (
-            Integer id,
+            Long id,
             String nickname
     ) {}
 }

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface BidRepository extends JpaRepository<Bid,Long> {
     // 현재 최고 입찰가 조회
@@ -29,4 +30,27 @@ public interface BidRepository extends JpaRepository<Bid,Long> {
     // 내 입찰내역 조회
     @Query("SELECT b FROM Bid b JOIN FETCH b.product p WHERE b.member.id = :memberId AND b.status = 'bidding' ORDER BY b.createDate DESC")
     Page<Bid> findMyBids(@Param("memberId") Long memberId, Pageable pageable);
+    // 상품들 현재 최고 입찰가 조회
+    @Query("""
+        SELECT b.product.id, MAX(b.bidPrice) 
+        FROM Bid b
+        WHERE b.product.id IN :productIds
+        AND b.status = 'bidding'
+        GROUP BY b.product.id
+        """)
+    List<Object[]> findCurrentPricesForProducts(@Param("productIds") Set<Long> productIds);
+    // 내가 최고 입찰자인 상품들
+    @Query("""
+        SELECT b FROM Bid b
+        WHERE b.member.id = :memberId
+        AND b.status = 'bidding'
+        AND b.bidPrice = (
+                SELECT MAX(b2.bidPrice)
+                FROM Bid b2
+                WHERE b2.product.id = b.product.id
+                AND b2.status = 'bidding'
+                )
+        ORDER BY b.createDate DESC
+        """)
+    List<Bid> findWinningBids(@Param("memberId") Long memberId);
 }
