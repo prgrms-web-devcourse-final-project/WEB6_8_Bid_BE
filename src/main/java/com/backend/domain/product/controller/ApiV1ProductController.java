@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductDto;
+import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
@@ -55,7 +56,9 @@ public class ApiV1ProductController {
             @RequestParam(defaultValue = "") Boolean isDelivery,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        Page<Product> products = productService.findBySearchPaged(page, size, keyword, category, location, isDelivery, sort);
+        ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery);
+        Page<Product> products = productService.findBySearchPaged(page, size, sort, search);
+
         return new RsData<>(
                 "200",
                 "상품이 조회되었습니다.",

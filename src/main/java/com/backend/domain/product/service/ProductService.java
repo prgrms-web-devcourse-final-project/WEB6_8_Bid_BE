@@ -2,20 +2,27 @@ package com.backend.domain.product.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
+import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
-import com.backend.domain.product.enums.*;
+import com.backend.domain.product.enums.AuctionDuration;
+import com.backend.domain.product.enums.DeliveryMethod;
+import com.backend.domain.product.enums.ProductCategory;
+import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -103,7 +110,11 @@ public class ProductService {
     }
 
     public Page<Product> findBySearchPaged(
-            int page, int size, String keyword, Integer category, Location[] location, Boolean isDelivery, ProductSearchSortType sort) {
-        return new PageImpl<>(new ArrayList<>());
+            int page, int size, ProductSearchSortType sort, ProductSearchDto search
+    ) {
+        page = (page > 0) ? page : 1;
+        size = (size > 0 && size <= 100) ? size : 20;
+        Pageable pageable = PageRequest.of(page - 1, size, sort.toSort());
+        return productRepository.findBySearchPaged(pageable, search);
     }
 }
