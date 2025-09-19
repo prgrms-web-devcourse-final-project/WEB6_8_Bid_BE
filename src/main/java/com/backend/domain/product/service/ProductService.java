@@ -4,20 +4,18 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
-import com.backend.domain.product.enums.AuctionDuration;
-import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.enums.ProductCategory;
+import com.backend.domain.product.enums.*;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -102,5 +100,10 @@ public class ProductService {
 
     public Optional<Product> findLatest() {
         return productRepository.findFirstByOrderByIdDesc();
+    }
+
+    public Page<Product> findBySearchPaged(
+            int page, int size, String keyword, Integer category, Location[] location, Boolean isDelivery, ProductSearchSortType sort) {
+        return new PageImpl<>(new ArrayList<>());
     }
 }
