@@ -45,10 +45,10 @@ public class ApiV1ProductController {
     public ResponseEntity<Map<String, Object>> getProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam String keyword,
-            @RequestParam Integer[] category,
-            @RequestParam String[] location,
-            @RequestParam Boolean isDelivery,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer[] category,
+            @RequestParam(required = false) String[] location,
+            @RequestParam(required = false) Boolean isDelivery,
             @RequestParam(defaultValue = "경매 중") String status,
             @RequestParam(defaultValue = "LATEST") String sort
     ) {
@@ -308,7 +308,7 @@ public class ApiV1ProductController {
     public ResponseEntity<Map<String, Object>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "") String status,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "LATEST") String sort
     ) {
         Map<String, Object> response = new HashMap<>();
@@ -408,7 +408,7 @@ public class ApiV1ProductController {
             @PathVariable Long memberId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "") String status,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "LATEST") String sort
     ) {
         Map<String, Object> response = new HashMap<>();
