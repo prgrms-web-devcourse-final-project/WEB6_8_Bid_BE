@@ -2,6 +2,7 @@ package com.backend.domain.member.controller;
 
 import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.LoginResponseDto;
+import com.backend.domain.member.dto.LogoutResponseDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.dto.MemberSignUpResponseDto;
 import com.backend.domain.member.service.MemberService;
@@ -10,9 +11,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
@@ -35,5 +39,25 @@ public class ApiV1MemberController {
         RsData<LoginResponseDto> loginResponse = memberService.login(loginRequestDto);
 
         return ResponseEntity.status(loginResponse.statusCode()).body(loginResponse);
+    }
+
+    @Operation(summary = "로그아웃 API", description = "accessToken을 받아 로그아웃 처리")
+    @PostMapping("/auth/logout")
+    public ResponseEntity<LogoutResponseDto> logout(@RequestHeader("Authorization") String accessToken) {
+        String token = accessToken.substring(7);
+        memberService.logout(token);
+
+        LogoutResponseDto response = new LogoutResponseDto("200", "로그아웃 되었습니다.");
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "테스트용 API", description = "인증된 사용자의 이메일 반환")
+    @GetMapping("/members/me")
+    public ResponseEntity<String> me(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        return ResponseEntity.ok(authentication.getName());
     }
 }

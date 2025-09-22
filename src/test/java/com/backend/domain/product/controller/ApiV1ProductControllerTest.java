@@ -49,11 +49,14 @@ class ApiV1ProductControllerTest {
     @BeforeEach
     void setUp() {
         // 테스트용 회원 생성 및 DB에 저장
-        Member member = new Member(
-                "test@example.com", "password", "testUser", "01000000000", "서울 강남구", "USER",
-//                50, "url",
-                new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>()
-        );
+        Member member = Member.builder()
+                .email("test@example.com")
+                .password("password")
+                .nickname("testUser")
+                .phoneNumber("01000000000")
+                .address("서울 강남구")
+                .authority("USER")
+                .build();
         memberRepository.save(member);
     }
 

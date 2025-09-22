@@ -62,4 +62,15 @@ public class JwtUtil {
                 .getBody();
         return claims.getSubject();
     }
+
+    public Long getRemainingExpirationMillis(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        Date expiration = claims.getExpiration();
+        long now = new Date().getTime();
+        return expiration.getTime() - now;
+    }
 }
