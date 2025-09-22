@@ -139,4 +139,75 @@ public class ApiV1ProductController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{productId}")
+    public ResponseEntity<Map<String, Object>> getProduct(@PathVariable Long productId) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("resultCode", "200");
+        response.put("msg", "상품이 조회되었습니다.");
+
+        Map<String, Object> data = new HashMap<>();
+
+        if (productId > 0) {
+            // 아이폰 상품
+            data.put("productId", 1);
+            data.put("name", "아이폰 15 Pro 256GB");
+            data.put("description", "미개봉 새 제품입니다. 직거래 선호합니다.");
+            data.put("category", "디지털/가전");
+            data.put("initialPrice", 1000000);
+            data.put("currentPrice", 1000000);
+            data.put("auctionStartTime", "2024-12-17T09:00:00");
+            data.put("auctionEndTime", "2024-12-18T09:00:00");
+            data.put("auctionDuration", 24);
+            data.put("status", "경매 중");
+            data.put("biddersCount", 12);
+            data.put("deliveryMethod", "TRADE");
+            data.put("location", "서울");
+
+            // images 배열
+            List<Map<String, Object>> images = new ArrayList<>();
+
+            Map<String, Object> image1 = new HashMap<>();
+            image1.put("id", 1);
+            image1.put("productId", 1);
+            image1.put("imageUrl", "/images/product1_1.jpg");
+            images.add(image1);
+
+            Map<String, Object> image2 = new HashMap<>();
+            image2.put("id", 2);
+            image2.put("productId", 1);
+            image2.put("imageUrl", "/images/product1_2.jpg");
+            images.add(image2);
+
+            Map<String, Object> image3 = new HashMap<>();
+            image3.put("id", 3);
+            image3.put("productId", 1);
+            image3.put("imageUrl", "/images/product1_3.jpg");
+            images.add(image3);
+
+            data.put("images", images);
+
+            // seller 정보
+            Map<String, Object> seller = new HashMap<>();
+            seller.put("id", 2);
+            seller.put("nickname", "전자기기왕");
+            seller.put("creditScore", 75);
+            seller.put("profileImageUrl", "/images/member2.jpg");
+            seller.put("review_count", 8);
+            data.put("seller", seller);
+
+            data.put("createDate", "2024-12-15T10:30:00");
+            data.put("modifyDate", "2024-12-15T10:30:00");
+        } else {
+            // 존재하지 않는 상품
+            response.put("resultCode", "404");
+            response.put("msg", "상품을 찾을 수 없습니다.");
+            response.put("data", null);
+            return ResponseEntity.status(404).body(response);
+        }
+
+        response.put("data", data);
+        return ResponseEntity.ok(response);
+    }
 }
