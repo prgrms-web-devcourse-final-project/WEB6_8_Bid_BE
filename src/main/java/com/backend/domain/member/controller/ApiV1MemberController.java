@@ -52,8 +52,17 @@ public class ApiV1MemberController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "토큰 재생성 API", description = "refreshToken을 받아서 AccessToken 재발급")
+    @PostMapping("/auth/reissue")
+    public ResponseEntity<RsData<LoginResponseDto>> reissue(@RequestHeader("Authorization") String refreshToken) {
+        String token = refreshToken.substring(7);
+        RsData<LoginResponseDto> reissueResponse = memberService.reissue(token);
+
+        return ResponseEntity.status(reissueResponse.statusCode()).body(reissueResponse);
+    }
+
     @Operation(summary = "테스트용 API", description = "인증된 사용자의 이메일 반환")
-    @GetMapping("/members/me")
+    @GetMapping("/members/test")
     public ResponseEntity<String> me(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(401).body("Unauthorized");
