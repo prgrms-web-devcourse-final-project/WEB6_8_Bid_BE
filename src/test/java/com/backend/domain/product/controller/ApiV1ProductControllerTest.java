@@ -3,6 +3,7 @@ package com.backend.domain.product.controller;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.service.ProductService;
@@ -19,6 +20,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +45,7 @@ class ApiV1ProductControllerTest {
 
     @Test
     @DisplayName("상품 생성")
+    @Transactional
     void createProduct_IntegrationTest_Success() throws Exception {
         // given
         ProductCreateRequest request = createValidRequest();
@@ -177,7 +180,8 @@ class ApiV1ProductControllerTest {
                         get("/api/v1/products")
                 ).andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST, new ProductSearchDto(null, null, null, null, null));
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+                new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
 
         // then
         resultActions
@@ -213,6 +217,215 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
                     .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
         }
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 키워드 검색")
+    void getProductsByKeyword() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("keyword", "아이폰"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+                new ProductSearchDto("아이폰", null, null, null, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 검색된 상품이 키워드를 포함하는지 확인
+        List<Product> products = productPage.getContent();
+        for (int i = 0; i < products.size(); i++) {
+            resultActions.andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(Matchers.containsString("아이폰")));
+        }
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 카테고리 필터링")
+    void getProductsByCategory() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("category", "1")) // 전자기기
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+                new ProductSearchDto(null, new Integer[]{1}, null, null, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 지역 필터링")
+    void getProductsByLocation() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("location", "서울"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+                new ProductSearchDto(null, null, new String[]{"서울"}, null, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 검색된 상품이 서울 지역을 포함하는지 확인
+        List<Product> products = productPage.getContent();
+        for (int i = 0; i < products.size(); i++) {
+            resultActions.andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(Matchers.containsString("서울")));
+        }
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 배송 가능 필터링")
+    void getProductsByDelivery() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("isDelivery", "true"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+                new ProductSearchDto(null, null, null, true, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 복합 검색 조건")
+    void getProductsByComplexConditions() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("keyword", "갤럭시")
+                        .param("category", "1")
+                        .param("isDelivery", "true"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+                new ProductSearchDto("갤럭시", new Integer[]{1}, null, true, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 페이징")
+    void getProductsWithPaging() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 2, ProductSearchSortType.LATEST,
+                new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(2))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()))
+                .andExpect(jsonPath("$.data.content.length()").value(Math.min(2, productPage.getContent().size())));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 가격 오름차순 정렬")
+    void getProductsSortedByPriceAsc() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("sort", "PRICE_LOW"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.PRICE_LOW,
+                new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 가격 순서 확인
+        List<Product> products = productPage.getContent();
+        for (int i = 0; i < products.size() - 1; i++) {
+            Long currentPrice = products.get(i).getCurrentPrice();
+            Long nextPrice = products.get(i + 1).getCurrentPrice();
+            // 현재 가격이 다음 가격보다 작거나 같아야 함
+            assert currentPrice <= nextPrice : "Price ordering is incorrect";
+        }
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 인기순 정렬")
+    void getProductsSortedByPopularity() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("sort", "POPULAR"))
+                .andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.POPULAR,
+                new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
+        if (!productPage.getContent().isEmpty()) {
+            resultActions.andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
+        }
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 - 검색 결과 없음")
+    void getProductsEmptyResult() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products")
+                        .param("keyword", "존재하지않는상품"))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(0))
+                .andExpect(jsonPath("$.data.content.length()").value(0));
     }
 
     // Helper methods
