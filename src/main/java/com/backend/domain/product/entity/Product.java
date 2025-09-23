@@ -3,6 +3,8 @@ package com.backend.domain.product.entity;
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.payment.entity.Payment;
+import com.backend.domain.product.dto.ProductModifyRequest;
+import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -126,9 +128,30 @@ public class Product extends BaseEntity {
             return thumbnailUrl;
         }
 
-        return productImages.stream()
+        thumbnailUrl = productImages.stream()
                 .findFirst()
                 .map(ProductImage::getImageUrl)
                 .orElse(null);
+
+        return thumbnailUrl;
+    }
+
+    public void modify(ProductModifyRequest validatedRequest) {
+        if (validatedRequest.name() != null) this.productName = validatedRequest.name();
+        if (validatedRequest.description() != null) this.description = validatedRequest.description();
+        if (validatedRequest.categoryId() != null) this.category = ProductCategory.fromId(validatedRequest.categoryId());
+        if (validatedRequest.initialPrice() != null) this.initialPrice = validatedRequest.initialPrice();
+        if (validatedRequest.auctionStartTime() != null) this.startTime = validatedRequest.auctionStartTime();
+        if (validatedRequest.auctionDuration() != null) this.duration = AuctionDuration.fromValue(validatedRequest.auctionDuration());
+        if (validatedRequest.deliveryMethod() != null) this.deliveryMethod = validatedRequest.deliveryMethod();
+        if (validatedRequest.location() != null) this.location = validatedRequest.location();
+    }
+
+    public void deleteProductImage(ProductImage productImage) {
+        productImages.remove(productImage);
+
+        if (thumbnailUrl.equals(productImage.getImageUrl())) {
+            thumbnailUrl = null;
+        }
     }
 }

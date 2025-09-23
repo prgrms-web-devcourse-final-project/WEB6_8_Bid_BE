@@ -2,6 +2,7 @@ package com.backend.domain.product.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
+import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,12 +43,7 @@ public class ProductService {
         Product savedProduct = createProduct(actor, request);
 
         // 2. 이미지 업로드 및 저장
-        for (MultipartFile image : images) {
-            String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
-            productImageRepository.save(productImage);
-            savedProduct.addProductImage(imageUrl);
-        }
+        createProductImage(savedProduct, images);
 
         return savedProduct;
     }
@@ -64,6 +61,15 @@ public class ProductService {
                 actor
         );
         return productRepository.save(product);
+    }
+
+    private void createProductImage(Product savedProduct, List<MultipartFile> images) {
+        for (MultipartFile image : images) {
+            String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
+            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
+            productImageRepository.save(productImage);
+            savedProduct.addProductImage(imageUrl);
+        }
     }
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
@@ -128,5 +134,59 @@ public class ProductService {
 
     public Optional<Product> findById(Long productId) {
         return productRepository.findById(productId);
+    }
+
+    public Product getProductById(Long productId) {
+        return findById(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+    }
+
+    @Transactional
+    public Product modifyProduct(Long productId, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
+        ProductModifyRequest validatedRequest = validateEditRequest(productId, request);
+
+        Product product = getProductById(productId);
+        product.modify(validatedRequest);
+
+        if (images != null && !images.isEmpty()) {
+            createProductImage(product, images);
+        }
+
+        if (deleteImageIds != null) {
+            for (Long deleteImageId : deleteImageIds) {
+                ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
+                if (!productImage.getProduct().getId().equals(productId)) throw new ServiceException("400", "이미지가 해당 상품에 속하지 않습니다.");
+
+                product.deleteProductImage(productImage);
+                productImageRepository.delete(productImage);
+            }
+
+            if (product.getProductImages().isEmpty()) throw new ServiceException("400", "이미지는 필수입니다.");
+        }
+
+        return product;
+    }
+
+    private ProductModifyRequest validateEditRequest(Long productId, ProductModifyRequest request) {
+        Product product = getProductById(productId);
+
+        String newTitle = request.name();
+        String newDescription = request.description();
+        Integer newCategoryId = request.categoryId();
+        Long newInitialPrice = request.initialPrice();
+        LocalDateTime newAuctionStartTime = request.auctionStartTime();
+        String newAuctionDuration = request.auctionDuration();
+        DeliveryMethod newDeliveryMethod = request.deliveryMethod();
+        String newLocation = request.location();
+
+        if (newTitle != null && newTitle.equals(product.getProductName())) newTitle = null;
+        if (newDescription != null && newDescription.equals(product.getDescription())) newDescription = null;
+        if (newCategoryId != null && ProductCategory.fromId(newCategoryId).equals(product.getCategory())) newCategoryId = null;
+        if (newInitialPrice != null && newInitialPrice.equals(product.getInitialPrice())) newInitialPrice = null;
+        if (newAuctionStartTime != null && newAuctionStartTime.equals(product.getStartTime())) newAuctionStartTime = null;
+        if (newAuctionDuration != null && AuctionDuration.fromValue(newAuctionDuration).equals(product.getDuration())) newAuctionDuration = null;
+        if (newDeliveryMethod != null && newDeliveryMethod.equals(product.getDeliveryMethod())) newDeliveryMethod = null;
+        if (newLocation != null && newLocation.equals(product.getLocation())) newLocation = null;
+
+        return new ProductModifyRequest(newTitle, newDescription, newCategoryId, newInitialPrice, newAuctionStartTime, newAuctionDuration, newDeliveryMethod, newLocation);
     }
 }
