@@ -2,15 +2,20 @@ package com.backend.domain.product.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
+import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
+import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,12 +32,24 @@ public class ProductService {
     private final FileService fileService;
 
     @Transactional
-    public Product createProduct(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
+    public Product create(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
         // 0. 유효성 검증 (location, images)
         validateLocation(request.location(), request.deliveryMethod());
         validateImages(images);
 
         // 1. Product 생성 및 저장
+        Product savedProduct = createProduct(actor, request);
+
+        // 2. 이미지 업로드 및 저장
+        for (MultipartFile image : images) {
+            String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
+            createProductImage(savedProduct, imageUrl);
+        }
+
+        return savedProduct;
+    }
+
+    public Product createProduct(Member actor, ProductCreateRequest request) {
         Product product = new Product(
                 request.name(),
                 request.description(),
@@ -44,18 +61,13 @@ public class ProductService {
                 request.location(),
                 actor
         );
-        Product savedProduct = productRepository.save(product);
+        return productRepository.save(product);
+    }
 
-        // 2. 이미지 업로드 및 저장
-        for (MultipartFile image : images) {
-            String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-
-            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
-            productImageRepository.save(productImage);
-            savedProduct.addProductImage(productImage);
-        }
-
-        return savedProduct;
+    public void createProductImage(Product product, String imageUrl) {
+        ProductImage productImage = new ProductImage(imageUrl, product);
+        productImageRepository.save(productImage);
+        product.addProductImage(productImage);
     }
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
@@ -102,5 +114,19 @@ public class ProductService {
 
     public Optional<Product> findLatest() {
         return productRepository.findFirstByOrderByIdDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Product> findBySearchPaged(
+            int page, int size, ProductSearchSortType sort, ProductSearchDto search
+    ) {
+        page = (page > 0) ? page : 1;
+        size = (size > 0 && size <= 100) ? size : 20;
+        Pageable pageable = PageRequest.of(page - 1, size, sort.toSort());
+        return productRepository.findBySearchPaged(pageable, search);
+    }
+
+    public long count() {
+        return productRepository.count();
     }
 }
