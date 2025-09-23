@@ -160,9 +160,7 @@ public class ProductService {
     }
 
     @Transactional
-    public Product modifyProduct(Long productId, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
-        Product product = getProductById(productId);
-
+    public Product modifyProduct(Product product, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
         ProductModifyRequest validatedRequest = validateModifyRequest(product, request);
         validateImagesForModify(product, images);
 
@@ -178,7 +176,7 @@ public class ProductService {
 
             for (Long deleteImageId : deleteImageIds) {
                 ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
-                if (!productImage.getProduct().getId().equals(productId)) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
+                if (!productImage.getProduct().getId().equals(product.getId())) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
 
                 product.deleteProductImage(productImage);
                 productImageRepository.delete(productImage);

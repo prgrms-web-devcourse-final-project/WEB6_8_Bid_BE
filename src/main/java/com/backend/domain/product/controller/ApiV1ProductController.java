@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,12 +34,9 @@ public class ApiV1ProductController {
     @Transactional
     public RsData<ProductDto> createProduct(
             @RequestPart("request") @Valid ProductCreateRequest request,
-            @RequestPart("images") List<MultipartFile> images
+            @RequestPart("images") List<MultipartFile> images,
+            @AuthenticationPrincipal Member actor
     ) {
-        // TODO: JWT 토큰에서 사용자 추출
-        // Member actor = rq.getActor();
-        Member actor = memberRepository.findAll().getFirst();
-
         Product product = productService.create(actor, request, images);
 
         return new RsData<>("201", "상품이 등록되었습니다.", ProductDto.fromEntity(product));
@@ -85,9 +83,14 @@ public class ApiV1ProductController {
             @PathVariable Long productId,
             @RequestPart("request") @Valid ProductModifyRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds
+            @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds,
+            @AuthenticationPrincipal Member actor
     ) {
-        Product product = productService.modifyProduct(productId, request, images, deleteImageIds);
+        Product product = productService.getProductById(productId);
+
+        product.checkActorCanModify(actor);
+
+        productService.modifyProduct(product, request, images, deleteImageIds);
 
         return new RsData<>(
                 "200",

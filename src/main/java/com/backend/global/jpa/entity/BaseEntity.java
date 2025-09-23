@@ -36,7 +36,8 @@ public abstract class BaseEntity {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BaseEntity that = (BaseEntity) o;
-        return id == that.id;
+        if (id == null || that.id == null) return false; // 영속화 전 객체는 다 다르다고 본다
+        return Objects.equals(id, that.id);
     }
 
     @Override

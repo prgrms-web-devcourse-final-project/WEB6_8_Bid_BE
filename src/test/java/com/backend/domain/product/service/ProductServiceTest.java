@@ -270,8 +270,6 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
         given(fileService.uploadFile(any(MultipartFile.class), anyString()))
                 .willReturn("http://localhost:8080/uploads/products/1/image3.jpg")
                 .willReturn("http://localhost:8080/uploads/products/1/image4.jpg");
@@ -280,7 +278,7 @@ class ProductServiceTest {
                 .willReturn(new ProductImage("http://localhost:8080/uploads/products/1/image4.jpg", mockProduct));
 
         // when
-        Product result = productService.modifyProduct(productId, request, images, null);
+        Product result = productService.modifyProduct(mockProduct, request, images, null);
 
         // then
         assertThat(result).isNotNull();
@@ -308,8 +306,6 @@ class ProductServiceTest {
         given(mockImage1.getProduct()).willReturn(mockProduct);
         given(mockImage2.getProduct()).willReturn(mockProduct);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
         given(productImageRepository.findById(10L))
                 .willReturn(Optional.of(mockImage1));
         given(productImageRepository.findById(20L))
@@ -318,7 +314,7 @@ class ProductServiceTest {
                 .willReturn(List.of(remainingImage)); // 삭제 후에도 이미지가 남아있음
 
         // when
-        Product result = productService.modifyProduct(productId, request, null, deleteImageIds);
+        Product result = productService.modifyProduct(mockProduct, request, null, deleteImageIds);
 
         // then
         assertThat(result).isNotNull();
@@ -347,8 +343,6 @@ class ProductServiceTest {
 
         given(mockImage.getProduct()).willReturn(mockProduct);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
         given(productImageRepository.findById(10L))
                 .willReturn(Optional.of(mockImage));
         given(mockProduct.getProductImages())
@@ -359,7 +353,7 @@ class ProductServiceTest {
                 .willReturn(new ProductImage("http://localhost:8080/uploads/products/1/new_image.jpg", mockProduct));
 
         // when
-        Product result = productService.modifyProduct(productId, request, images, deleteImageIds);
+        Product result = productService.modifyProduct(mockProduct, request, images, deleteImageIds);
 
         // then
         assertThat(result).isNotNull();
@@ -372,23 +366,6 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("상품 수정 실패 - 존재하지 않는 상품")
-    void modifyProduct_FailByProductNotFound() {
-        // given
-        Long productId = 999L;
-        ProductModifyRequest request = createValidModifyRequest();
-
-        given(productRepository.findById(productId))
-                .willReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, null, null))
-                .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "404")
-                .hasFieldOrPropertyWithValue("msg", "존재하지 않는 상품입니다.");
-    }
-
-    @Test
     @DisplayName("상품 수정 실패 - 존재하지 않는 이미지 삭제")
     void modifyProduct_FailByImageNotFound() {
         // given
@@ -398,13 +375,11 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
         given(productImageRepository.findById(999L))
                 .willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, null, deleteImageIds))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, deleteImageIds))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "404")
                 .hasFieldOrPropertyWithValue("msg", "존재하지 않는 이미지입니다.");
@@ -426,13 +401,11 @@ class ProductServiceTest {
 
         given(mockImage.getProduct()).willReturn(otherProduct);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
         given(productImageRepository.findById(10L))
                 .willReturn(Optional.of(mockImage));
 
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, null, deleteImageIds))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, deleteImageIds))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-8")
                 .hasFieldOrPropertyWithValue("msg", "이미지가 해당 상품에 속하지 않습니다.");
@@ -452,15 +425,13 @@ class ProductServiceTest {
 
         given(mockImage.getProduct()).willReturn(mockProduct);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
         given(productImageRepository.findById(10L))
                 .willReturn(Optional.of(mockImage));
         given(mockProduct.getProductImages())
                 .willReturn(List.of()); // 삭제 후 이미지가 없음
 
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, null, deleteImageIds))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, deleteImageIds))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-2")
                 .hasFieldOrPropertyWithValue("msg", "이미지는 필수입니다.");
@@ -476,11 +447,8 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when
-        Product result = productService.modifyProduct(productId, request, null, null);
+        Product result = productService.modifyProduct(mockProduct, request, null, null);
 
         // then
         assertThat(result).isNotNull();
@@ -502,11 +470,8 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when
-        Product result = productService.modifyProduct(productId, request, images, null);
+        Product result = productService.modifyProduct(mockProduct, request, images, null);
 
         // then
         assertThat(result).isNotNull();
@@ -527,11 +492,8 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class))); // 기존 이미지 1개
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, images, null))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-3")
                 .hasFieldOrPropertyWithValue("msg", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
@@ -541,7 +503,6 @@ class ProductServiceTest {
     @DisplayName("상품 수정 실패 - 빈 파일 업로드")
     void modifyProduct_FailByEmptyFile() {
         // given
-        Long productId = 1L;
         ProductModifyRequest request = createValidModifyRequest();
         List<MultipartFile> images = List.of(
                 new MockMultipartFile("image", "test.jpg", "image/jpeg", new byte[0]) // 빈 파일
@@ -550,11 +511,8 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, images, null))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-4")
                 .hasFieldOrPropertyWithValue("msg", "빈 파일은 업로드할 수 없습니다.");
@@ -576,11 +534,8 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, images, null))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-5")
                 .hasFieldOrPropertyWithValue("msg", "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
@@ -599,11 +554,8 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, images, null))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-7")
                 .hasFieldOrPropertyWithValue("msg", "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
@@ -622,11 +574,8 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, images, null))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-6")
                 .hasFieldOrPropertyWithValue("msg", "올바른 파일명이 아닙니다.");
@@ -650,11 +599,8 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
 
-        given(productRepository.findById(productId))
-                .willReturn(Optional.of(mockProduct));
-
         // when & then
-        assertThatThrownBy(() -> productService.modifyProduct(productId, request, null, null))
+        assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-1")
                 .hasFieldOrPropertyWithValue("msg", "직거래 시 배송지는 필수입니다.");
