@@ -13,9 +13,26 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    // ServiceException의 resultCode에 따라 동적으로 HTTP 상태 코드를 반환
     @ExceptionHandler(ServiceException.class)
-    public ResponseEntity<RsData<Void>> handleServiceException(ServiceException e){
-        return ResponseEntity.badRequest().body(e.getRsData());
+    public ResponseEntity<RsData<Void>> handleServiceException(ServiceException e) {
+        HttpStatus httpStatus;
+        try {
+            int resultCode = Integer.parseInt(e.getResultCode());
+            httpStatus = HttpStatus.valueOf(resultCode);
+        } catch (NumberFormatException ex) {
+            httpStatus = HttpStatus.BAD_REQUEST;
+        }
+
+        String rawMessage = e.getMessage();
+        // 메시지에서 resultCode 접두사 제거
+        if (rawMessage != null && rawMessage.startsWith(e.getResultCode() + ":")) {
+            rawMessage = rawMessage.substring(e.getResultCode().length() + 1);
+        }
+
+        RsData<Void> rsData = new RsData<>(e.getResultCode(), rawMessage);
+
+        return new ResponseEntity<>(rsData, httpStatus);
     }
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<RsData<Void>> handle(NoSuchElementException ex) {

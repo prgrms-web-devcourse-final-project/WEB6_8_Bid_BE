@@ -9,6 +9,7 @@ import lombok.*;
 @Entity
 @Table(name = "bids")
 @Getter @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Bid extends BaseEntity {
