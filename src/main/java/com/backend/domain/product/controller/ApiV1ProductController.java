@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +35,7 @@ public class ApiV1ProductController {
     private final MemberRepository memberRepository;
 
     @PostMapping
+    @Transactional
     public RsData<ProductDto> createProduct(
             @RequestPart("request") @Valid ProductCreateRequest request,
             @RequestPart("images") List<MultipartFile> images
@@ -48,6 +50,7 @@ public class ApiV1ProductController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public RsData<PageDto<ProductListDto>> getProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -71,8 +74,9 @@ public class ApiV1ProductController {
     }
 
     @GetMapping("/{productId}")
+    @Transactional(readOnly = true)
     public RsData<ProductDto> getProduct(@PathVariable Long productId) {
-        Product product = productService.findById(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+        Product product = productService.findByIdWithImages(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
 
         return new RsData<>(
                 "200",

@@ -4,7 +4,6 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -43,7 +42,7 @@ public class ProductService {
         // 2. 이미지 업로드 및 저장
         for (MultipartFile image : images) {
             String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-            createProductImage(savedProduct, imageUrl);
+            savedProduct.addProductImage(imageUrl);
         }
 
         return savedProduct;
@@ -62,12 +61,6 @@ public class ProductService {
                 actor
         );
         return productRepository.save(product);
-    }
-
-    public void createProductImage(Product product, String imageUrl) {
-        ProductImage productImage = new ProductImage(imageUrl, product);
-        productImageRepository.save(productImage);
-        product.addProductImage(productImage);
     }
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
@@ -132,5 +125,9 @@ public class ProductService {
 
     public Optional<Product> findById(Long productId) {
         return productRepository.findById(productId);
+    }
+
+    public Optional<Product> findByIdWithImages(Long productId) {
+        return productRepository.findByIdWithImages(productId);
     }
 }

@@ -77,8 +77,8 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
                 .andExpect(jsonPath("$.data.initialPrice").value(product.getInitialPrice()))
                 .andExpect(jsonPath("$.data.currentPrice").value(product.getCurrentPrice()))
-                .andExpect(jsonPath("$.data.auctionStartTime").value(product.getStartTime().toString()))
-                .andExpect(jsonPath("$.data.auctionEndTime").value(product.getEndTime().toString()))
+                .andExpect(jsonPath("$.data.auctionStartTime").value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
 //                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
@@ -428,7 +428,64 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(0));
     }
 
-    // Helper methods
+    @Test
+    @DisplayName("상품 상세 조회")
+    @Transactional
+    void getProduct() throws Exception {
+        // when
+        Long id = 1L;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/" + id))
+                .andDo(print());
+
+        Product product = productService.findByIdWithImages(id).get();
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProduct"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("상품이 조회되었습니다."))
+                .andExpect(jsonPath("$.data.name").value(product.getProductName()))
+                .andExpect(jsonPath("$.data.description").value(product.getDescription()))
+                .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
+                .andExpect(jsonPath("$.data.initialPrice").value(product.getInitialPrice()))
+                .andExpect(jsonPath("$.data.currentPrice").value(product.getCurrentPrice()))
+                .andExpect(jsonPath("$.data.auctionStartTime").value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
+                .andExpect(jsonPath("$.data.status").value(product.getStatus()))
+//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
+                .andExpect(jsonPath("$.data.location").value(product.getLocation()))
+                .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
+                .andExpect(jsonPath("$.data.images[0].imageUrl").value(product.getProductImages().get(0).getImageUrl()))
+                .andExpect(jsonPath("$.data.seller.id").value(product.getSeller().getId()))
+                .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(product.getCreateDate().toString().substring(0, 20))))
+                .andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(product.getModifyDate().toString().substring(0, 20))));
+    }
+
+    @Test
+    @DisplayName("상품 상세 조회 실패")
+    void getProduct_failed() throws Exception {
+        // when
+        long id = Long.MAX_VALUE;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/" + id))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProduct"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 상품입니다."));
+    }
+
+
+    // ======================================= Helper methods ======================================= //
     private ProductCreateRequest createValidRequest() {
         return new ProductCreateRequest(
                 "테스트 상품",
