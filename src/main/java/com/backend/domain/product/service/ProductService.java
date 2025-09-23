@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -42,6 +43,8 @@ public class ProductService {
         // 2. 이미지 업로드 및 저장
         for (MultipartFile image : images) {
             String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
+            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
+            productImageRepository.save(productImage);
             savedProduct.addProductImage(imageUrl);
         }
 

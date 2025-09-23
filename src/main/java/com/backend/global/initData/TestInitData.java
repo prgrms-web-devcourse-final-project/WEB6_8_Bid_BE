@@ -15,11 +15,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-//@Profile("test")
+@Profile("test")
 @Configuration
 @RequiredArgsConstructor
 public class TestInitData {
