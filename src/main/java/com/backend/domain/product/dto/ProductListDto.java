@@ -15,9 +15,9 @@ public record ProductListDto(
         @NotNull LocalDateTime auctionEndTime,
         @NotNull Integer auctionDuration,
         @NotNull String status,
-        @NotNull Long biddersCount,
+//        @NotNull Long biddersCount,
         String location,
-        @NotNull String thumbnail,
+        @NotNull String thumbnailUrl,
         @NotNull SellerDto seller
 ) {
     public static ProductListDto fromEntity(Product entity) {
@@ -31,7 +31,7 @@ public record ProductListDto(
                 entity.getEndTime(),
                 entity.getDuration(),
                 entity.getStatus(),
-                entity.getBiddersCount(),
+//                entity.getBiddersCount(),
                 entity.getLocation(),
                 entity.getThumbnail(),
                 SellerDto.fromEntity(entity.getSeller())

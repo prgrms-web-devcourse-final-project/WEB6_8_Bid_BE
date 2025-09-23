@@ -116,6 +116,7 @@ public class ProductService {
         return productRepository.findFirstByOrderByIdDesc();
     }
 
+    @Transactional(readOnly = true)
     public Page<Product> findBySearchPaged(
             int page, int size, ProductSearchSortType sort, ProductSearchDto search
     ) {

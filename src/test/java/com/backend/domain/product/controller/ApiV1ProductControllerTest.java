@@ -1,7 +1,5 @@
 package com.backend.domain.product.controller;
 
-import com.backend.domain.member.entity.Member;
-import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
@@ -10,7 +8,6 @@ import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +19,6 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,11 +28,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// Controller 테스트는 로그인 기능 구현된 후에 작성
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 class ApiV1ProductControllerTest {
     @Autowired
     private MockMvc mvc;
@@ -46,23 +40,6 @@ class ApiV1ProductControllerTest {
 
     @Autowired
     private ProductService productService;
-
-    @Autowired
-    private MemberRepository memberRepository;
-
-    @BeforeEach
-    void setUp() {
-        // 테스트용 회원 생성 및 DB에 저장
-        Member member = Member.builder()
-                .email("test@example.com")
-                .password("password")
-                .nickname("testUser")
-                .phoneNumber("01000000000")
-                .address("서울 강남구")
-                .authority("USER")
-                .build();
-        memberRepository.save(member);
-    }
 
     @Test
     @DisplayName("상품 생성")
@@ -101,7 +78,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.auctionEndTime").value(product.getEndTime().toString()))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
-                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
                 .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
                 .andExpect(jsonPath("$.data.location").value(product.getLocation()))
                 .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
@@ -224,15 +201,15 @@ class ApiV1ProductControllerTest {
             resultActions
                     .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
                     .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().name()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
                     .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
         }

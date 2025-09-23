@@ -62,6 +62,9 @@ public class Product extends BaseEntity {
     @Column(length = 50)
     private String location;
 
+    @Column(name = "thumbnail_url")
+    private String thumbnailUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private Member seller;
@@ -100,21 +103,32 @@ public class Product extends BaseEntity {
     }
 
 
-    public Long getBiddersCount() {
-        if (bids == null) return 0L;
-
-        return bids.stream()
-                .map(bid -> bid.getMember().getId())
-                .distinct()
-                .count();
-    }
+//    public Long getBiddersCount() {
+//        if (bids == null) return 0L;
+//
+//        return bids.stream()
+//                .map(bid -> bid.getMember().getId())
+//                .distinct()
+//                .count();
+//    }
 
     public void addProductImage(ProductImage productImage) {
         this.productImages.add(productImage);
         productImage.setProduct(this);
+
+        if (thumbnailUrl == null) {
+            this.thumbnailUrl = productImage.getImageUrl();
+        }
     }
 
     public String getThumbnail() {
-        return productImages.stream().findFirst().get().getImageUrl();
+        if (thumbnailUrl != null) {
+            return thumbnailUrl;
+        }
+
+        return productImages.stream()
+                .findFirst()
+                .map(ProductImage::getImageUrl)
+                .orElse(null);
     }
 }
