@@ -30,6 +30,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation ("org.springframework.boot:spring-boot-starter-websocket")
 
     // 스프링부트 추가 기능
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")

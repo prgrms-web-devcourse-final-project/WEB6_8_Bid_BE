@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+    <div>
+        <h2>WebSocket 연결 테스트</h2>
+        <button id="connect">연결</button>
+        <button id="disconnect">연결 해제</button>
+        <br><br>
+        
+        <div>
+            <input type="text" id="messageInput" placeholder="메시지 입력">
+            <button id="send">전송</button>
+        </div>
+        <br>
+        
+        <div>
+            <h3>수신 메시지:</h3>
+            <div id="messages"></div>
+        </div>
+    </div>
+
+    <script>
+        let stompClient = null;
+
+        function connect() {
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                document.getElementById('messages').innerHTML += '<p>연결 성공!</p>';
+                
+                // 테스트 토픽 구독
+                stompClient.subscribe('/topic/test', function (message) {
+                    const messageBody = JSON.parse(message.body);
+                    document.getElementById('messages').innerHTML += 
+                        '<p><strong>' + messageBody.type + '</strong>: ' + messageBody.content + '</p>';
+                });
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+                document.getElementById('messages').innerHTML += '<p>연결 해제!</p>';
+            }
+        }
+
+        function sendMessage() {
+            const messageContent = document.getElementById('messageInput').value;
+            if (messageContent && stompClient) {
+                const message = {
+                    type: 'CHAT',
+                    sender: 'test-user',
+                    content: messageContent,
+                    data: null
+                };
+                stompClient.send("/app/test", {}, JSON.stringify(message));
+                document.getElementById('messageInput').value = '';
+            }
+        }
+
+        document.getElementById('connect').addEventListener('click', connect);
+        document.getElementById('disconnect').addEventListener('click', disconnect);
+        document.getElementById('send').addEventListener('click', sendMessage);
+        
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
