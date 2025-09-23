@@ -43,7 +43,7 @@ public class ProductService {
         Product savedProduct = createProduct(actor, request);
 
         // 2. 이미지 업로드 및 저장
-        createProductImage(savedProduct, images);
+        createProductImages(savedProduct, images);
 
         return savedProduct;
     }
@@ -63,13 +63,17 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    private void createProductImage(Product savedProduct, List<MultipartFile> images) {
+    private void createProductImages(Product savedProduct, List<MultipartFile> images) {
         for (MultipartFile image : images) {
             String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
-            productImageRepository.save(productImage);
-            savedProduct.addProductImage(imageUrl);
+            createProductImage(savedProduct, imageUrl);
         }
+    }
+
+    public void createProductImage(Product savedProduct, String imageUrl) {
+        ProductImage productImage = new ProductImage(imageUrl, savedProduct);
+        productImageRepository.save(productImage);
+        savedProduct.addProductImage(productImage);
     }
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
@@ -165,7 +169,7 @@ public class ProductService {
         product.modify(validatedRequest);
 
         if (images != null && !images.isEmpty()) {
-            createProductImage(product, images);
+            createProductImages(product, images);
             productImageRepository.flush();
         }
 

@@ -114,8 +114,7 @@ public class Product extends BaseEntity {
 //                .count();
 //    }
 
-    public void addProductImage(String imageUrl) {
-        ProductImage productImage = new ProductImage(imageUrl, this);
+    public void addProductImage(ProductImage productImage) {
         productImages.add(productImage);
 
         if (thumbnailUrl == null) {
