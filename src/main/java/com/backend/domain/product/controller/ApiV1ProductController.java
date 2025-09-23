@@ -12,6 +12,7 @@ import com.backend.standard.page.dto.PageDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -23,13 +24,12 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("api/v1/products")
 @RequiredArgsConstructor
-public class ApiV1ProductController {
+public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     private final ProductService productService;
     private final MemberRepository memberRepository;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
     public RsData<ProductDto> createProduct(
             @RequestPart("request") @Valid ProductCreateRequest request,
@@ -79,7 +79,7 @@ public class ApiV1ProductController {
         );
     }
 
-    @PutMapping("/{productId}")
+    @PutMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
     public RsData<ProductDto> modifyProduct(
             @PathVariable Long productId,
