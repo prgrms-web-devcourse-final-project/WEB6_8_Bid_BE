@@ -32,12 +32,24 @@ public class ProductService {
     private final FileService fileService;
 
     @Transactional
-    public Product createProduct(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
+    public Product create(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
         // 0. 유효성 검증 (location, images)
         validateLocation(request.location(), request.deliveryMethod());
         validateImages(images);
 
         // 1. Product 생성 및 저장
+        Product savedProduct = createProduct(actor, request);
+
+        // 2. 이미지 업로드 및 저장
+        for (MultipartFile image : images) {
+            String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
+            createProductImage(savedProduct, imageUrl);
+        }
+
+        return savedProduct;
+    }
+
+    public Product createProduct(Member actor, ProductCreateRequest request) {
         Product product = new Product(
                 request.name(),
                 request.description(),
@@ -49,18 +61,13 @@ public class ProductService {
                 request.location(),
                 actor
         );
-        Product savedProduct = productRepository.save(product);
+        return productRepository.save(product);
+    }
 
-        // 2. 이미지 업로드 및 저장
-        for (MultipartFile image : images) {
-            String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-
-            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
-            productImageRepository.save(productImage);
-            savedProduct.addProductImage(productImage);
-        }
-
-        return savedProduct;
+    public void createProductImage(Product product, String imageUrl) {
+        ProductImage productImage = new ProductImage(imageUrl, product);
+        productImageRepository.save(productImage);
+        product.addProductImage(productImage);
     }
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
@@ -116,5 +123,9 @@ public class ProductService {
         size = (size > 0 && size <= 100) ? size : 20;
         Pageable pageable = PageRequest.of(page - 1, size, sort.toSort());
         return productRepository.findBySearchPaged(pageable, search);
+    }
+
+    public long count() {
+        return productRepository.count();
     }
 }

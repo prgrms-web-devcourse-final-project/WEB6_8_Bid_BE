@@ -8,7 +8,6 @@ import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.enums.Location;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.service.ProductService;
 import com.backend.global.rsData.RsData;
@@ -41,7 +40,7 @@ public class ApiV1ProductController {
         // Member actor = rq.getActor();
         Member actor = memberRepository.findAll().getFirst();
 
-        Product product = productService.createProduct(actor, request, images);
+        Product product = productService.create(actor, request, images);
 
         return new RsData<>("201", "상품이 등록되었습니다.", ProductDto.fromEntity(product));
     }
@@ -61,7 +60,7 @@ public class ApiV1ProductController {
 
         return new RsData<>(
                 "200",
-                "상품이 조회되었습니다.",
+                "상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
                         products.map(ProductDto::fromEntity)
                 )
