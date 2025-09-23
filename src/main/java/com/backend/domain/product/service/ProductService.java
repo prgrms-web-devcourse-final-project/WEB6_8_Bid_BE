@@ -37,7 +37,7 @@ public class ProductService {
     public Product create(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
         // 0. 유효성 검증 (location, images)
         validateLocation(request.location(), request.deliveryMethod());
-        validateImages(images);
+        validateImagesForCreate(images);
 
         // 1. Product 생성 및 저장
         Product savedProduct = createProduct(actor, request);
@@ -80,7 +80,7 @@ public class ProductService {
         }
     }
 
-    private void validateImages(List<MultipartFile> images) {
+    private void validateImagesForCreate(List<MultipartFile> images) {
         if (images == null || images.isEmpty()) {
             throw new ServiceException("400-2", "이미지는 필수입니다.");
         }
@@ -89,6 +89,21 @@ public class ProductService {
             throw new ServiceException("400-3", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
         }
 
+        validateImages(images);
+    }
+
+    private void validateImagesForModify(Product product, List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
+            return;
+        }
+        if (images.size() + product.getProductImages().size() > 5) {
+            throw new ServiceException("400-3", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
+        }
+
+        validateImages(images);
+    }
+
+    private void validateImages(List<MultipartFile> images) {
         Set<String> allowedExtensions = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
 
         for (MultipartFile image : images) {
@@ -142,9 +157,11 @@ public class ProductService {
 
     @Transactional
     public Product modifyProduct(Long productId, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
-        ProductModifyRequest validatedRequest = validateEditRequest(productId, request);
-
         Product product = getProductById(productId);
+
+        ProductModifyRequest validatedRequest = validateModifyRequest(product, request);
+        validateImagesForModify(product, images);
+
         product.modify(validatedRequest);
 
         if (images != null && !images.isEmpty()) {
@@ -154,20 +171,20 @@ public class ProductService {
         if (deleteImageIds != null) {
             for (Long deleteImageId : deleteImageIds) {
                 ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
-                if (!productImage.getProduct().getId().equals(productId)) throw new ServiceException("400", "이미지가 해당 상품에 속하지 않습니다.");
+                if (!productImage.getProduct().getId().equals(productId)) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
 
                 product.deleteProductImage(productImage);
                 productImageRepository.delete(productImage);
             }
 
-            if (product.getProductImages().isEmpty()) throw new ServiceException("400", "이미지는 필수입니다.");
+            if (product.getProductImages().isEmpty()) throw new ServiceException("400-2", "이미지는 필수입니다.");
         }
 
         return product;
     }
 
-    private ProductModifyRequest validateEditRequest(Long productId, ProductModifyRequest request) {
-        Product product = getProductById(productId);
+    public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
+        validateLocation(request.location(), request.deliveryMethod());
 
         String newTitle = request.name();
         String newDescription = request.description();
