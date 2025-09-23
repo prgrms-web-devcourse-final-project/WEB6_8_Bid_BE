@@ -8,6 +8,7 @@ import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.rsData.RsData;
 import jakarta.persistence.EntityManager;
@@ -103,18 +104,24 @@ public class BidService {
             );
             return new RsData<>("200","내 빈 입찰내역 조회 성공.",emptyBids);
         }
-        Set<Long> productIds = bidPage.getContent().stream().map(Bid::getId).collect(Collectors.toSet());
-        Map<Long,Long> currentPricesMap = getCurrentPrices(productIds);
-        // 3. 입찰에서 이긴 것들 조회
-        List<Bid> myWinningBids = bidRepository.findWinningBids(memberId);
-        Set<Long> winningBidIds = myWinningBids.stream().map(Bid::getId).collect(Collectors.toSet());
-        // 4. response 데이터 생성
+
+        // BidPage에서 상품 ID만 추출
+        Set<Long> productIds = bidPage.getContent().stream().map(bid -> bid.getProduct().getId()).collect(Collectors.toSet());
+        // 각 상품의 현재 최고 입찰가 조회
+        Map<Long, Long> currentPricesMap = bidRepository.findCurrentPricesForProducts(productIds).stream()
+                .collect(Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> (Long) arr[1]
+                ));
+
+        // 3. response 데이터 생성
         List<MyBidResponseDto.MyBidItem> myBidItems = bidPage.getContent().stream()
                 .map(bid -> {
                     Product product = bid.getProduct();
 
-                    boolean isWinning = winningBidIds.contains(bid.getId());
-                    Long currentPrice = currentPricesMap.getOrDefault(product.getId(),bid.getBidPrice());
+                    // 각 입찰이 현재 최고가인지 확인
+                    Long currentHighestPrice = currentPricesMap.getOrDefault(product.getId(), 0L);
+                    boolean isWinning = bid.getBidPrice().equals(currentHighestPrice);
 
                     MyBidResponseDto.SellerInfo sellerInfo = null;
                     if(product.getSeller() != null){
@@ -126,7 +133,7 @@ public class BidService {
                             product.getProductName(),
                             //product.getThumbnail(),
                             bid.getBidPrice(),
-                            currentPrice,
+                            currentHighestPrice,
                             bid.getStatus(),
                             isWinning,
                             bid.getCreateDate(),
@@ -169,7 +176,7 @@ public class BidService {
         }
 
         // 2. 경매 진행 상태 확인
-        if(!"bidding".equals(product.getStatus())){
+        if(!AuctionStatus.BIDDING.getDisplayName().equals(product.getStatus())){
             throw new ServiceException("400", "현재 입찰할 수 없는 상품입니다.");
         }
 
@@ -178,7 +185,7 @@ public class BidService {
         if(product.getStartTime()!=null && now.isBefore(product.getStartTime())){
             throw new ServiceException("400", "경매가 아직 시작되지 않았습니다.");
         }
-        if(product.getEndTime()!=null && now.isBefore(product.getEndTime())){
+        if(product.getEndTime()!=null && now.isAfter(product.getEndTime())){
             throw new ServiceException("400", "경매가 이미 종료되었습니다.");
         }
 
@@ -188,15 +195,19 @@ public class BidService {
             throw new ServiceException("400","본인이 등록한 상품에는 입찰할 수 없습니다.");
         }
 
-        // 5. 현재 최고가보다 높은지 확인
+        // 5. 입찰 금액 유효성 검사 및 현재 최고가보다 높은지 확인
+        if (bidPrice == null || bidPrice <= 0) {
+            throw new ServiceException("400", "입찰 금액은 0보다 커야 합니다.");
+        }
+
         Long currentHighestPrice = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
         if(bidPrice <= currentHighestPrice){
-            throw new IllegalArgumentException("입찰 금액이 현재 최고가인 "+currentHighestPrice+"원 보다 높아야 합니다.");
+            throw new ServiceException("400", "입찰 금액이 현재 최고가인 "+currentHighestPrice+"원 보다 높아야 합니다.");
         }
 
         // 6. 최소 입찰단위 100원
         if(bidPrice % 100!=0){
-            throw new IllegalArgumentException("입찰 금액은 100원 단위로 입력해주세요.");
+            throw new ServiceException("400", "입찰 금액은 100원 단위로 입력해주세요.");
         }
 
         // 7. 최소 입찰단위 지켰는지 확인
