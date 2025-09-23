@@ -30,7 +30,7 @@ public record ProductDto(
                 entity.getId(),
                 entity.getProductName(),
                 entity.getDescription(),
-                entity.getCategory().name(),
+                entity.getCategory().getDisplayName(),
                 entity.getInitialPrice(),
                 entity.getCurrentPrice(),
                 entity.getStartTime(),

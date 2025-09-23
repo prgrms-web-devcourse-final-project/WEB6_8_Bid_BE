@@ -129,4 +129,8 @@ public class ProductService {
     public long count() {
         return productRepository.count();
     }
+
+    public Optional<Product> findById(Long productId) {
+        return productRepository.findById(productId);
+    }
 }

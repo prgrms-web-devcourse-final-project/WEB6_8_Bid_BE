@@ -74,7 +74,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.msg").value("상품이 등록되었습니다."))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
-                .andExpect(jsonPath("$.data.category").value(product.getCategory().name()))
+                .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
                 .andExpect(jsonPath("$.data.initialPrice").value(product.getInitialPrice()))
                 .andExpect(jsonPath("$.data.currentPrice").value(product.getCurrentPrice()))
                 .andExpect(jsonPath("$.data.auctionStartTime").value(product.getStartTime().toString()))
@@ -205,7 +205,7 @@ class ApiV1ProductControllerTest {
             resultActions
                     .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
                     .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().name()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
                     .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
                     .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
                     .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
