@@ -75,7 +75,7 @@ public class Product extends BaseEntity {
     private List<Payment> payments;
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private List<Bid> bids;
+    private List<Bid> bids = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductImage> productImages = new ArrayList<>();
@@ -153,5 +153,22 @@ public class Product extends BaseEntity {
         if (thumbnailUrl.equals(productImage.getImageUrl())) {
             thumbnailUrl = null;
         }
+    }
+
+    public String getStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(startTime)) {
+            status = AuctionStatus.BEFORE_START.getDisplayName();
+        } else if (now.isBefore(endTime)) {
+            status = AuctionStatus.BIDDING.getDisplayName();
+        } else {
+            status = hasWinner() ? AuctionStatus.SUCCESSFUL.getDisplayName() : AuctionStatus.FAILED.getDisplayName();
+        }
+
+        return status;
+    }
+
+    public boolean hasWinner() {
+        return endTime.isBefore(LocalDateTime.now()) && bids != null && !bids.isEmpty();
     }
 }
