@@ -90,7 +90,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         QueryDslUtil.applySorting(query, pageable, property ->
             switch (property) {
                 case "createDate" -> product.createDate;
-                case "price" -> product.currentPrice;
+                case "currentPrice" -> product.currentPrice;
                 case "endTime" -> product.endTime;
                 case "bidderCount" -> JPAExpressions
                         .select(bid.member.id.countDistinct())

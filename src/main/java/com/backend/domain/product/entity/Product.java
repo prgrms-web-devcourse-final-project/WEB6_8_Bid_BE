@@ -51,6 +51,7 @@ public class Product extends BaseEntity {
     @Column(name = "auction_duration", nullable = false)
     private Integer duration;
 
+    @Setter
     @Column(length = 50, nullable = false)
     private String status;
 
@@ -58,7 +59,7 @@ public class Product extends BaseEntity {
     @Column(name = "delivery_method", nullable = false)
     private DeliveryMethod deliveryMethod;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 50)
     private String location;
 
     @ManyToOne(fetch = FetchType.LAZY)

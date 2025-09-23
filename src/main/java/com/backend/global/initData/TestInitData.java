@@ -87,7 +87,8 @@ public class TestInitData {
         productService.createProductImage(product4, "/image4_1.jpg");
 
 
-        bidService.createBid(product1.getId(), member4.getId(), new BidRequestDto(1100000L));
-        bidService.createBid(product1.getId(), member5.getId(), new BidRequestDto(1200000L));
+        product1.setStatus("BIDDING");
+        bidService.createBid(product1.getId(), member4.getId(), new BidRequestDto(1200000L));
+        bidService.createBid(product1.getId(), member5.getId(), new BidRequestDto(1300000L));
     }
 }
