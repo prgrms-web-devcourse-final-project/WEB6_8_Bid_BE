@@ -15,7 +15,7 @@ public record MyBidResponseDto (
             Long bidId,
             Long productId,
             String productName,
-//            String thumbnailUrl,
+            String thumbnailUrl,
             Long myBidPrice,
             Long currentPrice,
             String status,
