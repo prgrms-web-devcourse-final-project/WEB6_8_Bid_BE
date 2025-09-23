@@ -69,4 +69,14 @@ public class ApiV1MemberController {
         }
         return ResponseEntity.ok(authentication.getName());
     }
+
+    @Operation(summary = "로그인 확인 API", description = "현재 로그인 되어있는지 확인")
+    @GetMapping("/auth/check")
+    public ResponseEntity<RsData<String>> checkLogin(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return ResponseEntity.ok(new RsData<>("200-1", "로그인 되어 있습니다.", authentication.getName()));
+        } else {
+            return ResponseEntity.ok(new RsData<>("200-2", "로그아웃 상태입니다.", null));
+        }
+    }
 }
