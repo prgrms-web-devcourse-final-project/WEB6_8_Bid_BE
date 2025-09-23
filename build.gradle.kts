@@ -25,23 +25,34 @@ repositories {
 }
 
 dependencies {
+    // 스프링부트 스타터
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    runtimeOnly("com.h2database:h2")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("org.junit.platform:junit-platform-launcher")
-    testImplementation("com.github.codemonstur:embedded-redis:1.4.2")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation ("org.springframework.boot:spring-boot-starter-websocket")
+
+    // 스프링부트 추가 기능
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    // 롬복
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+    // 개발 도구
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    // DB
+    runtimeOnly("com.h2database:h2")
+    // QueryDSL
+    implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
+    annotationProcessor("io.github.openfeign.querydsl:querydsl-apt:7.0:jpa")
+    // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation ("org.springframework.boot:spring-boot-starter-websocket")
+    // 테스트
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("com.github.codemonstur:embedded-redis:1.4.2")
 }
 
 tasks.withType<Test> {
