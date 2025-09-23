@@ -1,6 +1,7 @@
 package com.backend.domain.product.controller;
 
 import com.backend.domain.product.dto.ProductCreateRequest;
+import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -484,6 +486,183 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 상품입니다."));
     }
 
+    @Test
+    @DisplayName("상품 수정 - 기본 정보만 수정")
+    @Transactional
+    void modifyProduct() throws Exception {
+        // given
+        long id = 1L;
+        ProductModifyRequest request = modifyValidRequest();
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
+
+        // when
+        ResultActions resultActions = mvc
+                .perform(multipart(HttpMethod.PUT, "/api/v1/products/" + id)
+                        .file(requestPart)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andDo(print());
+
+        Product product = productService.findById(id).get();
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("modifyProduct"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다."))
+                .andExpect(jsonPath("$.data.name").value(product.getProductName()))
+                .andExpect(jsonPath("$.data.description").value(product.getDescription()))
+                .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
+                .andExpect(jsonPath("$.data.initialPrice").value(product.getInitialPrice()))
+                .andExpect(jsonPath("$.data.currentPrice").value(product.getCurrentPrice()))
+                .andExpect(jsonPath("$.data.auctionStartTime").value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
+                .andExpect(jsonPath("$.data.status").value(product.getStatus()))
+//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
+                .andExpect(jsonPath("$.data.location").value(product.getLocation()))
+                .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
+                .andExpect(jsonPath("$.data.images[0].imageUrl").value(product.getProductImages().get(0).getImageUrl()))
+                .andExpect(jsonPath("$.data.seller.id").value(product.getSeller().getId()))
+                .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(product.getCreateDate().toString().substring(0, 20))))
+                .andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(product.getModifyDate().toString().substring(0, 20))));
+    }
+
+    @Test
+    @DisplayName("상품 수정 - 이미지 추가")
+    @Transactional
+    void modifyProduct_addImages() throws Exception {
+        // given
+        long id = 1L;
+        ProductModifyRequest request = modifyValidRequest();
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
+        MockMultipartFile image1 = new MockMultipartFile("images", "test1.jpg", "image/jpeg", "image1 content".getBytes());
+        MockMultipartFile image2 = new MockMultipartFile("images", "test2.png", "image/png", "image2 content".getBytes());
+
+        // when
+        ResultActions resultActions = mvc
+                .perform(multipart(HttpMethod.PUT, "/api/v1/products/" + id)
+                        .file(requestPart)
+                        .file(image1)
+                        .file(image2)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andDo(print());
+
+        Product product = productService.findById(id).get();
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("modifyProduct"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다."))
+                .andExpect(jsonPath("$.data.name").value(product.getProductName()))
+                .andExpect(jsonPath("$.data.description").value(product.getDescription()))
+                .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
+                .andExpect(jsonPath("$.data.initialPrice").value(product.getInitialPrice()))
+                .andExpect(jsonPath("$.data.currentPrice").value(product.getCurrentPrice()))
+                .andExpect(jsonPath("$.data.auctionStartTime").value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
+                .andExpect(jsonPath("$.data.status").value(product.getStatus()))
+//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
+                .andExpect(jsonPath("$.data.location").value(product.getLocation()))
+                .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
+                .andExpect(jsonPath("$.data.images[0].imageUrl").value(product.getProductImages().get(0).getImageUrl()))
+                .andExpect(jsonPath("$.data.images[1].imageUrl").value(product.getProductImages().get(1).getImageUrl()))
+                .andExpect(jsonPath("$.data.images[2].imageUrl").value(product.getProductImages().get(2).getImageUrl()))
+                .andExpect(jsonPath("$.data.seller.id").value(product.getSeller().getId()))
+                .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(product.getCreateDate().toString().substring(0, 20))))
+                .andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(product.getModifyDate().toString().substring(0, 20))));
+    }
+
+    @Test
+    @DisplayName("상품 수정 - 이미지 삭제")
+    @Transactional
+    void modifyProduct_deleteImages() throws Exception {
+        // given
+        long id = 1L;
+        ProductModifyRequest request = modifyValidRequest();
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(1L)));
+
+        // when
+        ResultActions resultActions = mvc
+                .perform(multipart(HttpMethod.PUT, "/api/v1/products/" + id)
+                        .file(requestPart)
+                        .file(deleteImageIdsPart)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andDo(print());
+
+        Product product = productService.findById(id).get();
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("modifyProduct"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("400-2"))
+                .andExpect(jsonPath("$.msg").value("이미지는 필수입니다."));
+    }
+
+    @Test
+    @DisplayName("상품 수정 - 이미지 추가 + 삭제")
+    @Transactional
+    void modifyProduct_addAndDeleteImages() throws Exception {
+        // given
+        long id = 1L;
+        ProductModifyRequest request = modifyValidRequest();
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
+        MockMultipartFile image1 = new MockMultipartFile("images", "test1.jpg", "image/jpeg", "image1 content".getBytes());
+        MockMultipartFile image2 = new MockMultipartFile("images", "test2.png", "image/png", "image2 content".getBytes());
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(1L)));
+
+        // when
+        ResultActions resultActions = mvc
+                .perform(multipart(HttpMethod.PUT, "/api/v1/products/" + id)
+                        .file(requestPart)
+                        .file(image1)
+                        .file(image2)
+                        .file(deleteImageIdsPart)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andDo(print());
+
+        Product product = productService.findById(id).get();
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("modifyProduct"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다."))
+                .andExpect(jsonPath("$.data.name").value(product.getProductName()))
+                .andExpect(jsonPath("$.data.description").value(product.getDescription()))
+                .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
+                .andExpect(jsonPath("$.data.initialPrice").value(product.getInitialPrice()))
+                .andExpect(jsonPath("$.data.currentPrice").value(product.getCurrentPrice()))
+                .andExpect(jsonPath("$.data.auctionStartTime").value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
+                .andExpect(jsonPath("$.data.status").value(product.getStatus()))
+//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
+                .andExpect(jsonPath("$.data.location").value(product.getLocation()))
+                .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
+                .andExpect(jsonPath("$.data.images[0].imageUrl").value(product.getProductImages().get(0).getImageUrl()))
+                .andExpect(jsonPath("$.data.images[1].imageUrl").value(product.getProductImages().get(1).getImageUrl()))
+                .andExpect(jsonPath("$.data.seller.id").value(product.getSeller().getId()))
+                .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(product.getCreateDate().toString().substring(0, 20))))
+                .andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(product.getModifyDate().toString().substring(0, 20))));
+    }
 
     // ======================================= Helper methods ======================================= //
     private ProductCreateRequest createValidRequest() {
@@ -495,6 +674,19 @@ class ApiV1ProductControllerTest {
                 LocalDateTime.now().plusDays(1),
                 "24시간",
                 DeliveryMethod.DELIVERY,
+                null
+        );
+    }
+
+    private ProductModifyRequest modifyValidRequest() {
+        return new ProductModifyRequest(
+                "테스트 상품 수정",
+                "상품 설명 수정",
+                2,
+                1200L,
+                LocalDateTime.now().plusDays(1),
+                "24시간",
+                DeliveryMethod.TRADE,
                 "서울특별시"
         );
     }

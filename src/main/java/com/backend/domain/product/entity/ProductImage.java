@@ -6,7 +6,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "product_images")
-@Getter @Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductImage extends BaseEntity {

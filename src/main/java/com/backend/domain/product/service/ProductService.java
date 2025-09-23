@@ -166,9 +166,12 @@ public class ProductService {
 
         if (images != null && !images.isEmpty()) {
             createProductImage(product, images);
+            productImageRepository.flush();
         }
 
         if (deleteImageIds != null) {
+            System.out.println("삭제 요청된 이미지 IDs: " + deleteImageIds);
+
             for (Long deleteImageId : deleteImageIds) {
                 ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
                 if (!productImage.getProduct().getId().equals(productId)) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
