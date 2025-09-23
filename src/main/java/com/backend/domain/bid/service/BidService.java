@@ -131,7 +131,7 @@ public class BidService {
                             bid.getId(),
                             product.getId(),
                             product.getProductName(),
-                            //product.getThumbnail(),
+                            product.getThumbnail(),
                             bid.getBidPrice(),
                             currentHighestPrice,
                             bid.getStatus(),
