@@ -2,6 +2,7 @@ package com.backend.domain.product.repository;
 
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class ProductRepositoryTest {
     @DisplayName("키워드로 상품을 검색할 수 있다 - 아이폰")
     void findByKeywordIphone() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto("아이폰", null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto("아이폰", null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -42,7 +43,7 @@ class ProductRepositoryTest {
     @DisplayName("전자기기 카테고리로 상품을 필터링할 수 있다")
     void findByElectronicsCategory() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{1}, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{1}, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -59,7 +60,7 @@ class ProductRepositoryTest {
     @DisplayName("패션 카테고리로 상품을 필터링할 수 있다")
     void findByFashionCategory() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{2}, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{2}, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -76,7 +77,7 @@ class ProductRepositoryTest {
     @DisplayName("서울 지역으로 상품을 필터링할 수 있다")
     void findBySeoulLocation() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, new String[]{"서울"}, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, new String[]{"서울"}, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -91,7 +92,7 @@ class ProductRepositoryTest {
     @DisplayName("부산 지역으로 상품을 필터링할 수 있다")
     void findByBusanLocation() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, new String[]{"부산"}, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, new String[]{"부산"}, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -106,7 +107,7 @@ class ProductRepositoryTest {
     @DisplayName("배송 가능 상품만 필터링할 수 있다")
     void findByDeliveryMethod() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, true);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, true, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -125,7 +126,7 @@ class ProductRepositoryTest {
     @DisplayName("전자기기 + 배송가능 조건으로 검색할 수 있다")
     void findByElectronicsAndDelivery() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{1}, null, true);
+        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{1}, null, true, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -140,7 +141,7 @@ class ProductRepositoryTest {
     @DisplayName("가격 오름차순으로 정렬할 수 있다")
     void findWithPriceAscending() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("currentPrice").ascending());
 
         // when
@@ -161,7 +162,7 @@ class ProductRepositoryTest {
     @DisplayName("가격 내림차순으로 정렬할 수 있다")
     void findWithPriceDescending() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("currentPrice").descending());
 
         // when
@@ -182,7 +183,7 @@ class ProductRepositoryTest {
     @DisplayName("인기순으로 정렬할 수 있다")
     void findWithBidderCountDescending() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("bidderCount").descending());
 
         // when
@@ -200,7 +201,7 @@ class ProductRepositoryTest {
     @DisplayName("마감 임박순으로 정렬할 수 있다")
     void findWithEndTimeSorting() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("endTime").ascending());
 
         // when
@@ -221,7 +222,7 @@ class ProductRepositoryTest {
     @DisplayName("페이징이 정상적으로 동작한다")
     void findWithPaging() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 2); // 첫 번째 페이지, 2개씩
 
         // when
@@ -239,7 +240,7 @@ class ProductRepositoryTest {
     @DisplayName("두 번째 페이지를 조회할 수 있다")
     void findSecondPage() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(1, 2); // 두 번째 페이지, 2개씩
 
         // when
@@ -257,9 +258,7 @@ class ProductRepositoryTest {
     @DisplayName("존재하지 않는 키워드로 검색하면 빈 결과를 반환한다")
     void findByNonExistentKeyword() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(
-                "존재하지않는상품", null, null, null
-        );
+        ProductSearchDto searchDto = new ProductSearchDto("존재하지않는상품", null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -274,12 +273,7 @@ class ProductRepositoryTest {
     @DisplayName("복합 검색 조건 - 전자기기 + 서울 + 직거래/배송")
     void findByComplexConditions() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(
-                null,
-                new Integer[]{1},
-                new String[]{"서울"},
-                null
-        );
+        ProductSearchDto searchDto = new ProductSearchDto(null, new Integer[]{1}, new String[]{"서울"}, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -295,7 +289,7 @@ class ProductRepositoryTest {
     @DisplayName("모든 상품을 조회할 수 있다")
     void findAllProducts() {
         // given
-        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null);
+        ProductSearchDto searchDto = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
         Pageable pageable = PageRequest.of(0, 10);
 
         // when

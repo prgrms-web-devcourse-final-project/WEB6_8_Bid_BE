@@ -78,6 +78,9 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         if (search.isDelivery() != null && search.isDelivery()) {
             builder.and(product.deliveryMethod.eq(DeliveryMethod.DELIVERY));
         }
+        if (search.status() != null) {
+            builder.and(product.status.eq(search.status().getDisplayName()));
+        }
     }
 
     private JPAQuery<Product> createProductsQuery(BooleanBuilder builder) {

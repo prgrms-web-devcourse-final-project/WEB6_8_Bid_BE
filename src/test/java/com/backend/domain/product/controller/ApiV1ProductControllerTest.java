@@ -3,8 +3,10 @@ package com.backend.domain.product.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
+import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
+import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,7 +25,9 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -144,7 +149,8 @@ class ApiV1ProductControllerTest {
         MockMultipartFile largeImage = new MockMultipartFile("images", "large.jpg", "image/jpeg", largeContent);
 
         // when
-        ResultActions resultActions = mvc.perform(multipart("/api/v1/products")
+        ResultActions resultActions = mvc
+                .perform(multipart("/api/v1/products")
                         .file(requestPart)
                         .file(largeImage))
                 .andDo(print());
@@ -169,7 +175,8 @@ class ApiV1ProductControllerTest {
         MockMultipartFile pdfFile = new MockMultipartFile("images", "document.pdf", "application/pdf", "pdf content".getBytes());
 
         // when
-        ResultActions resultActions = mvc.perform(multipart("/api/v1/products")
+        ResultActions resultActions = mvc
+                .perform(multipart("/api/v1/products")
                         .file(requestPart)
                         .file(pdfFile))
                 .andDo(print());
@@ -181,6 +188,54 @@ class ApiV1ProductControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-7"))
                 .andExpect(jsonPath("$.msg").value("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)"));
+    }
+
+
+    @Test
+    @DisplayName("상품 목록 조회")
+    void getProducts() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/products")
+                ).andDo(print());
+
+        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST, new ProductSearchDto(null, null, null, null, null));
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProducts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("상품 목록이 조회되었습니다."))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
+                    .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
+        }
     }
 
     // Helper methods

@@ -1,7 +1,7 @@
 package com.backend.standard.page.dto;
 
 public record PageableDto(
-        int currentPageNumber,
+        int currentPage,
         int pageSize,
         int totalPages,
         long totalElements,

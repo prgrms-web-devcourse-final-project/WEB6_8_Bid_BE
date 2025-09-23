@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductDto;
+import com.backend.domain.product.dto.ProductListDto;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
@@ -46,23 +47,24 @@ public class ApiV1ProductController {
     }
 
     @GetMapping
-    public RsData<PageDto<ProductDto>> getProducts(
+    public RsData<PageDto<ProductListDto>> getProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer[] category,
             @RequestParam(required = false) String[] location,
             @RequestParam(required = false) Boolean isDelivery,
+            @RequestParam(defaultValue = "BIDDING") AuctionStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery);
+        ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery, status);
         Page<Product> products = productService.findBySearchPaged(page, size, sort, search);
 
         return new RsData<>(
                 "200",
                 "상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
-                        products.map(ProductDto::fromEntity)
+                        products.map(ProductListDto::fromEntity)
                 )
         );
     }
