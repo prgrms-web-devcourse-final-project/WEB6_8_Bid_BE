@@ -76,7 +76,7 @@ public class ApiV1ProductController {
     @GetMapping("/{productId}")
     @Transactional(readOnly = true)
     public RsData<ProductDto> getProduct(@PathVariable Long productId) {
-        Product product = productService.findByIdWithImages(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+        Product product = productService.findById(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
 
         return new RsData<>(
                 "200",

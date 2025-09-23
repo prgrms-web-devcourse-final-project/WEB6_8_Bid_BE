@@ -438,7 +438,7 @@ class ApiV1ProductControllerTest {
                 .perform(get("/api/v1/products/" + id))
                 .andDo(print());
 
-        Product product = productService.findByIdWithImages(id).get();
+        Product product = productService.findById(id).get();
 
         // then
         resultActions

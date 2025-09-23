@@ -126,8 +126,4 @@ public class ProductService {
     public Optional<Product> findById(Long productId) {
         return productRepository.findById(productId);
     }
-
-    public Optional<Product> findByIdWithImages(Long productId) {
-        return productRepository.findByIdWithImages(productId);
-    }
 }
