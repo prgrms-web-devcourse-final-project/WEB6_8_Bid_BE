@@ -24,7 +24,7 @@ public record ProductListDto(
         return new ProductListDto(
                 entity.getId(),
                 entity.getProductName(),
-                entity.getCategory().name(),
+                entity.getCategory().getDisplayName(),
                 entity.getInitialPrice(),
                 entity.getCurrentPrice(),
                 entity.getStartTime(),

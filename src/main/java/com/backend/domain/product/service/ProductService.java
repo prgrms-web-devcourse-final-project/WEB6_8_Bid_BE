@@ -43,7 +43,9 @@ public class ProductService {
         // 2. 이미지 업로드 및 저장
         for (MultipartFile image : images) {
             String imageUrl = fileService.uploadFile(image, "products/" + savedProduct.getId());
-            createProductImage(savedProduct, imageUrl);
+            ProductImage productImage = new ProductImage(imageUrl, savedProduct);
+            productImageRepository.save(productImage);
+            savedProduct.addProductImage(imageUrl);
         }
 
         return savedProduct;
@@ -62,12 +64,6 @@ public class ProductService {
                 actor
         );
         return productRepository.save(product);
-    }
-
-    public void createProductImage(Product product, String imageUrl) {
-        ProductImage productImage = new ProductImage(imageUrl, product);
-        productImageRepository.save(productImage);
-        product.addProductImage(productImage);
     }
 
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
@@ -128,5 +124,9 @@ public class ProductService {
 
     public long count() {
         return productRepository.count();
+    }
+
+    public Optional<Product> findById(Long productId) {
+        return productRepository.findById(productId);
     }
 }
