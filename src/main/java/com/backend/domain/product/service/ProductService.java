@@ -33,6 +33,7 @@ public class ProductService {
     private final ProductImageRepository productImageRepository;
     private final FileService fileService;
 
+    // ======================================= create methods ======================================= //
     @Transactional
     public Product create(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
         // 0. 유효성 검증 (location, images)
@@ -76,6 +77,77 @@ public class ProductService {
         savedProduct.addProductImage(productImage);
     }
 
+    // ======================================= find/get methods ======================================= //
+    public Optional<Product> findLatest() {
+        return productRepository.findFirstByOrderByIdDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Product> findBySearchPaged(
+            int page, int size, ProductSearchSortType sort, ProductSearchDto search
+    ) {
+        page = (page > 0) ? page : 1;
+        size = (size > 0 && size <= 100) ? size : 20;
+        Pageable pageable = PageRequest.of(page - 1, size, sort.toSort());
+        return productRepository.findBySearchPaged(pageable, search);
+    }
+
+    public long count() {
+        return productRepository.count();
+    }
+
+    public Optional<Product> findById(Long productId) {
+        return productRepository.findById(productId);
+    }
+
+    public Product getProductById(Long productId) {
+        return findById(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+    }
+
+    // ======================================= modify/delete methods ======================================= //
+    @Transactional
+    public Product modifyProduct(Product product, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
+        ProductModifyRequest validatedRequest = validateModifyRequest(product, request);
+        validateImagesForModify(product, images);
+
+        product.modify(validatedRequest);
+
+        if (images != null && !images.isEmpty()) {
+            createProductImages(product, images);
+            productImageRepository.flush();
+        }
+
+        if (deleteImageIds != null) {
+            System.out.println("삭제 요청된 이미지 IDs: " + deleteImageIds);
+
+            for (Long deleteImageId : deleteImageIds) {
+                ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
+                if (!productImage.getProduct().getId().equals(product.getId())) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
+
+                fileService.deleteFile(productImage.getImageUrl());
+                product.deleteProductImage(productImage);
+                productImageRepository.delete(productImage);
+            }
+
+            if (product.getProductImages().isEmpty()) throw new ServiceException("400-2", "이미지는 필수입니다.");
+        }
+
+        return product;
+    }
+
+    public void deleteProduct(Product product) {
+        if (product.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
+        }
+
+        for (ProductImage pi : product.getProductImages()) {
+            fileService.deleteFile(pi.getImageUrl());
+        }
+
+        productRepository.delete(product);
+    }
+
+    // ======================================= validation methods ======================================= //
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
         if (deliveryMethod == DeliveryMethod.TRADE || deliveryMethod == DeliveryMethod.BOTH) {
             if (location == null || location.isBlank()) {
@@ -133,62 +205,6 @@ public class ProductService {
         }
     }
 
-    public Optional<Product> findLatest() {
-        return productRepository.findFirstByOrderByIdDesc();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<Product> findBySearchPaged(
-            int page, int size, ProductSearchSortType sort, ProductSearchDto search
-    ) {
-        page = (page > 0) ? page : 1;
-        size = (size > 0 && size <= 100) ? size : 20;
-        Pageable pageable = PageRequest.of(page - 1, size, sort.toSort());
-        return productRepository.findBySearchPaged(pageable, search);
-    }
-
-    public long count() {
-        return productRepository.count();
-    }
-
-    public Optional<Product> findById(Long productId) {
-        return productRepository.findById(productId);
-    }
-
-    public Product getProductById(Long productId) {
-        return findById(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
-    }
-
-    @Transactional
-    public Product modifyProduct(Product product, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
-        ProductModifyRequest validatedRequest = validateModifyRequest(product, request);
-        validateImagesForModify(product, images);
-
-        product.modify(validatedRequest);
-
-        if (images != null && !images.isEmpty()) {
-            createProductImages(product, images);
-            productImageRepository.flush();
-        }
-
-        if (deleteImageIds != null) {
-            System.out.println("삭제 요청된 이미지 IDs: " + deleteImageIds);
-
-            for (Long deleteImageId : deleteImageIds) {
-                ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
-                if (!productImage.getProduct().getId().equals(product.getId())) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
-
-                fileService.deleteFile(productImage.getImageUrl());
-                product.deleteProductImage(productImage);
-                productImageRepository.delete(productImage);
-            }
-
-            if (product.getProductImages().isEmpty()) throw new ServiceException("400-2", "이미지는 필수입니다.");
-        }
-
-        return product;
-    }
-
     public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
         if (product.getStartTime().isBefore(LocalDateTime.now())) {
             throw new ServiceException("400-0", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
@@ -214,17 +230,5 @@ public class ProductService {
         if (newLocation != null && newLocation.equals(product.getLocation())) newLocation = null;
 
         return new ProductModifyRequest(newTitle, newDescription, newCategoryId, newInitialPrice, newAuctionStartTime, newAuctionDuration, newDeliveryMethod, newLocation);
-    }
-
-    public void deleteProduct(Product product) {
-        if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
-        }
-
-        for (ProductImage pi : product.getProductImages()) {
-            fileService.deleteFile(pi.getImageUrl());
-        }
-
-        productRepository.delete(product);
     }
 }
