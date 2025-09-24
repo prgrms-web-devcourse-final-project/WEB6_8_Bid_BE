@@ -1,10 +1,6 @@
 package com.backend.domain.member.controller;
 
-import com.backend.domain.member.dto.LoginRequestDto;
-import com.backend.domain.member.dto.LoginResponseDto;
-import com.backend.domain.member.dto.LogoutResponseDto;
-import com.backend.domain.member.dto.MemberSignUpRequestDto;
-import com.backend.domain.member.dto.MemberSignUpResponseDto;
+import com.backend.domain.member.dto.*;
 import com.backend.domain.member.service.MemberService;
 import com.backend.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,11 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @Controller
 @RequestMapping("/api/v1")
@@ -52,12 +46,64 @@ public class ApiV1MemberController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "토큰 재생성 API", description = "refreshToken을 받아서 AccessToken 재발급")
+    @PostMapping("/auth/reissue")
+    public ResponseEntity<RsData<LoginResponseDto>> reissue(@RequestHeader("Authorization") String refreshToken) {
+        String token = refreshToken.substring(7);
+        RsData<LoginResponseDto> reissueResponse = memberService.reissue(token);
+
+        return ResponseEntity.status(reissueResponse.statusCode()).body(reissueResponse);
+    }
+
     @Operation(summary = "테스트용 API", description = "인증된 사용자의 이메일 반환")
-    @GetMapping("/members/me")
+    @GetMapping("/members/test")
     public ResponseEntity<String> me(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(401).body("Unauthorized");
         }
         return ResponseEntity.ok(authentication.getName());
+    }
+
+    @Operation(summary = "로그인 확인 API", description = "현재 로그인 되어있는지 확인")
+    @GetMapping("/auth/check")
+    public ResponseEntity<RsData<String>> checkLogin(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return ResponseEntity.ok(new RsData<>("200-1", "로그인 되어 있습니다.", authentication.getName()));
+        } else {
+            return ResponseEntity.ok(new RsData<>("200-2", "로그아웃 상태입니다.", null));
+        }
+    }
+
+    @Operation(summary = "내 정보 Mock API", description = "내 정보 확인")
+    @GetMapping("/members/me")
+    public ResponseEntity<RsData<MemberMyInfoResponseDto>> myInfo(Authentication authentication) {
+        return ResponseEntity.ok(new RsData<>("200-1", "내 정보가 조회되었습니다.",
+                new MemberMyInfoResponseDto(1L, "test@test.com", "test", "010-0000-0000",
+                        "서울특별시 강남구...", "https://example.com/profile.jpg", 50, LocalDateTime.now(), LocalDateTime.now())
+                ));
+    }
+
+    @Operation(summary = "내 정보 수정 Mock API", description = "내 정보 수정")
+    @PutMapping("/members/me")
+    public ResponseEntity<RsData<MemberMyInfoResponseDto>> myInfoModify(@RequestBody MemberModifyRequestDto memberModifyRequestDto, Authentication authentication) {
+        return ResponseEntity.ok(new RsData<>("200-1", "내 정보가 수정되었습니다.",
+                new MemberMyInfoResponseDto(1L, "test@test.com", "test", "010-1111-1111",
+                        "서울특별시 영등포구...", "https://example.com/profile.jpg", 50, LocalDateTime.now(), LocalDateTime.now())
+        ));
+    }
+
+    @Operation(summary = "판매자 정보 Mock API", description = "판매자 정보 확인")
+    @GetMapping("/members/{id}")
+    public ResponseEntity<RsData<MemberInfoResponseDto>> memberInfo(@PathVariable Long id) {
+        return ResponseEntity.ok(new RsData<>("200-1", "판매자 정보가 조회되었습니다.",
+                new MemberInfoResponseDto(2L, "test@test.com", "test", "010-1111-1111",
+                        "https://example.com/profile.jpg", 50, LocalDateTime.now())
+        ));
+    }
+
+    @Operation(summary = "회원탈퇴 Mock API", description = "회원탈퇴 확인")
+    @DeleteMapping("/members/me")
+    public ResponseEntity<RsData<String>> memberWithdraw(Authentication authentication) {
+        return ResponseEntity.ok(new RsData<>("200-1", "회원 탈퇴가 완료되었습니다.", null));
     }
 }

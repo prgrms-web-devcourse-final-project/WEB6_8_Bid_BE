@@ -102,15 +102,17 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     }
 
     @DeleteMapping("/{productId}")
-    public ResponseEntity<Map<String, Object>> deleteProduct(
+    public RsData<Void> deleteProduct(
             @PathVariable Long productId
+//            @AuthenticationPrincipal Member actor
     ) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("resultCode", "200");
-        response.put("msg", "상품이 삭제되었습니다.");
-        response.put("data", null);
+        Product product = productService.getProductById(productId);
 
-        return ResponseEntity.ok(response);
+//        product.checkActorCanDelete(actor);
+
+        productService.deleteProduct(product);
+
+        return new RsData<>("200", "상품이 삭제되었습니다.", null);
     }
 
     @GetMapping("/me")

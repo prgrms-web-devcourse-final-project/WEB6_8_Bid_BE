@@ -225,11 +225,99 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."));
 
         // When (로그아웃된 토큰으로 보호된 API 접근 시도)
-        ResultActions accessResult = mockMvc.perform(get("/api/v1/members/me")
+        ResultActions accessResult = mockMvc.perform(get("/api/v1/members/test")
                         .header("Authorization", "Bearer " + accessToken))
                 .andDo(print());
 
         // Then (접근 거부 확인)
         accessResult.andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 성공")
+    void t7() throws Exception {
+        // Given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "test@example.com", "password123", "testUser", "01012345678", "Test Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        // 로그인하여 토큰 발급
+        LoginRequestDto loginDto = new LoginRequestDto("test@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+
+        String loginResponseBody = loginResult.andReturn().getResponse().getContentAsString();
+        String originalRefreshToken = objectMapper.readTree(loginResponseBody).get("data").get("refreshToken").asText();
+
+        // When
+        ResultActions reissueResult = mockMvc.perform(post("/api/v1/auth/reissue")
+                        .header("Authorization", "Bearer " + originalRefreshToken))
+                .andDo(print());
+
+        // Then
+        reissueResult
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("토큰 재발급 성공"))
+                .andExpect(jsonPath("$.data.accessToken").exists())
+                .andExpect(jsonPath("$.data.refreshToken").exists());
+
+        String reissueResponseBody = reissueResult.andReturn().getResponse().getContentAsString();
+        String newAccessToken = objectMapper.readTree(reissueResponseBody).get("data").get("accessToken").asText();
+        String newRefreshToken = objectMapper.readTree(reissueResponseBody).get("data").get("refreshToken").asText();
+
+        // 토큰이 실제로 변경되었는지 확인
+        assert !newRefreshToken.equals(originalRefreshToken);
+    }
+
+    @Test
+    @DisplayName("로그인 확인 - 인증된 사용자")
+    void t8() throws Exception {
+        // Given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "test@example.com", "password123", "testUser", "01012345678", "Test Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        // 로그인하여 토큰 발급
+        LoginRequestDto loginDto = new LoginRequestDto("test@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+
+        String responseBody = loginResult.andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(responseBody).get("data").get("accessToken").asText();
+
+        // When
+        ResultActions resultActions = mockMvc.perform(get("/api/v1/auth/check")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 되어 있습니다."))
+                .andExpect(jsonPath("$.data").value("test@example.com"));
+    }
+
+    @Test
+    @DisplayName("로그인 확인 - 미인증 사용자")
+    void t9() throws Exception {
+        // When
+        ResultActions resultActions = mockMvc.perform(get("/api/v1/auth/check"))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-2"))
+                .andExpect(jsonPath("$.msg").value("로그아웃 상태입니다."));
     }
 }

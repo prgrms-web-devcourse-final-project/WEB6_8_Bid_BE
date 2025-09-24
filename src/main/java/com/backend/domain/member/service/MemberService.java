@@ -52,6 +52,7 @@ public class MemberService {
         String refreshToken = jwtUtil.generateRefreshToken(member.getEmail());
 
         member.updateRefreshToken( refreshToken);
+        memberRepository.save(member);
 
         return new RsData<>("200-2", "로그인 성공", new LoginResponseDto(accessToken, refreshToken));
     }
@@ -59,6 +60,26 @@ public class MemberService {
     public void logout(String accessToken) {
         long remainingExpirationMillis = jwtUtil.getRemainingExpirationMillis(accessToken);
         redisUtil.setData(accessToken, "logout", remainingExpirationMillis);
+    }
+
+    public RsData<LoginResponseDto> reissue(String refreshToken) {
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 Refresh Token 입니다.");
+        }
+
+        String email = jwtUtil.getEmailFromToken(refreshToken);
+        Member member = findMemberByEmail(email);
+
+        if (!member.getRefreshToken().equals(refreshToken)) {
+            throw new IllegalArgumentException("Refresh Token이 일치하지 않습니다.");
+        }
+
+        String newAccessToken = jwtUtil.generateAccessToken(member.getEmail());
+        String newRefreshToken = jwtUtil.generateRefreshToken(member.getEmail());
+
+        member.updateRefreshToken(newRefreshToken);
+
+        return new RsData<>("200-3", "토큰 재발급 성공", new LoginResponseDto(newAccessToken, newRefreshToken));
     }
 
     private void checkEmailDuplication(String email) {

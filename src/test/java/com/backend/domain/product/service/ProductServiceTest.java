@@ -6,6 +6,7 @@ import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.enums.DeliveryMethod;
+import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
@@ -269,6 +270,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         given(fileService.uploadFile(any(MultipartFile.class), anyString()))
                 .willReturn("http://localhost:8080/uploads/products/1/image3.jpg")
@@ -290,41 +292,35 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("상품 수정 성공 - 이미지 삭제")
-    void modifyProduct_SuccessWithDeleteImages() {
+    @DisplayName("상품 수정 성공 - 이미지 삭제 (파일 삭제 포함)")
+    void modifyProduct_SuccessWithFileService() {
         // given
         Long productId = 1L;
         ProductModifyRequest request = createValidModifyRequest();
-        List<Long> deleteImageIds = List.of(10L, 20L);
+        List<Long> deleteImageIds = List.of(10L);
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId);
-        ProductImage mockImage1 = mock(ProductImage.class);
-        ProductImage mockImage2 = mock(ProductImage.class);
-        ProductImage remainingImage = mock(ProductImage.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
-        given(mockImage1.getProduct()).willReturn(mockProduct);
-        given(mockImage2.getProduct()).willReturn(mockProduct);
+        ProductImage mockImage = mock(ProductImage.class);
+        given(mockImage.getProduct()).willReturn(mockProduct);
+        given(mockImage.getImageUrl()).willReturn("http://example.com/image.jpg");
 
         given(productImageRepository.findById(10L))
-                .willReturn(Optional.of(mockImage1));
-        given(productImageRepository.findById(20L))
-                .willReturn(Optional.of(mockImage2));
+                .willReturn(Optional.of(mockImage));
         given(mockProduct.getProductImages())
-                .willReturn(List.of(remainingImage)); // 삭제 후에도 이미지가 남아있음
+                .willReturn(List.of(mock(ProductImage.class))); // 삭제 후에도 이미지 남음
 
         // when
         Product result = productService.modifyProduct(mockProduct, request, null, deleteImageIds);
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(productId);
 
-        verify(mockProduct).modify(request);
-        verify(mockProduct).deleteProductImage(mockImage1);
-        verify(mockProduct).deleteProductImage(mockImage2);
-        verify(productImageRepository).delete(mockImage1);
-        verify(productImageRepository).delete(mockImage2);
+        verify(fileService).deleteFile("http://example.com/image.jpg"); // 파일 삭제 확인
+        verify(mockProduct).deleteProductImage(mockImage);
+        verify(productImageRepository).delete(mockImage);
     }
 
     @Test
@@ -338,6 +334,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId); // ID 설정 추가
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
         ProductImage mockImage = mock(ProductImage.class);
         ProductImage remainingImage = mock(ProductImage.class);
 
@@ -375,6 +372,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
 
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
         given(productImageRepository.findById(999L))
                 .willReturn(Optional.empty());
 
@@ -397,6 +395,7 @@ class ProductServiceTest {
         Product mockProduct = mock(Product.class);
         Product otherProduct = mock(Product.class);
         given(otherProduct.getId()).willReturn(otherProductId);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
         ProductImage mockImage = mock(ProductImage.class);
 
         given(mockImage.getProduct()).willReturn(otherProduct);
@@ -421,6 +420,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId); // ID 설정 추가
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
         ProductImage mockImage = mock(ProductImage.class);
 
         given(mockImage.getProduct()).willReturn(mockProduct);
@@ -446,6 +446,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getId()).willReturn(productId);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when
         Product result = productService.modifyProduct(mockProduct, request, null, null);
@@ -469,6 +470,7 @@ class ProductServiceTest {
         List<MultipartFile> images = new ArrayList<>(); // 빈 리스트
 
         Product mockProduct = mock(Product.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when
         Product result = productService.modifyProduct(mockProduct, request, images, null);
@@ -491,6 +493,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class))); // 기존 이미지 1개
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
@@ -510,6 +513,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
@@ -533,6 +537,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
@@ -553,6 +558,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
@@ -573,6 +579,7 @@ class ProductServiceTest {
 
         Product mockProduct = mock(Product.class);
         given(mockProduct.getProductImages()).willReturn(List.of(mock(ProductImage.class)));
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
 
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
@@ -598,6 +605,7 @@ class ProductServiceTest {
         );
 
         Product mockProduct = mock(Product.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(2));
 
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, null))
@@ -605,6 +613,103 @@ class ProductServiceTest {
                 .hasFieldOrPropertyWithValue("resultCode", "400-1")
                 .hasFieldOrPropertyWithValue("msg", "직거래 시 배송지는 필수입니다.");
     }
+
+    @Test
+    @DisplayName("상품 수정 검증 실패 - 경매 시작 시간이 지난 상품")
+    void validateModifyRequest_FailByAuctionStarted() {
+        // given
+        Product mockProduct = mock(Product.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().minusHours(1)); // 1시간 전 시작
+
+        ProductModifyRequest request = createValidModifyRequest();
+
+        // when & then
+        assertThatThrownBy(() -> productService.validateModifyRequest(mockProduct, request))
+                .isInstanceOf(ServiceException.class)
+                .hasFieldOrPropertyWithValue("resultCode", "400-0")
+                .hasFieldOrPropertyWithValue("msg", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
+    }
+
+    @Test
+    @DisplayName("상품 수정 검증 - 변경되지 않은 필드들은 null로 반환")
+    void validateModifyRequest_NullForUnchangedFields() {
+        // given
+        String existingName = "기존 상품명";
+        String existingDescription = "기존 설명";
+
+        Product mockProduct = mock(Product.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
+        given(mockProduct.getProductName()).willReturn(existingName);
+        given(mockProduct.getDescription()).willReturn(existingDescription);
+        given(mockProduct.getCategory()).willReturn(ProductCategory.DIGITAL_ELECTRONICS);
+        given(mockProduct.getInitialPrice()).willReturn(1000L);
+        given(mockProduct.getDeliveryMethod()).willReturn(DeliveryMethod.DELIVERY);
+        given(mockProduct.getLocation()).willReturn("서울");
+
+        // 동일한 값으로 요청
+        ProductModifyRequest request = new ProductModifyRequest(
+                existingName, // 동일한 이름
+                existingDescription, // 동일한 설명
+                1, // 동일한 카테고리
+                1000L, // 동일한 가격
+                LocalDateTime.now().plusDays(1),
+                "24시간",
+                DeliveryMethod.DELIVERY, // 동일한 배송 방법
+                "서울" // 동일한 위치
+        );
+
+        // when
+        ProductModifyRequest result = productService.validateModifyRequest(mockProduct, request);
+
+        // then - 변경되지 않은 필드들은 null
+        assertThat(result.name()).isNull();
+        assertThat(result.description()).isNull();
+        assertThat(result.categoryId()).isNull();
+        assertThat(result.initialPrice()).isNull();
+        assertThat(result.deliveryMethod()).isNull();
+        assertThat(result.location()).isNull();
+    }
+
+    @Test
+    @DisplayName("상품 삭제 성공")
+    void deleteProduct_Success() {
+        // given
+        Product mockProduct = mock(Product.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1)); // 경매 시작 전
+
+        ProductImage mockImage1 = mock(ProductImage.class);
+        ProductImage mockImage2 = mock(ProductImage.class);
+        given(mockImage1.getImageUrl()).willReturn("http://example.com/image1.jpg");
+        given(mockImage2.getImageUrl()).willReturn("http://example.com/image2.jpg");
+        given(mockProduct.getProductImages()).willReturn(List.of(mockImage1, mockImage2));
+
+        // when
+        productService.deleteProduct(mockProduct);
+
+        // then
+        verify(fileService).deleteFile("http://example.com/image1.jpg");
+        verify(fileService).deleteFile("http://example.com/image2.jpg");
+        verify(productRepository).delete(mockProduct);
+    }
+
+    @Test
+    @DisplayName("상품 삭제 실패 - 경매 시작 후")
+    void deleteProduct_FailByAuctionStarted() {
+        // given
+        Product mockProduct = mock(Product.class);
+        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().minusHours(1)); // 경매 이미 시작
+
+        // when & then
+        assertThatThrownBy(() -> productService.deleteProduct(mockProduct))
+                .isInstanceOf(ServiceException.class)
+                .hasFieldOrPropertyWithValue("resultCode", "400")
+                .hasFieldOrPropertyWithValue("msg", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
+
+        // 파일 삭제나 DB 삭제가 호출되지 않았는지 확인
+        verifyNoInteractions(fileService);
+        verify(productRepository, never()).delete(any(Product.class));
+    }
+
 
     // ======================================= Helper methods for create tests  ======================================= //
     private Member createMockMember() {

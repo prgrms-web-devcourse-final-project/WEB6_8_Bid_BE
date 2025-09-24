@@ -70,21 +70,25 @@ public class TestInitData {
         Member member4 = memberService.findByNickname("입찰자1").get();
         Member member5 = memberService.findByNickname("입찰자2").get();
 
-        ProductCreateRequest requestDto1 = new ProductCreateRequest("아이폰 15 Pro 256GB", "미개봉 새 제품입니다. 직거래 선호합니다.", 1, 1000000L, LocalDateTime.of(2025, 9, 23, 9, 0, 0), "24시간", DeliveryMethod.TRADE, "서울 강남구");
+        ProductCreateRequest requestDto1 = new ProductCreateRequest("아이폰 15 Pro 256GB", "미개봉 새 제품입니다. 직거래 선호합니다.", 1, 1000000L, LocalDateTime.now().minusHours(2), "24시간", DeliveryMethod.TRADE, "서울 강남구");
         Product product1 = productService.createProduct(member1, requestDto1);
         productService.createProductImage(product1, "/image1_1.jpg");
 
-        ProductCreateRequest requestDto2 = new ProductCreateRequest("갤럭시 S24 Ultra 512GB", null, 1, 1200000L, LocalDateTime.of(2025, 9, 23, 10, 0, 0), "24시간", DeliveryMethod.DELIVERY, null);
+        ProductCreateRequest requestDto2 = new ProductCreateRequest("갤럭시 S24 Ultra 512GB", null, 1, 1200000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
         Product product2 = productService.createProduct(member1, requestDto2);
         productService.createProductImage(product2, "/image2_1.jpg");
 
-        ProductCreateRequest requestDto3 = new ProductCreateRequest("구찌 GG 마몽 숄더백", null, 2, 800000L, LocalDateTime.of(2025, 9, 23, 10, 0, 0), "48시간", DeliveryMethod.TRADE, "부산 해운대");
+        ProductCreateRequest requestDto3 = new ProductCreateRequest("구찌 GG 마몽 숄더백", null, 2, 800000L, LocalDateTime.now().minusHours(1), "48시간", DeliveryMethod.TRADE, "부산 해운대");
         Product product3 = productService.createProduct(member2, requestDto3);
         productService.createProductImage(product3, "/image3_1.jpg");
 
-        ProductCreateRequest requestDto4 = new ProductCreateRequest("나이키 Air Max", null, 2, 700000L, LocalDateTime.of(2025, 9, 23, 10, 0, 0), "24시간", DeliveryMethod.DELIVERY, null);
+        ProductCreateRequest requestDto4 = new ProductCreateRequest("나이키 Air Max", null, 2, 700000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
         Product product4 = productService.createProduct(member3, requestDto4);
         productService.createProductImage(product4, "/image4_1.jpg");
+
+        ProductCreateRequest requestDto5 = new ProductCreateRequest("뉴발란스 스니커즈", null, 2, 700000L, LocalDateTime.now().plusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
+        Product product5 = productService.createProduct(member3, requestDto5);
+        productService.createProductImage(product5, "/image5_1.jpg");
 
 
         product1.setStatus("경매 중");
