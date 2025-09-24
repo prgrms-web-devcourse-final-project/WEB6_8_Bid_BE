@@ -1,5 +1,7 @@
 package com.backend.domain.product.controller;
 
+import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
@@ -7,6 +9,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -43,6 +46,9 @@ class ApiV1ProductControllerTest {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private MemberRepository memberRepository;
 
     @Test
     @DisplayName("상품 생성")
@@ -699,6 +705,98 @@ class ApiV1ProductControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400"))
                 .andExpect(jsonPath("$.msg").value("경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다."));
+    }
+
+    @Test
+    @DisplayName("내 상품 목록 조회")
+    void getMyProducts() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/products/me")
+                ).andDo(print());
+
+        Member actor = memberRepository.findAll().getFirst();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getMyProducts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다."))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
+                    .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
+        }
+    }
+
+    @Test
+    @DisplayName("내 상품 목록 조회 - 판매 완료 필터링")
+    void getMyProductsByDelivery() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/me")
+                        .param("status", "SOLD"))
+                .andDo(print());
+
+        Member actor = memberRepository.findAll().getFirst();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD);
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+    }
+
+    @Test
+    @DisplayName("내 상품 목록 조회 - 인기순 정렬")
+    void getMyProductsSortedByPopularity() throws Exception {
+        // when
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/me")
+                        .param("sort", "POPULAR"))
+                .andDo(print());
+
+        Member actor = memberRepository.findAll().getFirst();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING);
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
+        if (!productPage.getContent().isEmpty()) {
+            resultActions.andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
+        }
     }
 
     // ======================================= Helper methods ======================================= //
