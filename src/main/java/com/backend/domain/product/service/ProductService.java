@@ -178,6 +178,7 @@ public class ProductService {
                 ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 이미지입니다."));
                 if (!productImage.getProduct().getId().equals(product.getId())) throw new ServiceException("400-8", "이미지가 해당 상품에 속하지 않습니다.");
 
+                fileService.deleteFile(productImage.getImageUrl());
                 product.deleteProductImage(productImage);
                 productImageRepository.delete(productImage);
             }
@@ -190,7 +191,7 @@ public class ProductService {
 
     public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
         if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
+            throw new ServiceException("400-0", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
         }
         validateLocation(request.location(), request.deliveryMethod());
 
@@ -219,6 +220,11 @@ public class ProductService {
         if (product.getStartTime().isBefore(LocalDateTime.now())) {
             throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
         }
+
+        for (ProductImage pi : product.getProductImages()) {
+            fileService.deleteFile(pi.getImageUrl());
+        }
+
         productRepository.delete(product);
     }
 }
