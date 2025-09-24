@@ -11,6 +11,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.rsData.RsData;
+import com.backend.global.webSocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class BidService {
     private final BidRepository bidRepository;
     private final EntityManager entityManager; // product,member 조회용 -> 나중에 머지해서 repsitory 생기면 수정
+    private final WebSocketService webSocketService;
 
     public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request){
         // 1. Product/Member 조회
@@ -53,6 +55,10 @@ public class BidService {
                 savedBid.getStatus(),
                 savedBid.getCreateDate()
         );
+        
+        // 6. 실시간 브로드캐스트 추가
+        webSocketService.broadcastBidUpdate(productId, bidResponse);
+        
         return new RsData<>("201","입찰이 완료되었습니다.",bidResponse);
 
     }

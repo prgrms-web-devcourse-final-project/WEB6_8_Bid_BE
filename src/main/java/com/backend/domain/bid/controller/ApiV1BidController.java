@@ -44,7 +44,13 @@ public class ApiV1BidController {
             @Parameter(description = "입찰 요청 정보", required = true) @Valid @RequestBody BidRequestDto request,
             @Parameter(hidden = true) @AuthenticationPrincipal User user) {
         // TODO: JWT 토큰에서 사용자 추출로직으로 대체
-        Long bidderId = Long.parseLong(user.getUsername());
+        Long bidderId;
+        if (user != null) {
+            bidderId = Long.parseLong(user.getUsername());
+        } else {
+            // 테스트용: 인증이 없으면 첫 번째 사용자 사용
+            bidderId = 1L;
+        }
         return bidService.createBid(productId, bidderId, request);
     }
 
