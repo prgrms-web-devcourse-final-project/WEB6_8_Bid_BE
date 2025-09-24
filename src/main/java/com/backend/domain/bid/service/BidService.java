@@ -58,6 +58,7 @@ public class BidService {
         // 3. 입찰 생성
         Bid bid = new Bid(request.price(), "bidding", product, member);
         Bid savedBid = bidRepository.save(bid);
+        product.addBid(savedBid);
         // 4. 입찰가 업데이트
         product.setCurrentPrice(request.price());
         // 5. 응답 데이터 생성

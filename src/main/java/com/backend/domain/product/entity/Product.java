@@ -182,7 +182,7 @@ public class Product extends BaseEntity {
     }
 
     public Member getBidder() {
-        if (!status.equals(AuctionStatus.SUCCESSFUL.getDisplayName())) {
+        if (!status.equals(AuctionStatus.SUCCESSFUL.getDisplayName()) || endTime.isAfter(LocalDateTime.now())) {
             return null;
         }
 
@@ -192,5 +192,9 @@ public class Product extends BaseEntity {
                 .map(Bid::getMember)
                 .findFirst()
                 .orElse(null);
+    }
+
+    public void addBid(Bid bid) {
+        bids.add(bid);
     }
 }

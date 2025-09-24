@@ -87,16 +87,26 @@ public class TestInitData {
         Product product4 = productService.createProduct(member3, requestDto4);
         productService.createProductImage(product4, "/image4_1.jpg");
 
-        ProductCreateRequest requestDto5 = new ProductCreateRequest("뉴발란스 스니커즈", null, 2, 700000L, LocalDateTime.now().plusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
-        Product product5 = productService.createProduct(member3, requestDto5);
-        productService.createProductImage(product5, "/image5_1.jpg");
-
-
         product1.setStatus("경매 중");
         product2.setStatus("경매 중");
         product3.setStatus("경매 중");
         product4.setStatus("경매 중");
         bidService.createBid(product1.getId(), member4.getId(), new BidRequestDto(1200000L));
         bidService.createBid(product1.getId(), member5.getId(), new BidRequestDto(1300000L));
+
+        // 경매 시작 전
+        ProductCreateRequest requestDto5 = new ProductCreateRequest("뉴발란스 스니커즈", null, 2, 700000L, LocalDateTime.now().plusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
+        Product product5 = productService.createProduct(member3, requestDto5);
+        productService.createProductImage(product5, "/image5_1.jpg");
+
+        // 낙찰
+        ProductCreateRequest requestDto6 = new ProductCreateRequest("아디다스 런닝화", null, 2, 700000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
+        Product product6 = productService.createProduct(member3, requestDto6);
+        productService.createProductImage(product6, "/image6_1.jpg");
+
+        product6.setStatus("경매 중");
+        bidService.createBid(product6.getId(), member4.getId(), new BidRequestDto(800000L));
+        product6.setStatus("낙찰");
+        product6.setEndTime(LocalDateTime.now());
     }
 }
