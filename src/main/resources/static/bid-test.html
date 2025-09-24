@@ -134,6 +134,16 @@
                     if (bidData.type === 'BID') {
                         updateCurrentBid(bidData.data);
                         addBidHistory('🚀 새 입찰: ' + bidData.data.price.toLocaleString() + '원 (' + new Date().toLocaleTimeString() + ')');
+                    } else if (bidData.type === 'SYSTEM') {
+                        // 경매 종료 알림
+                        addBidHistory('📢 ' + bidData.content + ' (' + new Date().toLocaleTimeString() + ')');
+                        if (bidData.data && bidData.data.isSuccessful !== undefined) {
+                            if (bidData.data.isSuccessful) {
+                                addBidHistory('🎉 낙찰! 최종 낙찰가: ' + bidData.data.finalPrice.toLocaleString() + '원');
+                            } else {
+                                addBidHistory('😔 유찰되었습니다.');
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('JSON 파싱 에러:', error);

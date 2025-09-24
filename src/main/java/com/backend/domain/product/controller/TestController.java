@@ -3,6 +3,7 @@ package com.backend.domain.product.controller;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,10 +21,21 @@ public class TestController {
 
     private final EntityManager entityManager;
 
-    //  테스트용: 경매 종료 시간을 30초 후로 설정
+    // 테스트용: 경매 종료 시간을 30초 후로 설정 (PUT)
     @PutMapping("/products/{productId}/end-soon")
     @Transactional
-    public RsData<String> setAuctionEndSoon(@PathVariable Long productId) {
+    public RsData<String> setAuctionEndSoonPut(@PathVariable Long productId) {
+        return processEndSoon(productId);
+    }
+
+    // 테스트용: 경매 종료 시간을 30초 후로 설정 (GET)
+    @GetMapping("/products/{productId}/end-soon")
+    @Transactional
+    public RsData<String> setAuctionEndSoonGet(@PathVariable Long productId) {
+        return processEndSoon(productId);
+    }
+
+    private RsData<String> processEndSoon(Long productId) {
         Product product = entityManager.find(Product.class, productId);
         if (product == null) {
             return new RsData<>("404", "상품을 찾을 수 없습니다.", null);

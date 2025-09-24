@@ -3,6 +3,7 @@ package com.backend.global.scheduler;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
+import com.backend.global.webSocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ public class AuctionSchedulerService {
 
     private final EntityManager entityManager;
     private final BidRepository bidRepository;
+    private final WebSocketService webSocketService;
 
     //  매분마다 실행되어 종료된 경매들을 확인하고 낙찰 처리
     @Scheduled(fixedRate = 60000) // 1분마다 실행
@@ -54,10 +56,17 @@ public class AuctionSchedulerService {
                 product.setCurrentPrice(highestBidPrice);
                 log.info("상품 ID: {}, 낙찰가: {}원으로 낙찰 처리되었습니다.", 
                     product.getId(), highestBidPrice);
+                
+                // 구독자들에게 낙찰 알림 전송
+                webSocketService.broadcastAuctionEnd(product.getId(), true, highestBidPrice);
+                
             } else {
                 // 입찰이 없었던 경우 - 유찰 처리
                 product.setStatus(AuctionStatus.FAILED.getDisplayName());
                 log.info("상품 ID: {}, 입찰이 없어 유찰 처리되었습니다.", product.getId());
+                
+                // 구독자들에게 유찰 알림 전송
+                webSocketService.broadcastAuctionEnd(product.getId(), false, 0L);
             }
             
             entityManager.merge(product);

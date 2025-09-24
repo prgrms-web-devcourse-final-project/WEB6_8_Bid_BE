@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -30,6 +32,30 @@ public class WebSocketService {
                 "system",
                 "새로운 입찰이 등록되었습니다.",
                 bidData
+        );
+        sendToTopic("bid/" + productId, message);
+    }
+
+    /**
+     * 경매 종료 알림 브로드캐스트
+     */
+    public void broadcastAuctionEnd(Long productId, boolean isSuccessful, Long finalPrice) {
+        String content = isSuccessful ? 
+            "경매가 종료되었습니다! 낙찰가: " + finalPrice.toString() + "원" : 
+            "경매가 종료되었습니다. 입찰이 없어 유찰되었습니다.";
+            
+        Object data = Map.of(
+            "productId", productId,
+            "isSuccessful", isSuccessful,
+            "finalPrice", finalPrice,
+            "status", isSuccessful ? "낙찰" : "유찰"
+        );
+        
+        WebSocketMessage message = WebSocketMessage.of(
+                WebSocketMessage.MessageType.SYSTEM,
+                "system",
+                content,
+                data
         );
         sendToTopic("bid/" + productId, message);
     }
