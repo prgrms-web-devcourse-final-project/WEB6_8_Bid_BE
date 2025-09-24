@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -35,7 +36,20 @@ public class BidService {
     private final EntityManager entityManager; // product,member 조회용 -> 나중에 머지해서 repsitory 생기면 수정
     private final WebSocketService webSocketService;
 
+    // 동시성 제어를 위한 락 객체 (상품별)
+    private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
+    
     public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request){
+        // 상품별 락 객체 가져오기 (없으면 생성)
+        Object lock = productLocks.computeIfAbsent(productId, k -> new Object());
+        
+        // 동시성 제어: 같은 상품에 대한 입찰은 순차적으로 처리
+        synchronized (lock) {
+            return createBidInternal(productId, bidderId, request);
+        }
+    }
+    
+    private RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
         // 1. Product/Member 조회
         Product product = entityManager.find(Product.class, productId);
         Member member = entityManager.find(Member.class, bidderId);
