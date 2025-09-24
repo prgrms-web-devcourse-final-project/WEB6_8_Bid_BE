@@ -27,8 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -491,7 +490,7 @@ class ApiV1ProductControllerTest {
     @Transactional
     void modifyProduct() throws Exception {
         // given
-        long id = 1L;
+        long id = 5L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
@@ -536,7 +535,7 @@ class ApiV1ProductControllerTest {
     @Transactional
     void modifyProduct_addImages() throws Exception {
         // given
-        long id = 1L;
+        long id = 5L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
@@ -587,11 +586,11 @@ class ApiV1ProductControllerTest {
     @Transactional
     void modifyProduct_deleteImages() throws Exception {
         // given
-        long id = 1L;
+        long id = 5L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(1L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
 
         // when
         ResultActions resultActions = mvc
@@ -617,13 +616,13 @@ class ApiV1ProductControllerTest {
     @Transactional
     void modifyProduct_addAndDeleteImages() throws Exception {
         // given
-        long id = 1L;
+        long id = 5L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
         MockMultipartFile image1 = new MockMultipartFile("images", "test1.jpg", "image/jpeg", "image1 content".getBytes());
         MockMultipartFile image2 = new MockMultipartFile("images", "test2.png", "image/png", "image2 content".getBytes());
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(1L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
 
         // when
         ResultActions resultActions = mvc
@@ -662,6 +661,44 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.seller.id").value(product.getSeller().getId()))
                 .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(product.getCreateDate().toString().substring(0, 20))))
                 .andExpect(jsonPath("$.data.modifyDate").value(Matchers.startsWith(product.getModifyDate().toString().substring(0, 20))));
+    }
+
+    @Test
+    @DisplayName("상품 삭제")
+    @Transactional
+    void deleteProduct_success() throws Exception {
+        // when
+        long id = 5L;
+        ResultActions resultActions = mvc
+                .perform(delete("/api/v1/products/" + id))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("deleteProduct"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("상품이 삭제되었습니다."));
+    }
+
+    @Test
+    @DisplayName("상품 삭제 실패")
+    @Transactional
+    void deleteProduct_failed() throws Exception {
+        // when
+        long id = 1L;
+        ResultActions resultActions = mvc
+                .perform(delete("/api/v1/products/" + id))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("deleteProduct"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("400"))
+                .andExpect(jsonPath("$.msg").value("경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다."));
     }
 
     // ======================================= Helper methods ======================================= //
