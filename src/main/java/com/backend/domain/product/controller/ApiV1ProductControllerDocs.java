@@ -93,7 +93,19 @@ public interface ApiV1ProductControllerDocs {
 
 
     @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
-    RsData<Void> deleteProduct(@PathVariable Long productId);
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "상품 삭제 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<Void> deleteProduct(
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId
+    );
 
 
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")
