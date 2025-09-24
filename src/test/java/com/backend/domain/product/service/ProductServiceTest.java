@@ -626,7 +626,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.validateModifyRequest(mockProduct, request))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-0")
+                .hasFieldOrPropertyWithValue("resultCode", "400-2")
                 .hasFieldOrPropertyWithValue("msg", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
     }
 
