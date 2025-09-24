@@ -92,7 +92,7 @@ public class ProductService {
             int page, int size, ProductSearchSortType sort, Member actor, SaleStatus status
     ) {
         Pageable pageable = getPageable(page, size, sort);
-        return productRepository.findByMemberPaged(pageable, actor, SaleStatus.fromSaleStatus(status));
+        return productRepository.findByMemberPaged(pageable, actor.getId(), SaleStatus.fromSaleStatus(status));
     }
 
     public long count() {
