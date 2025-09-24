@@ -21,6 +21,19 @@ public class WebSocketService {
         messagingTemplate.convertAndSend("/topic/" + topic, message);
     }
 
+    /**
+     * 입찰 정보 브로드캐스트 (상품별)
+     */
+    public void broadcastBidUpdate(Long productId, Object bidData) {
+        WebSocketMessage message = WebSocketMessage.of(
+                WebSocketMessage.MessageType.BID,
+                "system",
+                "새로운 입찰이 등록되었습니다.",
+                bidData
+        );
+        sendToTopic("bid/" + productId, message);
+    }
+
 
 
 }
