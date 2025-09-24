@@ -36,7 +36,7 @@ public class BidService {
     private final EntityManager entityManager; // product,member 조회용 -> 나중에 머지해서 repsitory 생기면 수정
     private final WebSocketService webSocketService;
 
-    // 동시성 제어를 위한 락 객체 (상품별)
+    // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
     
     public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request){
