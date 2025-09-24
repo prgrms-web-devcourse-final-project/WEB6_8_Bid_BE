@@ -48,6 +48,7 @@ public class Product extends BaseEntity {
     @Column(name = "auction_start_time", nullable = false)
     private LocalDateTime startTime;
 
+    @Setter
     @Column(name = "auction_end_time", nullable = false)
     private LocalDateTime endTime;
 
