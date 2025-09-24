@@ -1,15 +1,13 @@
 package com.backend.domain.payment.dto;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-
+import lombok.Setter;
 
 
 @Getter
-@NoArgsConstructor
-
+@Setter
 // 결제 수단 수정..
 public class PaymentMethodEditRequest {
-    private String aliasName;
-    private Boolean isDefault;
+    private String alias;       // 변경할 별명..
+    private Boolean isDefault;  // 기본 여부 변경..
 }

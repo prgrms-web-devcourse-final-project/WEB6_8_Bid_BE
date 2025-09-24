@@ -1,30 +1,15 @@
 package com.backend.domain.payment.dto;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-
+import lombok.Setter;
 
 @Getter
-@NoArgsConstructor
+@Setter
 
 // 결제 수단 등록..
 public class PaymentMethodCreateRequest {
-
-    // 공통..
-    private String type;
-    private String aliasName;
-    private Boolean isDefault;
-
-    // 신용카드..
-    private String cardCompany;
-    private String cardNumber;
-    private String expiryMonth;
-    private String expiryYear;
-    private String cvv;
-
-    // 계좌이체..
-    private String bankName;
-    private String accountNumber;
-    private String accountHolderName;
+    private String type;       // "CARD" 또는 "BANK"...
+    private String token;      // 결제사 토큰..
+    private String alias;      // 별명..
+    private Boolean isDefault; // 기본 수단 여부..
 }
