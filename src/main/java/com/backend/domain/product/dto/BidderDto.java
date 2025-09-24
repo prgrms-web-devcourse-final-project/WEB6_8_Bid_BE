@@ -9,6 +9,9 @@ public record BidderDto(
         String phoneNumber
 ) {
     public static BidderDto fromEntity(Member entity) {
+        if (entity == null) {
+            return null;
+        }
         return new BidderDto(
                 entity.getId(),
                 entity.getNickname(),

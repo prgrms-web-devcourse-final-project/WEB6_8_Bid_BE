@@ -79,7 +79,7 @@ public class Product extends BaseEntity {
     private List<ProductImage> productImages = new ArrayList<>();
 
     @OneToOne(mappedBy = "product")
-    private Review review;
+    private Review review = null;
 
 
     public Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {

@@ -716,7 +716,7 @@ class ApiV1ProductControllerTest {
                         get("/api/v1/products/me")
                 ).andDo(print());
 
-        Member actor = memberRepository.findAll().getFirst();
+        Member actor = memberRepository.findByNickname("전자기기왕").get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
 
         // then
@@ -750,8 +750,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
 //                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
-                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
-                    .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
         }
     }
 
@@ -769,10 +768,38 @@ class ApiV1ProductControllerTest {
 
         // then
         resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getMyProducts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다."))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
                 .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
-                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
+                    .andExpect(jsonPath("$.data.content[%d].bidder.id".formatted(i)).value(product.getBidder().getId()));
+        }
     }
 
     @Test
@@ -795,7 +822,9 @@ class ApiV1ProductControllerTest {
 
         // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
         if (!productPage.getContent().isEmpty()) {
-            resultActions.andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
+            resultActions
+                    .andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")))
+                    .andExpect(jsonPath("$.data.content[1].name").value(Matchers.containsString("닌텐도")));
         }
     }
 
