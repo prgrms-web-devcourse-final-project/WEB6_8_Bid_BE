@@ -119,7 +119,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
     @GetMapping("/me")
     @Transactional(readOnly = true)
-    public RsData<PageDto<ProductListDto>> getMyProducts(
+    public RsData<PageDto<MyProductListDto>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
@@ -134,7 +134,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
                 "200",
                 "내 상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
-                        products.map(ProductListDto::fromEntity)
+                        products.map(MyProductListDto::fromEntity)
                 )
         );
     }

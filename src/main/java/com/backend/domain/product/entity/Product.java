@@ -180,4 +180,17 @@ public class Product extends BaseEntity {
             throw new ServiceException("403", "상품 삭제 권한이 없습니다.");
         }
     }
+
+    public Member getBidder() {
+        if (!status.equals(AuctionStatus.SUCCESSFUL.getDisplayName())) {
+            return null;
+        }
+
+        return bids.stream()
+//                    .max(Comparator.comparing(Bid::getBidPrice))
+                .filter(bid -> bid.getBidPrice().equals(currentPrice))
+                .map(Bid::getMember)
+                .findFirst()
+                .orElse(null);
+    }
 }

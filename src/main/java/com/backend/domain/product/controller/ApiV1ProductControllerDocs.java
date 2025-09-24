@@ -1,9 +1,6 @@
 package com.backend.domain.product.controller;
 
-import com.backend.domain.product.dto.ProductCreateRequest;
-import com.backend.domain.product.dto.ProductDto;
-import com.backend.domain.product.dto.ProductListDto;
-import com.backend.domain.product.dto.ProductModifyRequest;
+import com.backend.domain.product.dto.*;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
@@ -114,7 +111,7 @@ public interface ApiV1ProductControllerDocs {
 
 
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")
-    RsData<PageDto<ProductListDto>> getMyProducts(
+    RsData<PageDto<MyProductListDto>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
