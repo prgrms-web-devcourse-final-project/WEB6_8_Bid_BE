@@ -81,6 +81,8 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "403", description = "인가 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
             @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
@@ -99,6 +101,8 @@ public interface ApiV1ProductControllerDocs {
             @ApiResponse(responseCode = "400", description = "잘못된 요청",
                     content = @Content(schema = @Schema(implementation = RsData.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "403", description = "인가 실패",
                     content = @Content(schema = @Schema(implementation = RsData.class))),
             @ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
