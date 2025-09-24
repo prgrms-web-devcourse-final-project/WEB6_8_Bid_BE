@@ -1,7 +1,9 @@
 package com.backend.domain.product.repository;
 
+import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.Location;
 import com.backend.domain.product.enums.ProductCategory;
@@ -12,9 +14,11 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static com.backend.domain.bid.entity.QBid.bid;
@@ -47,6 +51,12 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         return PageableExecutionUtils.getPage(productsQuery.fetch(), pageable, totalQuery::fetchOne);
     }
+
+    @Override
+    public Page<Product> findByMemberPaged(Pageable pageable, Member actor, AuctionStatus status) {
+        return new PageImpl<>(new ArrayList<>());
+    }
+
 
     private void applyFilters(BooleanBuilder builder, ProductSearchDto search) {
         if (search.keyword() != null) {

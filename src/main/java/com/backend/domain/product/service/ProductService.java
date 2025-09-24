@@ -6,10 +6,7 @@ import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
-import com.backend.domain.product.enums.AuctionDuration;
-import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.enums.*;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
@@ -86,10 +83,16 @@ public class ProductService {
     public Page<Product> findBySearchPaged(
             int page, int size, ProductSearchSortType sort, ProductSearchDto search
     ) {
-        page = (page > 0) ? page : 1;
-        size = (size > 0 && size <= 100) ? size : 20;
-        Pageable pageable = PageRequest.of(page - 1, size, sort.toSort());
+        Pageable pageable = getPageable(page, size, sort);
         return productRepository.findBySearchPaged(pageable, search);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Product> findByMemberPaged(
+            int page, int size, ProductSearchSortType sort, Member actor, SaleStatus status
+    ) {
+        Pageable pageable = getPageable(page, size, sort);
+        return productRepository.findByMemberPaged(pageable, actor, SaleStatus.fromSaleStatus(status));
     }
 
     public long count() {
@@ -102,6 +105,12 @@ public class ProductService {
 
     public Product getProductById(Long productId) {
         return findById(productId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+    }
+
+    private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
+        page = (page > 0) ? page : 1;
+        size = (size > 0 && size <= 100) ? size : 20;
+        return PageRequest.of(page - 1, size, sort.toSort());
     }
 
     // ======================================= modify/delete methods ======================================= //

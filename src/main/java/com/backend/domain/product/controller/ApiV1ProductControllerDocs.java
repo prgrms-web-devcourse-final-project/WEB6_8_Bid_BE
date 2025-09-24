@@ -6,6 +6,7 @@ import com.backend.domain.product.dto.ProductListDto;
 import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.enums.SaleStatus;
 import com.backend.global.rsData.RsData;
 import com.backend.standard.page.dto.PageDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -113,11 +114,11 @@ public interface ApiV1ProductControllerDocs {
 
 
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")
-    ResponseEntity<Map<String, Object>> getMyProducts(
+    RsData<PageDto<ProductListDto>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "LATEST") String sort
+            @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
 
 
