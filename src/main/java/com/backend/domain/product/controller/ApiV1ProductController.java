@@ -103,6 +103,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     }
 
     @DeleteMapping("/{productId}")
+    @Transactional
     public RsData<Void> deleteProduct(
             @PathVariable Long productId
 //            @AuthenticationPrincipal Member actor
@@ -117,6 +118,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     }
 
     @GetMapping("/me")
+    @Transactional(readOnly = true)
     public RsData<PageDto<ProductListDto>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -138,6 +140,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     }
 
     @GetMapping("/members/{memberId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getProductsByMember(
             @PathVariable Long memberId,
             @RequestParam(defaultValue = "1") int page,
