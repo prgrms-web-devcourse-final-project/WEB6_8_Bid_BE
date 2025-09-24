@@ -93,7 +93,7 @@ public interface ApiV1ProductControllerDocs {
 
 
     @Operation(summary = "상품 삭제", description = "상품을 삭제합니다.")
-    ResponseEntity<Map<String, Object>> deleteProduct(@PathVariable Long productId);
+    RsData<Void> deleteProduct(@PathVariable Long productId);
 
 
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")

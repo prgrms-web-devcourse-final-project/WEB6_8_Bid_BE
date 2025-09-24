@@ -189,6 +189,9 @@ public class ProductService {
     }
 
     public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
+        if (product.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
+        }
         validateLocation(request.location(), request.deliveryMethod());
 
         String newTitle = request.name();
@@ -210,5 +213,12 @@ public class ProductService {
         if (newLocation != null && newLocation.equals(product.getLocation())) newLocation = null;
 
         return new ProductModifyRequest(newTitle, newDescription, newCategoryId, newInitialPrice, newAuctionStartTime, newAuctionDuration, newDeliveryMethod, newLocation);
+    }
+
+    public void deleteProduct(Product product) {
+        if (product.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
+        }
+        productRepository.delete(product);
     }
 }
