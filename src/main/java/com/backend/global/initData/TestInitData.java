@@ -33,6 +33,7 @@ public class TestInitData {
     private final BidService bidService;
 
     @Bean
+//    @Order(1)
     ApplicationRunner testInitDataApplicationRunner() {
         return args -> {
             self.work1();

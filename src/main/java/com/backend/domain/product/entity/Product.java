@@ -2,7 +2,6 @@ package com.backend.domain.product.entity;
 
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.AuctionStatus;
@@ -72,9 +71,6 @@ public class Product extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private Member seller;
-
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private List<Payment> payments;
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<Bid> bids = new ArrayList<>();
