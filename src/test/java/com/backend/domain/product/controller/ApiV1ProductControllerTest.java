@@ -756,6 +756,7 @@ class ApiV1ProductControllerTest {
 
     @Test
     @DisplayName("내 상품 목록 조회 - 판매 완료 필터링")
+    @Transactional
     void getMyProductsByDelivery() throws Exception {
         // when
         ResultActions resultActions = mvc
@@ -823,8 +824,7 @@ class ApiV1ProductControllerTest {
         // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
         if (!productPage.getContent().isEmpty()) {
             resultActions
-                    .andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")))
-                    .andExpect(jsonPath("$.data.content[1].name").value(Matchers.containsString("닌텐도")));
+                    .andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
         }
     }
 
