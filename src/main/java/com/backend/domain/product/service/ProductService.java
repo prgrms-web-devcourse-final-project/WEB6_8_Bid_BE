@@ -207,7 +207,7 @@ public class ProductService {
 
     public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
         if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new ServiceException("400-0", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
+            throw new ServiceException("400-2", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
         }
         validateLocation(request.location(), request.deliveryMethod());
 
