@@ -2,7 +2,6 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
@@ -500,7 +499,7 @@ class ApiV1ProductControllerTest {
     @WithMockUser("user3@example.com")
     void modifyProduct() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
@@ -546,7 +545,7 @@ class ApiV1ProductControllerTest {
     @WithMockUser("user3@example.com")
     void modifyProduct_addImages() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
@@ -598,11 +597,11 @@ class ApiV1ProductControllerTest {
     @WithMockUser("user3@example.com")
     void modifyProduct_deleteImages() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(id)));
 
         // when
         ResultActions resultActions = mvc
@@ -627,13 +626,13 @@ class ApiV1ProductControllerTest {
     @WithMockUser("user3@example.com")
     void modifyProduct_addAndDeleteImages() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
         MockMultipartFile image1 = new MockMultipartFile("images", "test1.jpg", "image/jpeg", "image1 content".getBytes());
         MockMultipartFile image2 = new MockMultipartFile("images", "test2.png", "image/png", "image2 content".getBytes());
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(id)));
 
         // when
         ResultActions resultActions = mvc
@@ -679,11 +678,11 @@ class ApiV1ProductControllerTest {
     @Transactional
     void modifyProduct_withoutPermission() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(id)));
 
         // when
         ResultActions resultActions = mvc
@@ -708,7 +707,7 @@ class ApiV1ProductControllerTest {
     @WithMockUser("user3@example.com")
     void deleteProduct_success() throws Exception {
         // when
-        long id = 5L;
+        long id = 8L;
         ResultActions resultActions = mvc
                 .perform(delete("/api/v1/products/" + id))
                 .andDo(print());
@@ -727,7 +726,7 @@ class ApiV1ProductControllerTest {
     @Transactional
     void deleteProduct_failed() throws Exception {
         // when
-        long id = 1L;
+        long id = 4L;
         ResultActions resultActions = mvc
                 .perform(delete("/api/v1/products/" + id))
                 .andDo(print());
@@ -747,7 +746,7 @@ class ApiV1ProductControllerTest {
     @WithMockUser("user2@example.com")
     void deleteProduct_withoutPermission() throws Exception {
         // when
-        long id = 1L;
+        long id = 4L;
         ResultActions resultActions = mvc
                 .perform(delete("/api/v1/products/" + id))
                 .andDo(print());
