@@ -828,6 +828,130 @@ class ApiV1ProductControllerTest {
         }
     }
 
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회")
+    void getProductsByMember() throws Exception {
+        // when
+        Long memberId = 1L;
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/products/memebers/" + memberId)
+                ).andDo(print());
+
+        Member actor = memberRepository.findById(memberId).get();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProductsByMember"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId)))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
+        }
+    }
+
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회 - 판매 완료 필터링")
+    @Transactional
+    void getProductsByMemberAndDelivery() throws Exception {
+        // when
+        Long memberId = 1L;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/members/" + memberId)
+                        .param("status", "SOLD"))
+                .andDo(print());
+
+        Member actor = memberRepository.findById(memberId).get();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD);
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProductsByMember"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId)))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
+                    .andExpect(jsonPath("$.data.content[%d].bidder.id".formatted(i)).value(product.getBidder().getId()));
+        }
+    }
+
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회 - 인기순 정렬")
+    void getProductsSortedByMemberAndPopularity() throws Exception {
+        // when
+        Long memberId = 1L;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/members/" + memberId)
+                        .param("sort", "POPULAR"))
+                .andDo(print());
+
+        Member actor = memberRepository.findById(memberId).get();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING);
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
+        if (!productPage.getContent().isEmpty()) {
+            resultActions
+                    .andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
+        }
+    }
+
     // ======================================= Helper methods ======================================= //
     private ProductCreateRequest createValidRequest() {
         return new ProductCreateRequest(
