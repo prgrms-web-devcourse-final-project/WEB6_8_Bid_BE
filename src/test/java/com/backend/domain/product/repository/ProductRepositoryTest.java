@@ -4,6 +4,7 @@ import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
+import com.backend.domain.product.enums.ProductSearchSortType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -306,5 +307,126 @@ class ProductRepositoryTest {
                         "구찌 GG 마몽 숄더백",
                         "나이키 Air Max"
                 );
+    }
+
+    @Test
+    @DisplayName("특정 회원의 모든 상품을 조회할 수 있다")
+    void findByMemberAll() {
+        // given
+        Long sellerId = 1L; // 실제 테스트 데이터의 판매자 ID
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when
+        Page<Product> result = productRepository.findByMemberPaged(pageable, sellerId, null);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+        assertThat(result.getContent())
+                .allMatch(product -> product.getSeller().getId().equals(sellerId));
+    }
+
+    @Test
+    @DisplayName("특정 회원의 경매중인 상품만 조회할 수 있다")
+    void findByMemberWithBiddingStatus() {
+        // given
+        Long sellerId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when
+        Page<Product> result = productRepository.findByMemberPaged(pageable, sellerId, AuctionStatus.BIDDING);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+        assertThat(result.getContent())
+                .allMatch(product -> product.getSeller().getId().equals(sellerId))
+                .allMatch(product -> product.getStatus().equals(AuctionStatus.BIDDING.getDisplayName()));
+    }
+
+    @Test
+    @DisplayName("특정 회원의 판매완료 상품만 조회할 수 있다")
+    void findByMemberWithSoldStatus() {
+        // given
+        Long sellerId = 2L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when
+        Page<Product> result = productRepository.findByMemberPaged(pageable, sellerId, AuctionStatus.SUCCESSFUL);
+
+        // then
+        // 판매완료 상품이 없다면 빈 결과 반환
+        assertThat(result.getContent())
+                .allMatch(product -> product.getSeller().getId().equals(sellerId))
+                .allMatch(product -> product.getStatus().equals(AuctionStatus.SUCCESSFUL.getDisplayName()));
+    }
+
+    @Test
+    @DisplayName("특정 회원의 유찰 상품만 조회할 수 있다")
+    void findByMemberWithFailedStatus() {
+        // given
+        Long sellerId = 3L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when
+        Page<Product> result = productRepository.findByMemberPaged(pageable, sellerId, AuctionStatus.FAILED);
+
+        // then
+        assertThat(result.getContent())
+                .allMatch(product -> product.getSeller().getId().equals(sellerId))
+                .allMatch(product -> product.getStatus().equals(AuctionStatus.FAILED.getDisplayName()));
+    }
+
+    @Test
+    @DisplayName("회원별 상품 조회에서 페이징이 정상적으로 동작한다")
+    void findByMemberWithPaging() {
+        // given
+        Long sellerId = 1L;
+        Pageable pageable = PageRequest.of(0, 2); // 첫 번째 페이지, 2개씩
+
+        // when
+        Page<Product> result = productRepository.findByMemberPaged(pageable, sellerId, null);
+
+        // then
+        assertThat(result.getContent()).hasSizeLessThanOrEqualTo(2);
+        assertThat(result.getContent())
+                .allMatch(product -> product.getSeller().getId().equals(sellerId));
+    }
+
+    @Test
+    @DisplayName("회원별 상품 조회에서 기본 정렬은 최신순이다")
+    void findByMemberWithDefaultSorting() {
+        // given
+        Long sellerId = 1L;
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
+
+        // when
+        Page<Product> result = productRepository.findByMemberPaged(pageable, sellerId, null);
+
+        // then
+        List<Product> products = result.getContent();
+        if (products.size() > 1) {
+            // createDate 내림차순으로 정렬되어야 함
+            for (int i = 0; i < products.size() - 1; i++) {
+                assertThat(products.get(i).getCreateDate())
+                        .isAfterOrEqualTo(products.get(i + 1).getCreateDate());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("회원별 상품 조회 - 복합 조건 테스트")
+    void findByMemberComplexCondition() {
+        // given
+        Long sellerId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when
+        Page<Product> biddingProducts = productRepository.findByMemberPaged(pageable, sellerId, AuctionStatus.BIDDING);
+        Page<Product> allProducts = productRepository.findByMemberPaged(pageable, sellerId, null);
+
+        // then
+        assertThat(biddingProducts.getTotalElements()).isLessThanOrEqualTo(allProducts.getTotalElements());
+        assertThat(biddingProducts.getContent())
+                .allMatch(product -> product.getSeller().getId().equals(sellerId))
+                .allMatch(product -> product.getStatus().equals(AuctionStatus.BIDDING.getDisplayName()));
     }
 }
