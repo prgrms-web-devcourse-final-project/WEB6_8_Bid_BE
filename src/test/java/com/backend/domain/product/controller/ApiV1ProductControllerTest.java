@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser("user1@example.com")
 class ApiV1ProductControllerTest {
     @Autowired
     private MockMvc mvc;
@@ -494,9 +496,10 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 기본 정보만 수정")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
@@ -539,9 +542,10 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 이미지 추가")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct_addImages() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
@@ -590,13 +594,14 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 이미지 삭제")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct_deleteImages() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(id)));
 
         // when
         ResultActions resultActions = mvc
@@ -605,8 +610,6 @@ class ApiV1ProductControllerTest {
                         .file(deleteImageIdsPart)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andDo(print());
-
-        Product product = productService.findById(id).get();
 
         // then
         resultActions
@@ -620,15 +623,16 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 이미지 추가 + 삭제")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct_addAndDeleteImages() throws Exception {
         // given
-        long id = 5L;
+        long id = 8L;
         ProductModifyRequest request = modifyValidRequest();
 
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
         MockMultipartFile image1 = new MockMultipartFile("images", "test1.jpg", "image/jpeg", "image1 content".getBytes());
         MockMultipartFile image2 = new MockMultipartFile("images", "test2.png", "image/png", "image2 content".getBytes());
-        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(id)));
 
         // when
         ResultActions resultActions = mvc
@@ -670,11 +674,40 @@ class ApiV1ProductControllerTest {
     }
 
     @Test
+    @DisplayName("상품 수정 - 인가 실패")
+    @Transactional
+    void modifyProduct_withoutPermission() throws Exception {
+        // given
+        long id = 8L;
+        ProductModifyRequest request = modifyValidRequest();
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(id)));
+
+        // when
+        ResultActions resultActions = mvc
+                .perform(multipart(HttpMethod.PUT, "/api/v1/products/" + id)
+                        .file(requestPart)
+                        .file(deleteImageIdsPart)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("modifyProduct"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.msg").value("상품 수정 권한이 없습니다."));
+    }
+
+    @Test
     @DisplayName("상품 삭제")
     @Transactional
+    @WithMockUser("user3@example.com")
     void deleteProduct_success() throws Exception {
         // when
-        long id = 5L;
+        long id = 8L;
         ResultActions resultActions = mvc
                 .perform(delete("/api/v1/products/" + id))
                 .andDo(print());
@@ -693,7 +726,7 @@ class ApiV1ProductControllerTest {
     @Transactional
     void deleteProduct_failed() throws Exception {
         // when
-        long id = 1L;
+        long id = 4L;
         ResultActions resultActions = mvc
                 .perform(delete("/api/v1/products/" + id))
                 .andDo(print());
@@ -708,6 +741,26 @@ class ApiV1ProductControllerTest {
     }
 
     @Test
+    @DisplayName("상품 삭제 - 인가 실패")
+    @Transactional
+    @WithMockUser("user2@example.com")
+    void deleteProduct_withoutPermission() throws Exception {
+        // when
+        long id = 4L;
+        ResultActions resultActions = mvc
+                .perform(delete("/api/v1/products/" + id))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("deleteProduct"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.msg").value("상품 삭제 권한이 없습니다."));
+    }
+
+    @Test
     @DisplayName("내 상품 목록 조회")
     void getMyProducts() throws Exception {
         // when
@@ -716,7 +769,7 @@ class ApiV1ProductControllerTest {
                         get("/api/v1/products/me")
                 ).andDo(print());
 
-        Member actor = memberRepository.findByNickname("전자기기왕").get();
+        Member actor = memberRepository.findByEmail("user1@example.com").get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
 
         // then
@@ -764,7 +817,7 @@ class ApiV1ProductControllerTest {
                         .param("status", "SOLD"))
                 .andDo(print());
 
-        Member actor = memberRepository.findAll().getFirst();
+        Member actor = memberRepository.findByEmail("user1@example.com").get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD);
 
         // then
@@ -812,7 +865,130 @@ class ApiV1ProductControllerTest {
                         .param("sort", "POPULAR"))
                 .andDo(print());
 
-        Member actor = memberRepository.findAll().getFirst();
+        Member actor = memberRepository.findByEmail("user1@example.com").get();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING);
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
+
+        // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
+        if (!productPage.getContent().isEmpty()) {
+            resultActions
+                    .andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
+        }
+    }
+
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회")
+    void getProductsByMember() throws Exception {
+        // when
+        Long memberId = 1L;
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/products/members/" + memberId)
+                ).andDo(print());
+
+        Member actor = memberRepository.findById(memberId).get();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProductsByMember"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId)))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
+        }
+    }
+
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회 - 판매 완료 필터링")
+    @Transactional
+    void getProductsByMemberAndDelivery() throws Exception {
+        // when
+        Long memberId = 1L;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/members/" + memberId)
+                        .param("status", "SOLD"))
+                .andDo(print());
+
+        Member actor = memberRepository.findById(memberId).get();
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD);
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProductsByMember"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId)))
+                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
+                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
+                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
+                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
+                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
+
+        List<Product> products = productPage.getContent();
+        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
+
+        for (int i = 0; i < products.size(); i++) {
+            Product product = products.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
+                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
+                    .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
+                    .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
+                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
+//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
+        }
+    }
+
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회 - 인기순 정렬")
+    void getProductsSortedByMemberAndPopularity() throws Exception {
+        // when
+        Long memberId = 1L;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/members/" + memberId)
+                        .param("sort", "POPULAR"))
+                .andDo(print());
+
+        Member actor = memberRepository.findById(memberId).get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING);
 
         // then

@@ -14,7 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 @Tag(name = "Product", description = "상품 관련 API")
 @RequestMapping("api/v1/products")
@@ -38,7 +38,8 @@ public interface ApiV1ProductControllerDocs {
     })
     RsData<ProductDto> createProduct(
             @Parameter(description = "상품 등록 요청 정보", required = true) @RequestPart("request") @Valid ProductCreateRequest request,
-            @Parameter(description = "상품 이미지", required = true) @RequestPart("images") List<MultipartFile> images
+            @Parameter(description = "상품 이미지", required = true) @RequestPart("images") List<MultipartFile> images,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
@@ -48,8 +49,8 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<PageDto<ProductListDto>> getProducts(
-            @Parameter(description = "페이지 번호 (1부터 시작)", required = true) @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "페이지 크기", required = true) @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "상품명 검색어") @RequestParam(required = false) String keyword,
             @Parameter(description = "상품 카테고리 (번호)") @RequestParam(required = false) Integer[] category,
             @Parameter(description = "직거래 시 지역") @RequestParam(required = false) String[] location,
@@ -88,7 +89,8 @@ public interface ApiV1ProductControllerDocs {
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
             @Parameter(description = "상품 수정 요청 정보", required = true) @RequestPart("request") @Valid ProductModifyRequest request,
             @Parameter(description = "상품 이미지") @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @Parameter(description = "삭제할 이미지 ID") @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds
+            @Parameter(description = "삭제할 이미지 ID") @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
@@ -106,25 +108,39 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<Void> deleteProduct(
-            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "내 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     RsData<PageDto<MyProductListDto>> getMyProducts(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "SELLING") SaleStatus status,
-            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
     @Operation(summary = "특정 회원 상품 조회", description = "특정 회원이 올린 상품들을 조회합니다.")
-    ResponseEntity<Map<String, Object>> getProductsByMember(
-            @PathVariable Long memberId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "LATEST") String sort
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "특정 회원 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<PageDto<ProductListByMemberDto>> getProductsByMember(
+            @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
 }

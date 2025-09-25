@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:7.2.5
+    container_name: my-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    command: >
+      redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+volumes:
+  redis-data:

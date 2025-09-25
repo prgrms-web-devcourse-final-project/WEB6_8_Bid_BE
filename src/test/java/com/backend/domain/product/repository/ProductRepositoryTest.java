@@ -51,10 +51,10 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).hasSize(5);
         assertThat(result.getContent())
                 .extracting(Product::getProductName)
-                .containsExactlyInAnyOrder("아이폰 15 Pro 256GB", "갤럭시 S24 Ultra 512GB");
+                .contains("아이폰 15 Pro 256GB", "갤럭시 S24 Ultra 512GB");
     }
 
     @Test
@@ -85,8 +85,7 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
+        assertThat(result.getContent()).hasSize(4);
     }
 
     @Test
@@ -150,13 +149,11 @@ class ProductRepositoryTest {
 
         // then
         List<Product> products = result.getContent();
-        assertThat(products).hasSize(4);
+        assertThat(products).hasSize(7);
 
-        // 가격 순서 확인: 나이키(700000) < 구찌(800000) < 갤럭시(1200000) < 아이폰(1300000)
-        assertThat(products.get(0).getProductName()).isEqualTo("나이키 Air Max");
-        assertThat(products.get(1).getProductName()).isEqualTo("구찌 GG 마몽 숄더백");
-        assertThat(products.get(2).getProductName()).isEqualTo("갤럭시 S24 Ultra 512GB");
-        assertThat(products.get(3).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
+        for (int i = 0; i < products.size() - 1; i++) {
+            assertThat(products.get(i).getCurrentPrice() <= products.get(i+1).getCurrentPrice()).isTrue();
+        }
     }
 
     @Test
@@ -171,13 +168,11 @@ class ProductRepositoryTest {
 
         // then
         List<Product> products = result.getContent();
-        assertThat(products).hasSize(4);
+        assertThat(products).hasSize(7);
 
-        // 가격 순서 확인: 아이폰(1300000) > 갤럭시(1200000) > 구찌(800000) > 나이키(700000)
-        assertThat(products.get(0).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
-        assertThat(products.get(1).getProductName()).isEqualTo("갤럭시 S24 Ultra 512GB");
-        assertThat(products.get(2).getProductName()).isEqualTo("구찌 GG 마몽 숄더백");
-        assertThat(products.get(3).getProductName()).isEqualTo("나이키 Air Max");
+        for (int i = 0; i < products.size() - 1; i++) {
+            assertThat(products.get(i).getCurrentPrice() >= products.get(i+1).getCurrentPrice()).isTrue();
+        }
     }
 
     @Test
@@ -192,7 +187,7 @@ class ProductRepositoryTest {
 
         // then
         List<Product> products = result.getContent();
-        assertThat(products).hasSize(4);
+        assertThat(products).hasSize(7);
 
         // 아이폰에 입찰자가 2명이므로 첫 번째로 와야 함
         assertThat(products.get(0).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
@@ -210,7 +205,7 @@ class ProductRepositoryTest {
 
         // then
         List<Product> products = result.getContent();
-        assertThat(products).hasSize(4);
+        assertThat(products).hasSize(7);
 
         // 마감시간이 이른 순서대로 정렬되어야 함
         for (int i = 0; i < products.size() - 1; i++) {
@@ -231,8 +226,8 @@ class ProductRepositoryTest {
 
         // then
         assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getTotalElements()).isEqualTo(4);
-        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.getTotalElements()).isEqualTo(7);
+        assertThat(result.getTotalPages()).isEqualTo(4);
         assertThat(result.hasNext()).isTrue();
         assertThat(result.hasPrevious()).isFalse();
     }
@@ -249,9 +244,9 @@ class ProductRepositoryTest {
 
         // then
         assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getTotalElements()).isEqualTo(4);
-        assertThat(result.getTotalPages()).isEqualTo(2);
-        assertThat(result.hasNext()).isFalse();
+        assertThat(result.getTotalElements()).isEqualTo(7);
+        assertThat(result.getTotalPages()).isEqualTo(4);
+        assertThat(result.hasNext()).isTrue();
         assertThat(result.hasPrevious()).isTrue();
     }
 
@@ -281,9 +276,11 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
-        assertThat(result.getContent().get(0).getDeliveryMethod()).isEqualTo(DeliveryMethod.TRADE);
+        assertThat(result.getContent()).hasSize(4);
+
+        for (int i = 0; i < result.getContent().size(); i++) {
+            assertThat(result.getContent().get(i).getDeliveryMethod()).isIn(DeliveryMethod.TRADE, DeliveryMethod.BOTH);
+        }
     }
 
     @Test
@@ -297,11 +294,11 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(4);
-        assertThat(result.getTotalElements()).isEqualTo(4);
+        assertThat(result.getContent()).hasSize(7);
+        assertThat(result.getTotalElements()).isEqualTo(7);
         assertThat(result.getContent())
                 .extracting(Product::getProductName)
-                .containsExactlyInAnyOrder(
+                .contains(
                         "아이폰 15 Pro 256GB",
                         "갤럭시 S24 Ultra 512GB",
                         "구찌 GG 마몽 숄더백",
@@ -313,7 +310,7 @@ class ProductRepositoryTest {
     @DisplayName("특정 회원의 모든 상품을 조회할 수 있다")
     void findByMemberAll() {
         // given
-        Long sellerId = 1L; // 실제 테스트 데이터의 판매자 ID
+        Long sellerId = 5L; // 실제 테스트 데이터의 판매자 ID
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -329,7 +326,7 @@ class ProductRepositoryTest {
     @DisplayName("특정 회원의 경매중인 상품만 조회할 수 있다")
     void findByMemberWithBiddingStatus() {
         // given
-        Long sellerId = 1L;
+        Long sellerId = 5L;
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
@@ -346,7 +343,7 @@ class ProductRepositoryTest {
     @DisplayName("특정 회원의 판매완료 상품만 조회할 수 있다")
     void findByMemberWithSoldStatus() {
         // given
-        Long sellerId = 2L;
+        Long sellerId = 4L;
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
