@@ -1,5 +1,6 @@
 package com.backend.domain.product.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
+@Tag(name = "Test", description = "테스트 API")
 public class TestController {
 
     private final EntityManager entityManager;
