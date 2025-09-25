@@ -50,6 +50,9 @@ public class WebSocketService {
         log.info("개인 알림 전송 - 사용자: {}, 메시지: {}", userId, message);
     }
 
+    /**
+     * 경매 종료 알림 브로드캐스트
+     */
     public void broadcastAuctionEnd(Long productId, boolean isSuccessful, Long finalPrice) {
         String content = isSuccessful ? 
             "경매가 종료되었습니다! 낙찰가: " + finalPrice.toString() + "원" : 

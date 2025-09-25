@@ -36,7 +36,7 @@ public class BidService {
     private final BidRepository bidRepository;
     private final EntityManager entityManager; 
     private final WebSocketService webSocketService;
-    private final BidNotificationService bidNotificationService; // 알림 서비스 추가
+    private final BidNotificationService bidNotificationService;
 
     // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();

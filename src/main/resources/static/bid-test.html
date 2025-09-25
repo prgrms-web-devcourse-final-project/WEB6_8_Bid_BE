@@ -152,7 +152,7 @@
                 }
             });
 
-            // 개인 알림 구독 추가
+            // 개인 알림 구독
             stompClient.subscribe('/user/queue/notifications', function(message) {
                 console.log('=== 개인 알림 수신 ===');
                 console.log('Notification message:', message.body);
