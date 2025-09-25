@@ -2,6 +2,7 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.dto.ProductCreateRequest;
 import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
@@ -611,8 +612,6 @@ class ApiV1ProductControllerTest {
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andDo(print());
 
-        Product product = productService.findById(id).get();
-
         // then
         resultActions
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
@@ -676,6 +675,34 @@ class ApiV1ProductControllerTest {
     }
 
     @Test
+    @DisplayName("상품 수정 - 인가 실패")
+    @Transactional
+    void modifyProduct_withoutPermission() throws Exception {
+        // given
+        long id = 5L;
+        ProductModifyRequest request = modifyValidRequest();
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", objectMapper.writeValueAsBytes(request));
+        MockMultipartFile deleteImageIdsPart = new MockMultipartFile("deleteImageIds", "", "application/json", objectMapper.writeValueAsBytes(List.of(5L)));
+
+        // when
+        ResultActions resultActions = mvc
+                .perform(multipart(HttpMethod.PUT, "/api/v1/products/" + id)
+                        .file(requestPart)
+                        .file(deleteImageIdsPart)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("modifyProduct"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.msg").value("상품 수정 권한이 없습니다."));
+    }
+
+    @Test
     @DisplayName("상품 삭제")
     @Transactional
     @WithMockUser("user3@example.com")
@@ -715,6 +742,26 @@ class ApiV1ProductControllerTest {
     }
 
     @Test
+    @DisplayName("상품 삭제 - 인가 실패")
+    @Transactional
+    @WithMockUser("user2@example.com")
+    void deleteProduct_withoutPermission() throws Exception {
+        // when
+        long id = 1L;
+        ResultActions resultActions = mvc
+                .perform(delete("/api/v1/products/" + id))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("deleteProduct"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.msg").value("상품 삭제 권한이 없습니다."));
+    }
+
+    @Test
     @DisplayName("내 상품 목록 조회")
     void getMyProducts() throws Exception {
         // when
@@ -723,7 +770,7 @@ class ApiV1ProductControllerTest {
                         get("/api/v1/products/me")
                 ).andDo(print());
 
-        Member actor = memberRepository.findByNickname("전자기기왕").get();
+        Member actor = memberRepository.findByEmail("user1@example.com").get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
 
         // then
@@ -771,7 +818,7 @@ class ApiV1ProductControllerTest {
                         .param("status", "SOLD"))
                 .andDo(print());
 
-        Member actor = memberRepository.findAll().getFirst();
+        Member actor = memberRepository.findByEmail("user1@example.com").get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD);
 
         // then
@@ -819,7 +866,7 @@ class ApiV1ProductControllerTest {
                         .param("sort", "POPULAR"))
                 .andDo(print());
 
-        Member actor = memberRepository.findAll().getFirst();
+        Member actor = memberRepository.findByEmail("user1@example.com").get();
         Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING);
 
         // then
