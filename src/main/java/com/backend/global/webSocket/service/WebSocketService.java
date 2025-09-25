@@ -37,6 +37,27 @@ public class WebSocketService {
     }
 
     /**
+     * 경매 종료 임박 알림 브로드캐스트
+     */
+    public void broadcastAuctionEndingSoon(Long productId, String productName) {
+        String content = String.format("'%s' 경매가 10분 후 종료됩니다!", productName);
+            
+        Object data = Map.of(
+            "productId", productId,
+            "productName", productName,
+            "remainingMinutes", 10
+        );
+        
+        WebSocketMessage message = WebSocketMessage.of(
+                WebSocketMessage.MessageType.SYSTEM,
+                "system",
+                content,
+                data
+        );
+        sendToTopic("bid/" + productId, message);
+    }
+
+    /**
      * 개인 알림 전송 (특정 사용자)
      */
     public void sendNotificationToUser(String userId, String message, Object data) {
