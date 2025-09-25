@@ -1,0 +1,288 @@
+package com.backend.domain.payment.service;
+
+import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.payment.constant.PaymentMethodType;
+import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodResponse;
+import com.backend.domain.payment.entity.PaymentMethod;
+import com.backend.domain.payment.repository.PaymentMethodRepository;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class PaymentMethodServiceTest {
+
+    @Mock private PaymentMethodRepository paymentMethodRepository;
+    @Mock private MemberRepository memberRepository;
+
+    @InjectMocks
+    private PaymentMethodService paymentMethodService;
+
+    private Member member;
+
+    @BeforeEach
+    void setUp() {
+        member = Member.builder().id(1L).email("test@example.com").build();
+    }
+
+    private PaymentMethodCreateRequest baseReq(String type) {
+        PaymentMethodCreateRequest r = new PaymentMethodCreateRequest();
+        r.setType(type);
+        r.setToken("pg_tok");
+        r.setAlias("별명1");
+        r.setIsDefault(true);
+        return r;
+    }
+
+    @Nested
+    class CreateSuccess {
+
+        @Test
+        @DisplayName("CARD 타입 저장 시, 카드 필드만 채워지고 은행 필드는 null")
+        void createCard_success() {
+            // given
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+            when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(false);
+            // isDefault=true → shouldBeDefault=true → 기존 기본 해제 시도, 없다고 가정
+            when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+                    .thenReturn(Optional.empty());
+            when(paymentMethodRepository.save(any(PaymentMethod.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            PaymentMethodCreateRequest req = baseReq("CARD");
+            req.setBrand("VISA");
+            req.setLast4("1234");
+            req.setExpMonth(12);
+            req.setExpYear(2030);
+
+            // when
+            PaymentMethodResponse res = paymentMethodService.create(1L, req);
+
+            // then
+            assertThat(res.getType()).isEqualTo(PaymentMethodType.CARD.name());
+            assertThat(res.getBrand()).isEqualTo("VISA");
+            assertThat(res.getLast4()).isEqualTo("1234");
+            assertThat(res.getExpMonth()).isEqualTo(12);
+            assertThat(res.getExpYear()).isEqualTo(2030);
+            assertThat(res.getBankCode()).isNull();
+            assertThat(res.getBankName()).isNull();
+            assertThat(res.getAcctLast4()).isNull();
+
+            ArgumentCaptor<PaymentMethod> captor = ArgumentCaptor.forClass(PaymentMethod.class);
+            verify(paymentMethodRepository).save(captor.capture());
+            PaymentMethod saved = captor.getValue();
+            assertThat(saved.getType()).isEqualTo(PaymentMethodType.CARD);
+            assertThat(saved.getIsDefault()).isTrue();
+        }
+
+        @Test
+        @DisplayName("BANK 타입 저장 시, 은행 필드만 채워지고 카드 필드는 null")
+        void createBank_success() {
+            // given
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+            when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(false);
+            // isDefault=true → 기존 기본 하나 있다고 가정
+            when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+                    .thenReturn(Optional.of(PaymentMethod.builder().member(member).isDefault(true).build()));
+            when(paymentMethodRepository.save(any(PaymentMethod.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            PaymentMethodCreateRequest req = baseReq("BANK");
+            req.setBankCode("004");
+            req.setBankName("KB국민은행");
+            req.setAcctLast4("5678");
+
+            // when
+            PaymentMethodResponse res = paymentMethodService.create(1L, req);
+
+            // then
+            assertThat(res.getType()).isEqualTo(PaymentMethodType.BANK.name());
+            assertThat(res.getBankCode()).isEqualTo("004");
+            assertThat(res.getBankName()).isEqualTo("KB국민은행");
+            assertThat(res.getAcctLast4()).isEqualTo("5678");
+            assertThat(res.getBrand()).isNull();
+            assertThat(res.getLast4()).isNull();
+            assertThat(res.getExpMonth()).isNull();
+            assertThat(res.getExpYear()).isNull();
+        }
+
+        @Test
+        @DisplayName("기본수단 우선→ 최신 생성순(리포지토리 반환 순서 가정)으로 매핑되어 응답한다")
+        void findAll_success_order_and_mapping() {
+            // given
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+
+            PaymentMethod defaultCard = PaymentMethod.builder()
+                    .member(member)
+                    .type(PaymentMethodType.CARD)
+                    .alias("내 주력카드")
+                    .isDefault(true)
+                    .brand("SHINHAN")
+                    .last4("1111")
+                    .expMonth(12)
+                    .expYear(2030)
+                    .build();
+
+            PaymentMethod bank = PaymentMethod.builder()
+                    .member(member)
+                    .type(PaymentMethodType.BANK)
+                    .alias("급여통장")
+                    .isDefault(false)
+                    .bankCode("004")
+                    .bankName("KB국민은행")
+                    .acctLast4("5678")
+                    .build();
+
+            // 정렬된 리스트(기본 수단 먼저)를 그대로 리턴
+            when(paymentMethodRepository.findAllByMemberOrderByIsDefaultDescCreateDateDesc(member))
+                    .thenReturn(List.of(defaultCard, bank));
+
+            // when
+            List<PaymentMethodResponse> list = paymentMethodService.findAll(1L);
+
+            // then
+            assertThat(list).hasSize(2);
+
+            // 1) 기본 수단(CARD) 먼저
+            PaymentMethodResponse r1 = list.get(0);
+            assertThat(r1.getType()).isEqualTo("CARD");
+            assertThat(r1.getAlias()).isEqualTo("내 주력카드");
+            assertThat(r1.getIsDefault()).isTrue();
+            assertThat(r1.getBrand()).isEqualTo("SHINHAN");
+            assertThat(r1.getLast4()).isEqualTo("1111");
+            assertThat(r1.getExpMonth()).isEqualTo(12);
+            assertThat(r1.getExpYear()).isEqualTo(2030);
+            // expireDate 포맷 "YYYY-MM" 확인
+            assertThat(r1.getExpireDate()).isEqualTo("2030-12");
+            // 은행 필드는 null
+            assertThat(r1.getBankCode()).isNull();
+            assertThat(r1.getBankName()).isNull();
+            assertThat(r1.getAcctLast4()).isNull();
+
+            // 2) 그 다음 BANK
+            PaymentMethodResponse r2 = list.get(1);
+            assertThat(r2.getType()).isEqualTo("BANK");
+            assertThat(r2.getAlias()).isEqualTo("급여통장");
+            assertThat(r2.getIsDefault()).isFalse();
+            assertThat(r2.getBankCode()).isEqualTo("004");
+            assertThat(r2.getBankName()).isEqualTo("KB국민은행");
+            assertThat(r2.getAcctLast4()).isEqualTo("5678");
+            // 카드 필드는 null
+            assertThat(r2.getBrand()).isNull();
+            assertThat(r2.getLast4()).isNull();
+            assertThat(r2.getExpMonth()).isNull();
+            assertThat(r2.getExpYear()).isNull();
+
+            verify(paymentMethodRepository).findAllByMemberOrderByIsDefaultDescCreateDateDesc(member);
+        }
+    }
+
+    @Nested
+    class CreateFail {
+        @Test
+        @DisplayName("회원이 없으면 예외")
+        void memberNotFound() {
+            when(memberRepository.findById(1L)).thenReturn(Optional.empty());
+            PaymentMethodCreateRequest req = baseReq("CARD");
+
+            assertThatThrownBy(() -> paymentMethodService.create(1L, req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("회원이 존재하지 않습니다.");
+        }
+
+        @Test
+        @DisplayName("type 이 CARD/BANK 가 아니면 예외")
+        void invalidType() {
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+            PaymentMethodCreateRequest req = baseReq("CASH");
+
+            assertThatThrownBy(() -> paymentMethodService.create(1L, req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("type 은 CARD 또는 BANK 이어야 합니다.");
+        }
+
+        @Test
+        @DisplayName("CARD 필수 누락 시 예외")
+        void cardMissingFields() {
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+            PaymentMethodCreateRequest req = baseReq("CARD");
+            req.setBrand("VISA");
+            req.setLast4(null); // 누락
+            req.setExpMonth(12);
+            req.setExpYear(2030);
+
+            assertThatThrownBy(() -> paymentMethodService.create(1L, req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("CARD는 brand, last4, expMonth, expYear가 필요합니다.");
+        }
+
+        @Test
+        @DisplayName("BANK 필수 누락 시 예외")
+        void bankMissingFields() {
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+            PaymentMethodCreateRequest req = baseReq("BANK");
+            req.setBankName(null); // 누락
+            req.setAcctLast4("5678");
+
+            assertThatThrownBy(() -> paymentMethodService.create(1L, req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("BANK는 bankName, acctLast4가 필요합니다.");
+        }
+
+        @Test
+        @DisplayName("별명(alias) 중복 시 예외")
+        void aliasDuplicate() {
+            when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+            when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(true);
+
+            PaymentMethodCreateRequest req = baseReq("CARD");
+            req.setBrand("VISA");
+            req.setLast4("1234");
+            req.setExpMonth(12);
+            req.setExpYear(2030);
+
+            assertThatThrownBy(() -> paymentMethodService.create(1L, req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("이미 사용 중인 별명");
+        }
+    }
+
+    @Test
+    @DisplayName("새 기본 결제수단 지정 시 기존 기본 해제")
+    void newDefaultUnsetsOldDefault() {
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(false);
+        // 기존 기본 존재
+        PaymentMethod oldDefault = PaymentMethod.builder()
+                .member(member)
+                .isDefault(true)
+                .build();
+        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+                .thenReturn(Optional.of(oldDefault));
+        when(paymentMethodRepository.save(any(PaymentMethod.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentMethodCreateRequest req = baseReq("CARD");
+        req.setBrand("VISA");
+        req.setLast4("4444");
+        req.setExpMonth(10);
+        req.setExpYear(2031);
+        req.setIsDefault(true);
+
+        paymentMethodService.create(1L, req);
+
+        assertThat(oldDefault.getIsDefault()).isFalse();
+        ArgumentCaptor<PaymentMethod> captor = ArgumentCaptor.forClass(PaymentMethod.class);
+        verify(paymentMethodRepository).save(captor.capture());
+        assertThat(captor.getValue().getIsDefault()).isTrue();
+    }
+}

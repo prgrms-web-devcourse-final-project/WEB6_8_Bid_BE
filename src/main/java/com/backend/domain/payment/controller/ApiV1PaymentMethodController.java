@@ -9,12 +9,13 @@ import com.backend.domain.payment.service.PaymentMethodService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Tag(name = "PaymentMethod", description = "결제 수단 관련 API")
 @RestController
@@ -45,5 +46,24 @@ public class ApiV1PaymentMethodController {
         Long memberId = member.getId();
 
         return paymentMethodService.create(memberId, request);
+    }
+
+    // 결제 수단 다건 조회..
+    @GetMapping
+    @Operation(summary = "결제 수단 다건 조회", description = "로그인한 사용자의 결제 수단 목록을 반환합니다.")
+    public List<PaymentMethodResponse> list(@AuthenticationPrincipal User user) {
+        // 인증 토큰 없으면 401
+        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+
+        // Security의 username = email
+        String email = user.getUsername();
+
+        // 이메일로 Member 조회 → memberId 획득
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+        Long memberId = member.getId();
+
+        // 전체 조회 반환
+        return paymentMethodService.findAll(memberId);
     }
 }

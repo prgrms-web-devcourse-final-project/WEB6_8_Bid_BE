@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.payment.entity.PaymentMethod;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Long> {
@@ -14,8 +15,9 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Lo
     // 같은 회원 내 별칭(alias) 중복 여부 확인..
     boolean existsByMemberAndAlias(Member member, String alias);
 
-    // 회원의 '기본 결제수단' 한 개 찾기..
+    // 회원의 기본 수단 찾기..
     Optional<PaymentMethod> findFirstByMemberAndIsDefaultTrue(Member member);
 
-
+    // 결제 수단 전체 조회(기본 수단 먼저, 그다음 최신 생성 순)..
+    List<PaymentMethod> findAllByMemberOrderByIsDefaultDescCreateDateDesc(Member member);
 }
