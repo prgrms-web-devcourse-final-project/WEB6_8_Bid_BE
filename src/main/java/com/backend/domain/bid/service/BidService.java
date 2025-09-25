@@ -10,6 +10,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.global.exception.ServiceException;
+import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.global.rsData.RsData;
 import com.backend.global.webSocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
@@ -33,8 +34,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BidService {
     private final BidRepository bidRepository;
-    private final EntityManager entityManager; // product,member 조회용 -> 나중에 머지해서 repsitory 생기면 수정
+    private final EntityManager entityManager; 
     private final WebSocketService webSocketService;
+    private final BidNotificationService bidNotificationService;
 
     // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
@@ -58,6 +60,7 @@ public class BidService {
         // 3. 입찰 생성
         Bid bid = new Bid(request.price(), "bidding", product, member);
         Bid savedBid = bidRepository.save(bid);
+        product.addBid(savedBid);
         // 4. 입찰가 업데이트
         product.setCurrentPrice(request.price());
         // 5. 응답 데이터 생성
@@ -72,6 +75,9 @@ public class BidService {
         
         // 6. 실시간 브로드캐스트 추가
         webSocketService.broadcastBidUpdate(productId, bidResponse);
+        
+        // 7. 입찰 성공 개인 알림
+        bidNotificationService.notifyBidSuccess(bidderId, product, request.price());
         
         return new RsData<>("201","입찰이 완료되었습니다.",bidResponse);
 

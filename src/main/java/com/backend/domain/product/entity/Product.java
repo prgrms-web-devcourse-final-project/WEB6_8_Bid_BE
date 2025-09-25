@@ -2,7 +2,6 @@ package com.backend.domain.product.entity;
 
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.product.dto.ProductModifyRequest;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.AuctionStatus;
@@ -48,6 +47,7 @@ public class Product extends BaseEntity {
     @Column(name = "auction_start_time", nullable = false)
     private LocalDateTime startTime;
 
+    @Setter
     @Column(name = "auction_end_time", nullable = false)
     private LocalDateTime endTime;
 
@@ -72,9 +72,6 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "seller_id", nullable = false)
     private Member seller;
 
-    /*@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private List<Payment> payments;*/
-
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<Bid> bids = new ArrayList<>();
 
@@ -82,7 +79,7 @@ public class Product extends BaseEntity {
     private List<ProductImage> productImages = new ArrayList<>();
 
     @OneToOne(mappedBy = "product")
-    private Review review;
+    private Review review = null;
 
 
     public Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {
@@ -182,5 +179,22 @@ public class Product extends BaseEntity {
         if (!actor.equals(seller)) {
             throw new ServiceException("403", "상품 삭제 권한이 없습니다.");
         }
+    }
+
+    public Member getBidder() {
+        if (!status.equals(AuctionStatus.SUCCESSFUL.getDisplayName()) || endTime.isAfter(LocalDateTime.now())) {
+            return null;
+        }
+
+        return bids.stream()
+//                    .max(Comparator.comparing(Bid::getBidPrice))
+                .filter(bid -> bid.getBidPrice().equals(currentPrice))
+                .map(Bid::getMember)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void addBid(Bid bid) {
+        bids.add(bid);
     }
 }

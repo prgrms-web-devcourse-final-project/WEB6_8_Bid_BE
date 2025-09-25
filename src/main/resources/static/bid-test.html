@@ -134,11 +134,51 @@
                     if (bidData.type === 'BID') {
                         updateCurrentBid(bidData.data);
                         addBidHistory('🚀 새 입찰: ' + bidData.data.price.toLocaleString() + '원 (' + new Date().toLocaleTimeString() + ')');
+                    } else if (bidData.type === 'SYSTEM') {
+                        // 경매 종료 알림
+                        addBidHistory('📢 ' + bidData.content + ' (' + new Date().toLocaleTimeString() + ')');
+                        if (bidData.data && bidData.data.isSuccessful !== undefined) {
+                            if (bidData.data.isSuccessful) {
+                                addBidHistory('🎉 낙찰! 최종 낙찰가: ' + bidData.data.finalPrice.toLocaleString() + '원');
+                            } else {
+                                addBidHistory('😔 유찰되었습니다.');
+                            }
+                        }
                     }
                 } catch (error) {
                     console.error('JSON 파싱 에러:', error);
                     console.log('원본 메시지:', message.body);
                     addBidHistory('❌ 메시지 파싱 실패: ' + message.body);
+                }
+            });
+
+            // 개인 알림 구독
+            stompClient.subscribe('/user/queue/notifications', function(message) {
+                console.log('=== 개인 알림 수신 ===');
+                console.log('Notification message:', message.body);
+                
+                try {
+                    const notification = JSON.parse(message.body);
+                    addBidHistory('🔔 개인 알림: ' + notification.content);
+                    
+                    if (notification.data && notification.data.type) {
+                        switch(notification.data.type) {
+                            case 'BID_SUCCESS':
+                                addBidHistory('✅ 입찰 성공 알림이 도착했습니다!');
+                                break;
+                            case 'BID_OUTBID':
+                                addBidHistory('😔 다른 입찰자에게 밀렸습니다');
+                                break;
+                            case 'AUCTION_WON':
+                                addBidHistory('🎉 낙찰 축하합니다!');
+                                break;
+                            case 'AUCTION_LOST':
+                                addBidHistory('😞 낙찰에 실패했습니다');
+                                break;
+                        }
+                    }
+                } catch (error) {
+                    console.error('알림 파싱 에러:', error);
                 }
             });
 
