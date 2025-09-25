@@ -74,13 +74,11 @@ public class ApiV1MemberController {
         }
     }
 
-    @Operation(summary = "내 정보 Mock API", description = "내 정보 확인")
+    @Operation(summary = "내 정보 API", description = "내 정보 확인")
     @GetMapping("/members/me")
     public ResponseEntity<RsData<MemberMyInfoResponseDto>> myInfo(Authentication authentication) {
-        return ResponseEntity.ok(new RsData<>("200-1", "내 정보가 조회되었습니다.",
-                new MemberMyInfoResponseDto(1L, "test@test.com", "test", "010-0000-0000",
-                        "서울특별시 강남구...", "https://example.com/profile.jpg", 50, LocalDateTime.now(), LocalDateTime.now())
-                ));
+        RsData<MemberMyInfoResponseDto> myInfoResponse = memberService.getMyInfo(authentication.getName());
+        return ResponseEntity.ok(myInfoResponse);
     }
 
     @Operation(summary = "내 정보 수정 Mock API", description = "내 정보 수정")
