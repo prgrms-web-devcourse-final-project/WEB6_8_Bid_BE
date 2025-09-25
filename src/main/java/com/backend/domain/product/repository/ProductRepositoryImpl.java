@@ -2,6 +2,7 @@ package com.backend.domain.product.repository;
 
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.Location;
 import com.backend.domain.product.enums.ProductCategory;
@@ -31,6 +32,22 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         // 필터 적용
         applyFilters(builder, search);
 
+        return createPagedQuery(builder, pageable);
+    }
+
+    @Override
+    public Page<Product> findByMemberPaged(Pageable pageable, Long actorId, AuctionStatus status) {
+        BooleanBuilder builder = new BooleanBuilder();
+
+        // 필터 적용
+        if (actorId != null) builder.and(product.seller.id.eq(actorId));
+        if (status != null) builder.and(product.status.eq(status.getDisplayName()));
+
+        return createPagedQuery(builder, pageable);
+    }
+
+
+    private Page<Product> createPagedQuery(BooleanBuilder builder, Pageable pageable) {
         // Query 생성
         JPAQuery<Product> productsQuery = createProductsQuery(builder);
 

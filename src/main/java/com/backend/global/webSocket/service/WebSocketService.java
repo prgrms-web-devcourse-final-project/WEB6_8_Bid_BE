@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -34,6 +36,41 @@ public class WebSocketService {
         sendToTopic("bid/" + productId, message);
     }
 
+    /**
+     * 개인 알림 전송 (특정 사용자)
+     */
+    public void sendNotificationToUser(String userId, String message, Object data) {
+        WebSocketMessage webSocketMessage = WebSocketMessage.of(
+                WebSocketMessage.MessageType.NOTIFICATION,
+                "system",
+                message,
+                data
+        );
+        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", webSocketMessage);
+        log.info("개인 알림 전송 - 사용자: {}, 메시지: {}", userId, message);
+    }
 
-
+    /**
+     * 경매 종료 알림 브로드캐스트
+     */
+    public void broadcastAuctionEnd(Long productId, boolean isSuccessful, Long finalPrice) {
+        String content = isSuccessful ? 
+            "경매가 종료되었습니다! 낙찰가: " + finalPrice.toString() + "원" : 
+            "경매가 종료되었습니다. 입찰이 없어 유찰되었습니다.";
+            
+        Object data = Map.of(
+            "productId", productId,
+            "isSuccessful", isSuccessful,
+            "finalPrice", finalPrice,
+            "status", isSuccessful ? "낙찰" : "유찰"
+        );
+        
+        WebSocketMessage message = WebSocketMessage.of(
+                WebSocketMessage.MessageType.SYSTEM,
+                "system",
+                content,
+                data
+        );
+        sendToTopic("bid/" + productId, message);
+    }
 }
