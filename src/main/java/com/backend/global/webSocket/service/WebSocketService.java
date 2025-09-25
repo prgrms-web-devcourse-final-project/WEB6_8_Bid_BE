@@ -37,6 +37,20 @@ public class WebSocketService {
     }
 
     /**
+     * 개인 알림 전송 (특정 사용자)
+     */
+    public void sendNotificationToUser(String userId, String message, Object data) {
+        WebSocketMessage webSocketMessage = WebSocketMessage.of(
+                WebSocketMessage.MessageType.NOTIFICATION,
+                "system",
+                message,
+                data
+        );
+        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", webSocketMessage);
+        log.info("개인 알림 전송 - 사용자: {}, 메시지: {}", userId, message);
+    }
+
+    /**
      * 경매 종료 알림 브로드캐스트
      */
     public void broadcastAuctionEnd(Long productId, boolean isSuccessful, Long finalPrice) {
@@ -59,7 +73,4 @@ public class WebSocketService {
         );
         sendToTopic("bid/" + productId, message);
     }
-
-
-
 }
