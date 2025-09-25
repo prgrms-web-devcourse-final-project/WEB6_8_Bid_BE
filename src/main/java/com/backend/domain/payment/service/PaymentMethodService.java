@@ -8,10 +8,13 @@ import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -121,6 +124,20 @@ public class PaymentMethodService {
         return toResponse(entity);
     }
 
+    // 결제 수단 다건 조회..
+    @Transactional(readOnly = true)
+    public List<PaymentMethodResponse> findAll(Long memberId) {
+        // 회원 검증(없으면 404)..
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
+
+        // 기본 수단 우선 → 최신 생성 순으로 정렬해 반환
+        return paymentMethodRepository.findAllByMemberOrderByIsDefaultDescCreateDateDesc(member)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     //엔티티 → 응답 DTO 매핑..
     private PaymentMethodResponse toResponse(PaymentMethod e) {
         return PaymentMethodResponse.builder()
@@ -149,4 +166,6 @@ public class PaymentMethodService {
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
+
+
 }
