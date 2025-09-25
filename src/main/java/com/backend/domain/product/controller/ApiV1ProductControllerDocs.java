@@ -128,7 +128,7 @@ public interface ApiV1ProductControllerDocs {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
-    RsData<PageDto<MyProductListDto>> getProductsByMember(
+    RsData<PageDto<ProductListByMemberDto>> getProductsByMember(
             @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,

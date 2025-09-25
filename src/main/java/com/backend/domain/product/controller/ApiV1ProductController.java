@@ -138,7 +138,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
     @GetMapping("/members/{memberId}")
     @Transactional(readOnly = true)
-    public RsData<PageDto<MyProductListDto>> getProductsByMember(
+    public RsData<PageDto<ProductListByMemberDto>> getProductsByMember(
             @PathVariable Long memberId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -153,7 +153,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
                 "200",
                 "%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId),
                 PageDto.fromPage(
-                        products.map(MyProductListDto::fromEntity)
+                        products.map(ProductListByMemberDto::fromEntity)
                 )
         );
     }

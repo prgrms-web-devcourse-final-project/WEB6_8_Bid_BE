@@ -835,7 +835,7 @@ class ApiV1ProductControllerTest {
         Long memberId = 1L;
         ResultActions resultActions = mvc
                 .perform(
-                        get("/api/v1/products/memebers/" + memberId)
+                        get("/api/v1/products/members/" + memberId)
                 ).andDo(print());
 
         Member actor = memberRepository.findById(memberId).get();
@@ -921,8 +921,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
 //                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
-                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
-                    .andExpect(jsonPath("$.data.content[%d].bidder.id".formatted(i)).value(product.getBidder().getId()));
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
         }
     }
 
