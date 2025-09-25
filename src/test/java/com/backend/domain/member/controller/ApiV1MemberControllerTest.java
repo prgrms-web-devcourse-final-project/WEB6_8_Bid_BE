@@ -188,8 +188,8 @@ class ApiV1MemberControllerTest {
 
         // Then
         resultActions
-                .andExpect(status().isConflict()) // GlobalExceptionHandler에 의해 409 Conflict
-                .andExpect(jsonPath("$.resultCode").value("400-1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value("404"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 이메일입니다."));
     }
 
