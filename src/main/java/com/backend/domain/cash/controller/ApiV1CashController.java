@@ -5,6 +5,8 @@ import com.backend.domain.cash.dto.CashTransactionItemResponse;
 import com.backend.domain.cash.dto.CashTransactionResponse;
 import com.backend.domain.cash.dto.CashTransactionsResponse;
 import com.backend.global.rsData.RsData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,10 +14,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/cashs")
+@Tag(name = "Cash", description = "돈 관련 API")
 public class ApiV1CashController {
 
-    // 내 지갑 잔액 조회..
     @GetMapping("/cash")
+    @Operation(summary = "내 지갑 잔액 조회")
     public ResponseEntity<RsData<CashResponse>> getMyCash() {
 
         CashResponse data = CashResponse.builder()
@@ -32,8 +35,8 @@ public class ApiV1CashController {
         return ResponseEntity.ok(body);
     }
 
-    // 내 원장 목록(입금/출금 내역)..
     @GetMapping("/cash/transactions")
+    @Operation(summary = "내 원장 목록(입금/출금 내역)", description = "입금/출금 내역을 확인합니다.")
     public ResponseEntity<RsData<CashTransactionsResponse>> getCashTransactions(
             @RequestParam(defaultValue = "1") int page,   // 몇 페이지..
             @RequestParam(defaultValue = "20") int size   // 몇 개씩..
@@ -88,8 +91,8 @@ public class ApiV1CashController {
         return ResponseEntity.ok(body);
     }
 
-    // 내 원장 단건 상세..
     @GetMapping("/cash/transactions/{transactionId}")
+    @Operation(summary = "내 원장 단건 상세 조회", description = "원장 단건 조회")
     public ResponseEntity<RsData<CashTransactionResponse>> getCashTransactionDetail(
             @PathVariable Long transactionId
     ) {

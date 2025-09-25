@@ -3,16 +3,19 @@ package com.backend.domain.payment.controller;
 
 import com.backend.domain.payment.dto.*;
 import com.backend.global.rsData.RsData;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Payment", description = "결제 관련 API")
 @RestController
-@RequestMapping("api/v1/payments")
-public class ApiV1PaymentController {
+@RequestMapping("/api/v1/payments")
+public class ApiV1PaymentMockController {
 
-    // 결제 수단 다건 조회..
+    @Operation(summary = "결제 수단 다건 조회", description = "카드, 계좌 다건 조회")
     @GetMapping("/paymentMethods")
     public ResponseEntity<RsData<List<PaymentMethodResponse>>> getPaymentMethods() {
 
@@ -59,8 +62,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.ok(body);
     }
 
-    // 결제 수단 단건 조회..
     @GetMapping("/paymentMethods/{id}")
+    @Operation(summary = "결제 수단 단건 조회", description = "카드 또는 계좌 단건 조회")
     public ResponseEntity<RsData<PaymentMethodResponse>> getPaymentMethod(@PathVariable Long id) {
 
         // 예시 규칙: id가 12면 카드, 아니면 계좌..
@@ -112,8 +115,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.ok(body);
     }
 
-    // 결제 수단 등록..
     @PostMapping("/paymentMethods")
+    @Operation(summary = "결제 수단 등록", description = "카드 또는 계좌 등록")
     public ResponseEntity<RsData<PaymentMethodResponse>> createPaymentMethod(
     ) {
         PaymentMethodResponse data = PaymentMethodResponse.builder()
@@ -139,8 +142,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.ok(body);
     }
 
-    // 결제 수단 수정..
     @PutMapping("/paymentMethods/{id}")
+    @Operation(summary = "결제 수단 수정")
     public ResponseEntity<RsData<PaymentMethodEditResponse>> editPaymentMethod(
             @PathVariable Long id
     ) {
@@ -157,8 +160,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.ok(body); // HTTP 200 OK
     }
 
-    // 결제 수단 삭제..
     @DeleteMapping("/paymentMethods/{id}")
+    @Operation(summary = "결제 수단 삭제")
     public ResponseEntity<RsData<PaymentMethodDeleteResponse>> deletePaymentMethod(
             @PathVariable Long id
     ) {
@@ -173,8 +176,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.ok(body); // HTTP 200 OK
     }
 
-    // 결제 요청(충전)..
     @PostMapping("/payments")
+    @Operation(summary = "결제 요청(충전)", description = "돈을 충전합니다.")
     public ResponseEntity<RsData<PaymentResponse>> charge() {
 
         PaymentResponse data = PaymentResponse.builder()
@@ -199,8 +202,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.status(201).body(body);
     }
 
-    // 내 결제 내역..
     @GetMapping("/payments/me")
+    @Operation(summary = "내 결제 내역 조회")
     public ResponseEntity<RsData<MyPaymentsResponse>> getMyPayments(
             @RequestParam(defaultValue = "1") int page,   // 몇 번째 페이지인지..
             @RequestParam(defaultValue = "20") int size   // 한 페이지에 몇 개 보여줄지..
@@ -233,8 +236,8 @@ public class ApiV1PaymentController {
 
         List<MyPaymentListItemResponse> items = List.of(item1, item2);
         MyPaymentsResponse data = MyPaymentsResponse.builder()
-                .page(page)          // 요청받은 page..
-                .size(size)          // 요청받은 size..
+                .page(page)          // 요청받은 page...
+                .size(size)          // 요청받은 size...
                 .total(3)            // 전체 건수 하드코딩(예: 3건)
                 .items(items)
                 .build();
@@ -245,8 +248,8 @@ public class ApiV1PaymentController {
         return ResponseEntity.ok(body);
     }
 
-    // 내 결제 상세 내역..
     @GetMapping("/payments/me/{paymentId}")
+    @Operation(summary = "내 결제 상세 내역 조회")
     public ResponseEntity<RsData<MyPaymentResponse>> getMyPaymentDetail(
             @PathVariable Long paymentId
     ) {

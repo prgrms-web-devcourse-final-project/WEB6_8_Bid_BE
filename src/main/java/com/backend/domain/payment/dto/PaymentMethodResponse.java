@@ -8,7 +8,7 @@ import lombok.Getter;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 
-// 결제 수단 다건/단건 조회..
+// 결제 수단 등록, 다건/단건 조회..
 public class PaymentMethodResponse {
 
     // 공통..

@@ -72,8 +72,8 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "seller_id", nullable = false)
     private Member seller;
 
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
-    private List<Payment> payments;
+    /*@OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<Payment> payments;*/
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     private List<Bid> bids = new ArrayList<>();
