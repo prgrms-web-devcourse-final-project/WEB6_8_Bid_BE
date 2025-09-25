@@ -121,12 +121,12 @@ public class TestInitData {
         // 경매 시작 전
         ProductCreateRequest requestDto8 = new ProductCreateRequest("뉴발란스 스니커즈", null, 2, 700000L, LocalDateTime.now().plusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
         Product product8 = productService.createProduct(member6, requestDto8);
-        productService.createProductImage(product8, "/image5_1.jpg");
+        productService.createProductImage(product8, "/image8_1.jpg");
 
         // 낙찰
         ProductCreateRequest requestDto9 = new ProductCreateRequest("닌텐도 Switch", null, 2, 700000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
         Product product9 = productService.createProduct(member4, requestDto9);
-        productService.createProductImage(product9, "/image6_1.jpg");
+        productService.createProductImage(product9, "/image9_1.jpg");
 
         product9.setStatus("경매 중");
         bidService.createBid(product9.getId(), member1.getId(), new BidRequestDto(900000L));
