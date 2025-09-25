@@ -48,8 +48,8 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<PageDto<ProductListDto>> getProducts(
-            @Parameter(description = "페이지 번호 (1부터 시작)", required = true) @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "페이지 크기", required = true) @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "상품명 검색어") @RequestParam(required = false) String keyword,
             @Parameter(description = "상품 카테고리 (번호)") @RequestParam(required = false) Integer[] category,
             @Parameter(description = "직거래 시 지역") @RequestParam(required = false) String[] location,
@@ -111,20 +111,28 @@ public interface ApiV1ProductControllerDocs {
 
 
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "내 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     RsData<PageDto<MyProductListDto>> getMyProducts(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "SELLING") SaleStatus status,
-            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
 
 
     @Operation(summary = "특정 회원 상품 조회", description = "특정 회원이 올린 상품들을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "특정 회원 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     ResponseEntity<Map<String, Object>> getProductsByMember(
-            @PathVariable Long memberId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "LATEST") String sort
+            @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") String status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") String sort
     );
 }
