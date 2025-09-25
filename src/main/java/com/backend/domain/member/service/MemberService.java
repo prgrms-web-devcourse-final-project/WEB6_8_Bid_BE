@@ -107,4 +107,8 @@ public class MemberService {
     public Optional<Member> findByNickname(String nickname) {
         return memberRepository.findByNickname(nickname);
     }
+
+    public Optional<Member> findById(Long memberId) {
+        return memberRepository.findById(memberId);
+    }
 }

@@ -28,7 +28,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     private final ProductService productService;
-    private final MemberRepository memberRepository;
     private final MemberService memberService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -151,7 +150,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        Member actor = memberRepository.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다."));
+        Member actor = memberService.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다."));
 
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
