@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,7 +38,8 @@ public interface ApiV1ProductControllerDocs {
     })
     RsData<ProductDto> createProduct(
             @Parameter(description = "상품 등록 요청 정보", required = true) @RequestPart("request") @Valid ProductCreateRequest request,
-            @Parameter(description = "상품 이미지", required = true) @RequestPart("images") List<MultipartFile> images
+            @Parameter(description = "상품 이미지", required = true) @RequestPart("images") List<MultipartFile> images,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
@@ -86,7 +89,8 @@ public interface ApiV1ProductControllerDocs {
             @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
             @Parameter(description = "상품 수정 요청 정보", required = true) @RequestPart("request") @Valid ProductModifyRequest request,
             @Parameter(description = "상품 이미지") @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @Parameter(description = "삭제할 이미지 ID") @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds
+            @Parameter(description = "삭제할 이미지 ID") @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
@@ -104,7 +108,8 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<Void> deleteProduct(
-            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId
+            @Parameter(description = "상품 ID", required = true) @PathVariable Long productId,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 
@@ -117,7 +122,8 @@ public interface ApiV1ProductControllerDocs {
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
-            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
     );
 
 

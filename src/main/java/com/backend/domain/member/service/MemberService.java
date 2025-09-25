@@ -6,6 +6,7 @@ import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.dto.MemberSignUpResponseDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.global.exception.ServiceException;
 import com.backend.global.rsData.RsData;
 import com.backend.global.security.JwtUtil;
 import com.backend.global.util.RedisUtil;
@@ -88,9 +89,9 @@ public class MemberService {
         }
     }
 
-    private Member findMemberByEmail(String email) {
+    public Member findMemberByEmail(String email) {
         return memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 이메일입니다."));
     }
 
     private void verifyPassword(String rawPassword, String encodedPassword) {

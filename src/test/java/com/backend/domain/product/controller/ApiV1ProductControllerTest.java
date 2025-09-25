@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser("user1@example.com")
 class ApiV1ProductControllerTest {
     @Autowired
     private MockMvc mvc;
@@ -494,6 +496,7 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 기본 정보만 수정")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct() throws Exception {
         // given
         long id = 5L;
@@ -539,6 +542,7 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 이미지 추가")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct_addImages() throws Exception {
         // given
         long id = 5L;
@@ -590,6 +594,7 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 이미지 삭제")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct_deleteImages() throws Exception {
         // given
         long id = 5L;
@@ -620,6 +625,7 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 수정 - 이미지 추가 + 삭제")
     @Transactional
+    @WithMockUser("user3@example.com")
     void modifyProduct_addAndDeleteImages() throws Exception {
         // given
         long id = 5L;
@@ -672,6 +678,7 @@ class ApiV1ProductControllerTest {
     @Test
     @DisplayName("상품 삭제")
     @Transactional
+    @WithMockUser("user3@example.com")
     void deleteProduct_success() throws Exception {
         // when
         long id = 5L;
