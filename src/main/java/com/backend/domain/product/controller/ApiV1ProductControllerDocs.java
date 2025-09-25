@@ -116,6 +116,8 @@ public interface ApiV1ProductControllerDocs {
     @Operation(summary = "내 상품 조회", description = "내가 올린 상품들을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "내 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<PageDto<MyProductListDto>> getMyProducts(
