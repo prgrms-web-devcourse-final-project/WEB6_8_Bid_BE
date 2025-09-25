@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 @Tag(name = "Product", description = "상품 관련 API")
 @RequestMapping("api/v1/products")
@@ -126,13 +124,15 @@ public interface ApiV1ProductControllerDocs {
     @Operation(summary = "특정 회원 상품 조회", description = "특정 회원이 올린 상품들을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "특정 회원 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
-    ResponseEntity<Map<String, Object>> getProductsByMember(
+    RsData<PageDto<MyProductListDto>> getProductsByMember(
             @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") String status,
-            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") String sort
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
 }
