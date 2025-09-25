@@ -320,4 +320,39 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200-2"))
                 .andExpect(jsonPath("$.msg").value("로그아웃 상태입니다."));
     }
+
+    @Test
+    @DisplayName("내 정보 조회 성공")
+    void t10() throws Exception {
+        // Given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "myinfo@example.com", "password123", "myinfoUser", "01011112222", "My Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        // 로그인하여 토큰 발급
+        LoginRequestDto loginDto = new LoginRequestDto("myinfo@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+
+        String responseBody = loginResult.andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(responseBody).get("data").get("accessToken").asText();
+
+        // When
+        ResultActions resultActions = mockMvc.perform(get("/api/v1/members/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("내 정보가 조회되었습니다."))
+                .andExpect(jsonPath("$.data.email").value("myinfo@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("myinfoUser"))
+                .andExpect(jsonPath("$.data.address").value("My Address"));
+    }
 }

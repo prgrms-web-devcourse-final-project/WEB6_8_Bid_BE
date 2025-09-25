@@ -2,6 +2,7 @@ package com.backend.domain.member.service;
 
 import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.LoginResponseDto;
+import com.backend.domain.member.dto.MemberMyInfoResponseDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.dto.MemberSignUpResponseDto;
 import com.backend.domain.member.entity.Member;
@@ -80,6 +81,23 @@ public class MemberService {
         member.updateRefreshToken(newRefreshToken);
 
         return new RsData<>("200-3", "토큰 재발급 성공", new LoginResponseDto(newAccessToken, newRefreshToken));
+    }
+
+    @Transactional(readOnly = true)
+    public RsData<MemberMyInfoResponseDto> getMyInfo(String email) {
+        Member member = findMemberByEmail(email);
+        MemberMyInfoResponseDto responseDto = new MemberMyInfoResponseDto(
+                member.getId(),
+                member.getEmail(),
+                member.getNickname(),
+                member.getPhoneNumber(),
+                member.getAddress(),
+                member.getProfileImageUrl(),
+                member.getCreditScore(),
+                member.getCreateDate(),
+                member.getModifyDate()
+        );
+        return new RsData<>("200-1", "내 정보가 조회되었습니다.", responseDto);
     }
 
     private void checkEmailDuplication(String email) {
