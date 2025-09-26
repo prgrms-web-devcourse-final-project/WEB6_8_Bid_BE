@@ -2,11 +2,13 @@ package com.backend.domain.member.service;
 
 import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.LoginResponseDto;
+import com.backend.domain.member.dto.MemberModifyRequestDto;
 import com.backend.domain.member.dto.MemberMyInfoResponseDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.dto.MemberSignUpResponseDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.product.service.FileService;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;
 import com.backend.global.security.JwtUtil;
@@ -14,6 +16,7 @@ import com.backend.global.redis.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -27,6 +30,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
+    private final FileService fileService;
 
     public RsData<MemberSignUpResponseDto> signup(MemberSignUpRequestDto memberSignUpRequestDto) {
         checkEmailDuplication(memberSignUpRequestDto.email());
@@ -35,7 +39,7 @@ public class MemberService {
                 .email(memberSignUpRequestDto.email())
                 .password(passwordEncoder.encode(memberSignUpRequestDto.password()))
                 .nickname(memberSignUpRequestDto.nickname())
-                .phoneNumber(memberSignUpRequestDto.phone())
+                .phoneNumber(memberSignUpRequestDto.phoneNumber())
                 .address(memberSignUpRequestDto.address())
                 .authority("ROLE_USER")
                 .build();

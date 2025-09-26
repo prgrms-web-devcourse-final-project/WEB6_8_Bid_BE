@@ -3,6 +3,9 @@ package com.backend.global.redis;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.test.context.ActiveProfiles;
 import redis.embedded.RedisServer;
 
@@ -10,18 +13,16 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 @TestConfiguration
-@ActiveProfiles("test")
 public class TestRedisConfiguration {
 
     private RedisServer redisServer;
+    private int redisPort;
 
     @PostConstruct
     public void startRedis() throws IOException {
-        int redisPort = findAvailablePort();
+        redisPort = findAvailablePort();
         redisServer = new RedisServer(redisPort);
         redisServer.start();
-
-        System.setProperty("spring.data.redis.port", String.valueOf(redisPort));
     }
 
     @PreDestroy
@@ -34,6 +35,11 @@ public class TestRedisConfiguration {
                 System.err.println("Error stopping Redis server: " + e.getMessage());
             }
         }
+    }
+
+    @Bean
+    public LettuceConnectionFactory redisConnectionFactory() {
+        return new LettuceConnectionFactory("localhost", redisPort);
     }
 
     private int findAvailablePort() throws IOException {
