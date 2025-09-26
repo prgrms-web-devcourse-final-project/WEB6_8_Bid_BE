@@ -66,4 +66,24 @@ public class ApiV1PaymentMethodController {
         // 전체 조회 반환
         return paymentMethodService.findAll(memberId);
     }
+
+    // 결제 수단 단건 조회..
+    @GetMapping("/{id}")
+    @Operation(summary = "결제 수단 단건 조회", description = "로그인한 사용자의 결제 수단 단건을 반환합니다.")
+    public PaymentMethodResponse getOne(
+            @AuthenticationPrincipal User user,
+            @PathVariable("id") Long paymentMethodId
+    ) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        String email = user.getUsername();
+
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+        Long memberId = member.getId();
+
+        return paymentMethodService.findOne(memberId, paymentMethodId);
+    }
 }

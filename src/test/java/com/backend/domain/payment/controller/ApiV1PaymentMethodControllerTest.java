@@ -3,6 +3,7 @@ package com.backend.domain.payment.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.global.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,11 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -38,7 +39,6 @@ class ApiV1PaymentMethodControllerTest {
 
     @Autowired
     MemberRepository memberRepository;
-
 
     @Autowired
     JwtUtil jwtUtil;
@@ -85,4 +85,42 @@ class ApiV1PaymentMethodControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }
+
+    @Test
+    @DisplayName("결제 수단 단건 조회")
+    void getOne_success() throws Exception {
+        // given: 실제 서비스로 하나 생성해서 id 확보
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+        PaymentMethodCreateRequest req = new PaymentMethodCreateRequest();
+        req.setType("CARD");
+        req.setAlias("경조사용 카드");
+        req.setIsDefault(true);
+        req.setBrand("KB");
+        req.setLast4("7777");
+        req.setExpMonth(3);
+        req.setExpYear(2029);
+
+        PaymentMethodResponse saved = paymentMethodService.create(memberId, req);
+        Long id = saved.getId();
+        assertThat(id).isNotNull();
+
+        // when & then
+        mvc.perform(get("/api/v1/paymentMethods/{id}", id)
+                        .header("Authorization", bearer("user1@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.type").value("CARD"))
+                .andExpect(jsonPath("$.alias").value("경조사용 카드"))
+                .andExpect(jsonPath("$.last4").value("7777"));
+    }
+
+    @Test
+    @DisplayName("결제 수단 단건 조회(미존재/타회원) → 404")
+    void getOne_notFound() throws Exception {
+        mvc.perform(get("/api/v1/paymentMethods/{id}", 99999L)
+                        .header("Authorization", bearer("user1@example.com")))
+                .andExpect(status().isNotFound());
+    }
+
 }
