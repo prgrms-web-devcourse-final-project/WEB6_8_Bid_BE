@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.constant.PaymentMethodType;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
@@ -261,6 +262,34 @@ public class PaymentMethodService {
         return t.isEmpty() ? null : t;
     }
 
+
+    // 회원의 결제수단을 삭제하고 그게 기본 수단이었으면 다른 수단 중 가장 최근 것을 자동으로 기본으로 승계..
+    @Transactional
+    public PaymentMethodDeleteResponse deleteAndReport(Long memberId, Long paymentMethodId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
+
+        PaymentMethod target = paymentMethodRepository.findByIdAndMember(paymentMethodId, member)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
+
+        boolean wasDefault = Boolean.TRUE.equals(target.getIsDefault());
+
+        paymentMethodRepository.delete(target);
+
+        Long newDefaultId = null;
+        if (wasDefault) {
+            newDefaultId = paymentMethodRepository.findFirstByMemberOrderByCreateDateDesc(member)
+                    .map(pm -> { pm.setIsDefault(true); return pm.getId(); })
+                    .orElse(null);
+        }
+
+        return PaymentMethodDeleteResponse.builder()
+                .id(paymentMethodId)
+                .deleted(true)
+                .wasDefault(wasDefault)
+                .newDefaultId(newDefaultId)
+                .build();
+    }
 
     //엔티티 → 응답 DTO 매핑..
     private PaymentMethodResponse toResponse(PaymentMethod e) {

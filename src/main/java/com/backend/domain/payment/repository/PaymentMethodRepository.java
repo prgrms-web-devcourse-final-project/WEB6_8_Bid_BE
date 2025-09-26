@@ -26,4 +26,7 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Lo
 
     // 결제 수단 단건 조회..
     Optional<PaymentMethod> findByIdAndMember(Long id, Member member);
+
+    // 기본 수단을 삭제했을 때 가장 최근에 만든 다른 결제수단을 자동으로 기본으로 승계..
+    Optional<PaymentMethod> findFirstByMemberOrderByCreateDateDesc(Member member);
 }

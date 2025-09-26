@@ -4,6 +4,7 @@ package com.backend.domain.payment.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +29,8 @@ public class ApiV1PaymentMethodController {
     private final MemberRepository memberRepository;
     private final PaymentMethodService paymentMethodService;
 
-    @Operation(summary = "결제 수단 등록", description = "카드, 계좌 등록")
+    @Operation(summary = "결제 수단 등록", description = "type: card, bank \n\n" + "CARD 등록: alias, isDefault, brand, last4, expMonth, expYear만 보내고 bankCode, bankName, acctLast4는 넣지마세요!\n\n" +
+            "BANK 등록: alias, isDefault, bankCode(선택), bankName, acctLast4만 보내고 brand, last4, expMonth, expYear는 넣지마세요!")
     @PostMapping
     public PaymentMethodResponse create(
             @AuthenticationPrincipal User user,
@@ -103,4 +106,21 @@ public class ApiV1PaymentMethodController {
 
         return paymentMethodService.edit(member.getId(), paymentMethodId, request);
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "결제 수단 삭제", description = "기본 수단 삭제 시 최근 생성 수단으로 자동 승계합니다.")
+    public ResponseEntity<PaymentMethodDeleteResponse> delete(
+            @AuthenticationPrincipal User user,
+            @PathVariable("id") Long paymentMethodId
+    ) {
+        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+
+        Member member = memberRepository.findByEmail(user.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+
+        PaymentMethodDeleteResponse result = paymentMethodService.deleteAndReport(member.getId(), paymentMethodId);
+        return ResponseEntity.ok(result); // 200 + 바디
+    }
+
+
 }

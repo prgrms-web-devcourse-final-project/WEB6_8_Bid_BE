@@ -5,6 +5,7 @@ import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
+import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.global.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,12 +16,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -42,6 +43,9 @@ class ApiV1PaymentMethodControllerTest {
     MemberRepository memberRepository;
 
     @Autowired
+    PaymentMethodRepository paymentMethodRepository;
+
+    @Autowired
     JwtUtil jwtUtil;
 
     private String bearer(String email) {
@@ -50,6 +54,8 @@ class ApiV1PaymentMethodControllerTest {
 
     @BeforeEach
     void setUp() {
+        paymentMethodRepository.deleteAll();
+
         memberRepository.findByEmail("user1@example.com")
                 .orElseGet(() -> memberRepository.save(
                         Member.builder().email("user1@example.com").build()
@@ -70,7 +76,7 @@ class ApiV1PaymentMethodControllerTest {
 
         mvc.perform(post("/api/v1/paymentMethods")
                         .header("Authorization", bearer("user1@example.com"))
-                        .with(SecurityMockMvcRequestPostProcessors.csrf()) // CSRF 사용 중이면 필요
+                        .with(csrf()) // CSRF 사용 중이면 필요
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(om.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -237,5 +243,84 @@ class ApiV1PaymentMethodControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"alias\":\"x\"}"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("DELETE: 기본이 아닌 결제수단 삭제 → 200 + {deleted:true, wasDefault:false, newDefaultId:null}")
+    void delete_nonDefault_success() throws Exception {
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+
+        // 기본 수단 A(기본)
+        PaymentMethodCreateRequest a = new PaymentMethodCreateRequest();
+        a.setType("CARD"); a.setAlias("A"); a.setIsDefault(true);
+        a.setBrand("VISA"); a.setLast4("1111"); a.setExpMonth(12); a.setExpYear(2030);
+        paymentMethodService.create(memberId, a);
+
+        // 비기본 수단 B(삭제 대상)
+        PaymentMethodCreateRequest b = new PaymentMethodCreateRequest();
+        b.setType("BANK"); b.setAlias("B"); b.setIsDefault(false);
+        b.setBankName("KB"); b.setAcctLast4("2222"); b.setBankCode("004");
+        Long deleteId = paymentMethodService.create(memberId, b).getId();
+
+        mvc.perform(delete("/api/v1/paymentMethods/{id}", deleteId)
+                        .header("Authorization", bearer("user1@example.com"))
+                        .with(csrf())) // CSRF 사용 중이면 유지
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(deleteId))
+                .andExpect(jsonPath("$.deleted").value(true))
+                .andExpect(jsonPath("$.wasDefault").value(false))
+                .andExpect(jsonPath("$.newDefaultId").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("DELETE: 기본 결제수단 삭제 → 최근 생성 수단으로 승계(newDefaultId 세팅)")
+    void delete_default_withSuccessor_success() throws Exception {
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+
+        // 기본 수단 A(삭제 대상)
+        PaymentMethodCreateRequest a = new PaymentMethodCreateRequest();
+        a.setType("CARD"); a.setAlias("A"); a.setIsDefault(true);
+        a.setBrand("VISA"); a.setLast4("9999"); a.setExpMonth(10); a.setExpYear(2031);
+        Long deleteId = paymentMethodService.create(memberId, a).getId();
+
+        // 후속 수단 B(최근 생성 → 승계 대상)
+        PaymentMethodCreateRequest b = new PaymentMethodCreateRequest();
+        b.setType("BANK"); b.setAlias("B"); b.setIsDefault(false);
+        b.setBankName("KB"); b.setAcctLast4("3333"); b.setBankCode("004");
+        Long successorId = paymentMethodService.create(memberId, b).getId();
+
+        mvc.perform(delete("/api/v1/paymentMethods/{id}", deleteId)
+                        .header("Authorization", bearer("user1@example.com"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(deleteId))
+                .andExpect(jsonPath("$.deleted").value(true))
+                .andExpect(jsonPath("$.wasDefault").value(true))
+                .andExpect(jsonPath("$.newDefaultId").value(successorId));
+
+        // 옵션: 승계된 수단이 정말 기본인지 확인
+        PaymentMethodResponse successor = paymentMethodService.findOne(memberId, successorId);
+        assertThat(successor.getIsDefault()).isTrue();
+    }
+
+    @Test
+    @DisplayName("DELETE: 기본 결제수단 삭제(마지막 1개) → newDefaultId=null")
+    void delete_default_withoutSuccessor_success() throws Exception {
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+
+        PaymentMethodCreateRequest a = new PaymentMethodCreateRequest();
+        a.setType("CARD"); a.setAlias("A"); a.setIsDefault(true);
+        a.setBrand("VISA"); a.setLast4("4444"); a.setExpMonth(9); a.setExpYear(2032);
+        Long deleteId = paymentMethodService.create(memberId, a).getId();
+
+        mvc.perform(delete("/api/v1/paymentMethods/{id}", deleteId)
+                        .header("Authorization", bearer("user1@example.com"))
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(deleteId))
+                .andExpect(jsonPath("$.deleted").value(true))
+                .andExpect(jsonPath("$.wasDefault").value(true))
+                .andExpect(jsonPath("$.newDefaultId").value(nullValue()));
     }
 }

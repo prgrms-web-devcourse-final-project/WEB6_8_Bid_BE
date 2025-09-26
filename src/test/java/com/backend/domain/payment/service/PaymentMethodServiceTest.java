@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.constant.PaymentMethodType;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
@@ -597,6 +598,82 @@ class PaymentMethodServiceTest {
         // CARD 쪽은 여전히 null
         assertThat(res.getBrand()).isNull();
         assertThat(res.getLast4()).isNull();
+    }
+
+    @Test
+    @DisplayName("기본이 아닌 결제수단 삭제 → deleted=true, wasDefault=false, newDefaultId=null")
+    void delete_nonDefault_success() {
+        // given
+        PaymentMethod target = cardEntity(34L, member); // 기본 아님
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(34L, member)).thenReturn(Optional.of(target));
+
+        // when
+        PaymentMethodDeleteResponse res = paymentMethodService.deleteAndReport(1L, 34L);
+
+        // then
+        assertThat(res.getId()).isEqualTo(34L);
+        assertThat(res.isDeleted()).isTrue();
+        assertThat(res.isWasDefault()).isFalse();
+        assertThat(res.getNewDefaultId()).isNull();
+
+        verify(paymentMethodRepository).delete(target);
+        // 기본이 아니므로 승계 조회 호출되지 않음
+        verify(paymentMethodRepository, never()).findFirstByMemberOrderByCreateDateDesc(any());
+    }
+
+    @Test
+    @DisplayName("기본 결제수단 삭제 & 다른 수단 존재 → 최근 생성 수단으로 승계(newDefaultId 설정)")
+    void delete_default_withSuccessor_success() {
+        // given
+        PaymentMethod target = cardEntity(34L, member);
+        target.setIsDefault(true); // 기본 수단
+        PaymentMethod successor = bankEntity(57L, member); // 승계 대상
+
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(34L, member)).thenReturn(Optional.of(target));
+        when(paymentMethodRepository.findFirstByMemberOrderByCreateDateDesc(member))
+                .thenReturn(Optional.of(successor));
+
+        // when
+        PaymentMethodDeleteResponse res = paymentMethodService.deleteAndReport(1L, 34L);
+
+        // then
+        assertThat(res.getId()).isEqualTo(34L);
+        assertThat(res.isDeleted()).isTrue();
+        assertThat(res.isWasDefault()).isTrue();
+        assertThat(res.getNewDefaultId()).isEqualTo(57L);
+
+        // 승계된 객체가 기본으로 표시되었는지(엔티티 필드 변화) 확인
+        assertThat(successor.getIsDefault()).isTrue();
+
+        verify(paymentMethodRepository).delete(target);
+        verify(paymentMethodRepository).findFirstByMemberOrderByCreateDateDesc(member);
+    }
+
+    @Test
+    @DisplayName("기본 결제수단 삭제 & 다른 수단 없음 → 기본 해제(newDefaultId=null)")
+    void delete_default_withoutSuccessor_success() {
+        // given
+        PaymentMethod target = cardEntity(34L, member);
+        target.setIsDefault(true); // 기본 수단
+
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(34L, member)).thenReturn(Optional.of(target));
+        when(paymentMethodRepository.findFirstByMemberOrderByCreateDateDesc(member))
+                .thenReturn(Optional.empty());
+
+        // when
+        PaymentMethodDeleteResponse res = paymentMethodService.deleteAndReport(1L, 34L);
+
+        // then
+        assertThat(res.getId()).isEqualTo(34L);
+        assertThat(res.isDeleted()).isTrue();
+        assertThat(res.isWasDefault()).isTrue();
+        assertThat(res.getNewDefaultId()).isNull();
+
+        verify(paymentMethodRepository).delete(target);
+        verify(paymentMethodRepository).findFirstByMemberOrderByCreateDateDesc(member);
     }
 }
 
