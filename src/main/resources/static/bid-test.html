@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>실시간 입찰 테스트</title>
+    <title>실시간 경매 테스트 (개인 알림 강화)</title>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
@@ -11,9 +11,15 @@
         .bid-section { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
         .current-bid { background: #e8f5e8; padding: 15px; margin: 10px 0; border-radius: 5px; }
         .bid-form { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .bid-history { background: #fff; border: 1px solid #eee; padding: 10px; height: 200px; overflow-y: auto; }
+        .bid-history {
+            background: #fff; border: 1px solid #eee; padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+        }
         .bid-item { padding: 5px 0; border-bottom: 1px solid #eee; }
         .bid-item:last-child { border-bottom: none; }
+        .item-broadcast { color: #0056b3; } /* 실시간 브로드캐스트 (전체) */
+        .item-personal { color: #8b0000; font-weight: bold; background-color: #ffe0e0; padding: 2px 5px; border-radius: 3px; }
         input, button { padding: 8px 12px; margin: 5px; }
         button { background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
         button:hover { background: #0056b3; }
@@ -23,249 +29,316 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔥 실시간 입찰 테스트</h1>
-        
-        <!-- 연결 상태 -->
-        <div class="bid-section">
-            <h3>WebSocket 연결</h3>
-            <span id="status" class="status disconnected">연결 안됨</span>
-            <button id="connect">연결</button>
-            <button id="disconnect">연결 해제</button>
-        </div>
+<div class="container">
+    <h1>🔥 실시간 경매 테스트</h1>
 
-        <!-- 상품 선택 -->
-        <div class="bid-section">
-            <h3>테스트할 상품 선택</h3>
-            <input type="number" id="productId" placeholder="상품 ID" value="1">
-            <button id="subscribe">이 상품 입찰 정보 구독</button>
-            <p>현재 구독 중: <span id="currentProduct">없음</span></p>
-        </div>
+    <div class="bid-section">
+        <h3>WebSocket 연결 설정</h3>
+        <span id="status" class="status disconnected">연결 안됨</span>
+        <button id="connect">연결</button>
+        <button id="disconnect">연결 해제</button>
+        <p><small>📢 서버에서 사용자 ID를 '1'로 가정하고 개인 알림을 보낸다고 가정합니다.</small></p>
+    </div>
 
-        <!-- 현재 입찰 정보 -->
-        <div class="current-bid">
-            <h3>💰 현재 최고 입찰</h3>
-            <div id="currentBidInfo">
-                <p>최고가: <strong id="highestBid">-</strong>원</p>
-                <p>입찰자: <span id="bidder">-</span></p>
-                <p>시간: <span id="bidTime">-</span></p>
-            </div>
-        </div>
+    <div class="bid-section">
+        <h3>테스트할 상품 선택</h3>
+        <input type="number" id="productId" placeholder="상품 ID" value="1">
+        <button id="subscribe">이 상품 입찰 정보 및 개인 알림 구독</button>
+        <p>현재 구독 중: <span id="currentProduct">없음</span></p>
+    </div>
 
-        <!-- 입찰하기 -->
-        <div class="bid-form">
-            <h3>🎯 입찰하기</h3>
-            <input type="number" id="bidAmount" placeholder="입찰 금액" step="100">
-            <button id="placeBid">입찰하기</button>
-            <p><small>※ REST API로 입찰 → WebSocket으로 실시간 브로드캐스트</small></p>
-        </div>
-
-        <!-- 실시간 입찰 내역 -->
-        <div class="bid-section">
-            <h3>📊 실시간 입찰 내역</h3>
-            <div id="bidHistory" class="bid-history">
-                <p>입찰 내역이 여기에 실시간으로 표시됩니다...</p>
-            </div>
+    <div class="current-bid">
+        <h3>💰 현재 최고 입찰 (전체 브로드캐스트)</h3>
+        <div id="currentBidInfo">
+            <p>최고가: <strong id="highestBid">-</strong>원</p>
+            <p>입찰자: <span id="bidder">-</span></p>
+            <p>시간: <span id="bidTime">-</span></p>
         </div>
     </div>
 
-    <script>
-        let stompClient = null;
-        let currentProductId = null;
-        let currentSubscription = null;
+    <div class="bid-form">
+        <h3>🎯 입찰하기 (개인 알림 테스트)</h3>
+        <input type="number" id="bidAmount" placeholder="입찰 금액" step="100">
+        <button id="placeBid">입찰하기</button>
+        <p><small>※ 입찰 시, 전체 브로드캐스트 및 **나에게만 오는 개인 알림**을 확인하세요.</small></p>
+    </div>
 
-        // WebSocket 연결
-        function connect() {
-            const socket = new SockJS('/ws');
-            stompClient = Stomp.over(socket);
-            
-            stompClient.connect({}, function(frame) {
-                console.log('Connected: ' + frame);
-                document.getElementById('status').textContent = '연결됨';
-                document.getElementById('status').className = 'status connected';
-                addBidHistory('✅ WebSocket 연결 성공!');
-            }, function(error) {
-                console.log('Connection error: ' + error);
-                document.getElementById('status').textContent = '연결 실패';
-                document.getElementById('status').className = 'status disconnected';
-                addBidHistory('❌ WebSocket 연결 실패: ' + error);
-            });
+    <div class="bid-section">
+        <h3>📊 실시간 내역 (브로드캐스트 & 개인 알림)</h3>
+        <div id="bidHistory" class="bid-history">
+            <p>내역이 여기에 실시간으로 표시됩니다...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let stompClient = null;
+    let currentProductId = null;
+    let bidSubscription = null; // 상품 브로드캐스트 구독 (/topic/bid/{productId})
+    let notiSubscription = null; // 개인 알림 구독 (/user/queue/notifications)
+    const TEST_USER_ID = "1"; // 개인 알림 테스트를 위해 사용자 ID를 '1'로 가정
+
+    // WebSocket 연결
+    function connect() {
+        if (stompClient && stompClient.connected) return;
+
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({ /* headers */ }, function(frame) {
+            console.log('Connected: ' + frame);
+            document.getElementById('status').textContent = '연결됨';
+            document.getElementById('status').className = 'status connected';
+            addBidHistory('✅ WebSocket 연결 성공!', 'broadcast');
+
+            // 연결 성공 시 개인 알림 채널 구독은 항상 시도
+            subscribeToNotifications();
+
+        }, function(error) {
+            console.log('Connection error: ' + error);
+            document.getElementById('status').textContent = '연결 실패';
+            document.getElementById('status').className = 'status disconnected';
+            addBidHistory('❌ WebSocket 연결 실패: ' + error, 'broadcast');
+        });
+    }
+
+    // WebSocket 연결 해제
+    function disconnect() {
+        if (stompClient !== null) {
+            if (bidSubscription) {
+                bidSubscription.unsubscribe();
+                bidSubscription = null;
+            }
+            if (notiSubscription) {
+                notiSubscription.unsubscribe();
+                notiSubscription = null;
+            }
+            stompClient.disconnect();
+            stompClient = null;
+
+            document.getElementById('status').textContent = '연결 해제됨';
+            document.getElementById('status').className = 'status disconnected';
+            document.getElementById('currentProduct').textContent = '없음';
+            addBidHistory('🔌 WebSocket 연결 해제', 'broadcast');
+        }
+    }
+
+    // 개인 알림 채널 구독
+    function subscribeToNotifications() {
+        if (notiSubscription) {
+            notiSubscription.unsubscribe();
         }
 
-        // WebSocket 연결 해제
-        function disconnect() {
-            if (stompClient !== null) {
-                if (currentSubscription) {
-                    currentSubscription.unsubscribe();
-                    currentSubscription = null;
-                }
-                stompClient.disconnect();
-                document.getElementById('status').textContent = '연결 해제됨';
-                document.getElementById('status').className = 'status disconnected';
-                document.getElementById('currentProduct').textContent = '없음';
-                addBidHistory('🔌 WebSocket 연결 해제');
+        // '/user/queue/notifications' 구독
+        notiSubscription = stompClient.subscribe('/user/queue/notifications', function(message) {
+            console.log('=== 개인 알림 수신 ===');
+            console.log('Notification message:', message.body);
+
+            try {
+                const notification = JSON.parse(message.body);
+                handlePersonalNotification(notification);
+            } catch (error) {
+                console.error('알림 파싱 에러:', error);
+                addBidHistory('❌ 개인 알림 파싱 실패: ' + message.body, 'personal');
             }
+        });
+        addBidHistory('🔔 개인 알림 채널 구독 성공!', 'personal');
+    }
+
+    // 상품 구독 (브로드캐스트 채널)
+    function subscribeToProduct() {
+        const productId = document.getElementById('productId').value;
+        if (!productId || !stompClient || !stompClient.connected) {
+            alert('상품 ID를 입력하고 WebSocket에 연결해주세요.');
+            return;
         }
 
-        // 상품 구독
-        function subscribeToProduct() {
-            const productId = document.getElementById('productId').value;
-            if (!productId || !stompClient) {
-                alert('상품 ID를 입력하고 WebSocket에 연결해주세요.');
-                return;
-            }
-
-            // 이전 구독 해제
-            if (currentSubscription) {
-                currentSubscription.unsubscribe();
-            }
-
-            // 새 구독 시작
-            currentSubscription = stompClient.subscribe('/topic/bid/' + productId, function(message) {
-                console.log('=== WebSocket 메시지 수신 ===');
-                console.log('Raw message:', message);
-                console.log('Message body:', message.body);
-                
-                try {
-                    const bidData = JSON.parse(message.body);
-                    console.log('Parsed bid data:', bidData);
-                    
-                    // 현재 입찰 정보 업데이트
-                    if (bidData.type === 'BID') {
-                        updateCurrentBid(bidData.data);
-                        addBidHistory('🚀 새 입찰: ' + bidData.data.price.toLocaleString() + '원 (' + new Date().toLocaleTimeString() + ')');
-                    } else if (bidData.type === 'SYSTEM') {
-                        // 경매 종료 알림
-                        addBidHistory('📢 ' + bidData.content + ' (' + new Date().toLocaleTimeString() + ')');
-                        if (bidData.data && bidData.data.isSuccessful !== undefined) {
-                            if (bidData.data.isSuccessful) {
-                                addBidHistory('🎉 낙찰! 최종 낙찰가: ' + bidData.data.finalPrice.toLocaleString() + '원');
-                            } else {
-                                addBidHistory('😔 유찰되었습니다.');
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('JSON 파싱 에러:', error);
-                    console.log('원본 메시지:', message.body);
-                    addBidHistory('❌ 메시지 파싱 실패: ' + message.body);
-                }
-            });
-
-            // 개인 알림 구독
-            stompClient.subscribe('/user/queue/notifications', function(message) {
-                console.log('=== 개인 알림 수신 ===');
-                console.log('Notification message:', message.body);
-                
-                try {
-                    const notification = JSON.parse(message.body);
-                    addBidHistory('🔔 개인 알림: ' + notification.content);
-                    
-                    if (notification.data && notification.data.type) {
-                        switch(notification.data.type) {
-                            case 'BID_SUCCESS':
-                                addBidHistory('✅ 입찰 성공 알림이 도착했습니다!');
-                                break;
-                            case 'BID_OUTBID':
-                                addBidHistory('😔 다른 입찰자에게 밀렸습니다');
-                                break;
-                            case 'AUCTION_WON':
-                                addBidHistory('🎉 낙찰 축하합니다!');
-                                break;
-                            case 'AUCTION_LOST':
-                                addBidHistory('😞 낙찰에 실패했습니다');
-                                break;
-                        }
-                    }
-                } catch (error) {
-                    console.error('알림 파싱 에러:', error);
-                }
-            });
-
-            currentProductId = productId;
-            document.getElementById('currentProduct').textContent = '상품 ' + productId;
-            addBidHistory('📡 상품 ' + productId + ' 구독 시작');
+        // 이전 상품 구독 해제
+        if (bidSubscription) {
+            bidSubscription.unsubscribe();
         }
 
-        // REST API로 입찰하기
-        function placeBid() {
-            const productId = document.getElementById('productId').value;
-            const bidAmount = document.getElementById('bidAmount').value;
+        // 새 상품 구독 시작
+        bidSubscription = stompClient.subscribe('/topic/bid/' + productId, function(message) {
+            console.log('=== 브로드캐스트 메시지 수신 ===');
+            console.log('Message body:', message.body);
 
-            if (!productId || !bidAmount) {
-                alert('상품 ID와 입찰 금액을 입력해주세요.');
-                return;
+            try {
+                const bidData = JSON.parse(message.body);
+                handleBroadcastMessage(bidData);
+            } catch (error) {
+                console.error('JSON 파싱 에러:', error);
+                addBidHistory('❌ 메시지 파싱 실패: ' + message.body, 'broadcast');
+            }
+        });
+
+        currentProductId = productId;
+        document.getElementById('currentProduct').textContent = '상품 ' + productId;
+        addBidHistory('📡 상품 ' + productId + ' 입찰 정보 구독 시작', 'broadcast');
+    }
+
+    // 브로드캐스트 메시지 처리 로직
+    function handleBroadcastMessage(bidData) {
+
+        if (bidData.type === 'BID') {
+            // 입찰 업데이트 브로드캐스트
+            updateCurrentBid(bidData.data);
+            addBidHistory('🚀 새 입찰: ' + bidData.data.price.toLocaleString() + '원 (상품 ' + bidData.data.productId + ')', 'broadcast');
+        } else if (bidData.type === 'SYSTEM') {
+            // 시스템 알림 (종료 임박, 종료 등) 브로드캐스트
+            const content = bidData.content || "시스템 알림 도착";
+            addBidHistory('📢 ' + content, 'broadcast');
+
+            if (bidData.data && bidData.data.isSuccessful !== undefined) {
+                // 경매 종료 알림 상세 (낙찰/유찰)
+                if (bidData.data.isSuccessful) {
+                    addBidHistory('🎉 낙찰! 최종 낙찰가: ' + bidData.data.finalPrice.toLocaleString() + '원', 'broadcast');
+                } else {
+                    addBidHistory('😔 유찰되었습니다.', 'broadcast');
+                }
+            }
+        }
+    }
+
+    // 개인 알림 메시지 처리 로직 (Auction/BidNotificationService에서 오는 알림)
+    function handlePersonalNotification(notification) {
+        const content = notification.content;
+        const data = notification.data;
+
+        // 메인 알림 로그 출력
+        addBidHistory(`🔔 ${content}`, 'personal');
+
+        if (data && data.type) {
+            let detailMessage = '';
+
+            switch(data.type) {
+                case 'AUCTION_START': // AuctionNotificationService
+                    detailMessage = `▶️ 경매 시작! 시작가: ${data.initialPrice.toLocaleString()}원`;
+                    break;
+                case 'AUCTION_ENDING_SOON': // AuctionNotificationService
+                    detailMessage = `⏳ 종료 임박! ${data.remainingMinutes}분 후 종료. 현재가: ${data.currentPrice.toLocaleString()}원`;
+                    break;
+                case 'AUCTION_END': // AuctionNotificationService
+                    detailMessage = data.hasWinner ?
+                        `🏆 경매 종료: 최종가 ${data.finalPrice.toLocaleString()}원` :
+                        `💧 경매 종료: 유찰되었습니다.`;
+                    break;
+                case 'BID_SUCCESS': // BidNotificationService
+                    detailMessage = `✅ 나의 입찰 성공: ${data.bidAmount.toLocaleString()}원 (최고가 유지)`;
+                    break;
+                case 'BID_OUTBID': // BidNotificationService
+                    detailMessage = `😔 입찰 밀림! 새로운 최고가: ${data.newHighestBid.toLocaleString()}원`;
+                    break;
+                case 'AUCTION_WON': // BidNotificationService
+                    detailMessage = `🎉 **최종 낙찰 성공!** 금액: ${data.finalPrice.toLocaleString()}원`;
+                    break;
+                case 'AUCTION_LOST': // BidNotificationService
+                    detailMessage = `😞 **낙찰 실패**. 최종가: ${data.finalPrice.toLocaleString()}원`;
+                    break;
+                default:
+                    detailMessage = `⚠️ 알 수 없는 알림 타입: ${data.type}`;
+                    break;
             }
 
-            // REST API 호출
-            fetch('/api/v1/bids/products/' + productId, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer test-token' // 임시 토큰
-                },
-                body: JSON.stringify({
-                    price: parseInt(bidAmount)
-                })
+            if (detailMessage) {
+                // 상세 정보는 같은 유형으로 한번 더 출력하여 강조
+                addBidHistory(detailMessage, 'personal');
+            }
+        }
+    }
+
+    // REST API로 입찰하기
+    function placeBid() {
+        const productId = document.getElementById('productId').value;
+        const bidAmount = document.getElementById('bidAmount').value;
+
+        if (!productId || !bidAmount) {
+            alert('상품 ID와 입찰 금액을 입력해주세요.');
+            return;
+        }
+
+        // JWT 필터에서 이 경로('/api/v1/bids/')는 검증을 건너뛰도록 설정되어 있으나,
+        // 서버에서 사용자 ID를 식별해야 개인 알림을 보낼 수 있습니다.
+        // 테스트를 위해 'test-token'이라는 임의의 토큰을 보냅니다.
+        const token = 'test-token';
+
+        fetch('/api/v1/bids/products/' + productId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // 서버는 이 토큰을 기반으로 현재 입찰자를 식별하고 개인 알림을 보냅니다.
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                price: parseInt(bidAmount)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.resultCode.startsWith('2')) {
-                    addBidHistory('✅ 입찰 성공: ' + bidAmount + '원');
+        })
+            .then(response => {
+                if (response.ok) {
+                    addBidHistory('✅ 입찰 요청 전송: ' + bidAmount + '원 (응답 대기중)', 'broadcast');
                     document.getElementById('bidAmount').value = '';
                 } else {
-                    addBidHistory('❌ 입찰 실패: ' + data.msg);
+                    response.json().then(data => {
+                        addBidHistory('❌ 입찰 요청 실패: ' + (data.msg || data.message), 'broadcast');
+                    }).catch(() => {
+                        addBidHistory('❌ 입찰 요청 실패 (서버 오류)', 'broadcast');
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                addBidHistory('❌ 입찰 요청 오류: ' + error.message);
+                addBidHistory('❌ 입찰 요청 오류: ' + error.message, 'broadcast');
             });
+    }
+
+    // 현재 입찰 정보 업데이트
+    function updateCurrentBid(bidData) {
+        if (bidData && bidData.price) {
+            document.getElementById('highestBid').textContent = bidData.price.toLocaleString();
+            // 브로드캐스트 데이터에 bidderId가 포함되어 있다고 가정
+            document.getElementById('bidder').textContent = 'User ' + (bidData.bidderId || '?');
+            document.getElementById('bidTime').textContent = new Date(bidData.createDate).toLocaleTimeString();
+        }
+    }
+
+    // 입찰 내역에 추가 (개인 알림과 전체 알림을 구분)
+    function addBidHistory(message, type = 'broadcast') {
+        const historyDiv = document.getElementById('bidHistory');
+        const timestamp = new Date().toLocaleTimeString();
+        const newItem = document.createElement('div');
+        newItem.className = 'bid-item';
+
+        let typeClass = '';
+        if (type === 'personal') {
+            typeClass = 'item-personal';
+        } else if (type === 'broadcast') {
+            typeClass = 'item-broadcast';
         }
 
-        // 현재 입찰 정보 업데이트
-        function updateCurrentBid(bidData) {
-            console.log('Updating UI with bid data:', bidData);
-            if (bidData && bidData.price) {
-                document.getElementById('highestBid').textContent = bidData.price.toLocaleString();
-                document.getElementById('bidder').textContent = 'User ' + bidData.bidderId;
-                document.getElementById('bidTime').textContent = new Date(bidData.createDate).toLocaleTimeString();
-            } else {
-                console.error('bidData.price가 없습니다:', bidData);
-                addBidHistory('❌ 입찰 데이터 형식 오류');
-            }
+        newItem.innerHTML = `<span class="${typeClass}">[${type === 'personal' ? '개인' : '전체'}]</span> <strong>${timestamp}</strong> - ${message}`;
+
+        historyDiv.appendChild(newItem);
+        historyDiv.scrollTop = historyDiv.scrollHeight;
+    }
+
+    // 이벤트 리스너
+    document.getElementById('connect').addEventListener('click', connect);
+    document.getElementById('disconnect').addEventListener('click', disconnect);
+    document.getElementById('subscribe').addEventListener('click', subscribeToProduct);
+    document.getElementById('placeBid').addEventListener('click', placeBid);
+
+    // Enter 키로 입찰하기
+    document.getElementById('bidAmount').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            placeBid();
         }
+    });
 
-        // 입찰 내역에 추가
-        function addBidHistory(message) {
-            const historyDiv = document.getElementById('bidHistory');
-            const timestamp = new Date().toLocaleTimeString();
-            const newItem = document.createElement('div');
-            newItem.className = 'bid-item';
-            newItem.innerHTML = '<strong>' + timestamp + '</strong> - ' + message;
-            historyDiv.appendChild(newItem);
-            historyDiv.scrollTop = historyDiv.scrollHeight;
-        }
-
-        // 이벤트 리스너
-        document.getElementById('connect').addEventListener('click', connect);
-        document.getElementById('disconnect').addEventListener('click', disconnect);
-        document.getElementById('subscribe').addEventListener('click', subscribeToProduct);
-        document.getElementById('placeBid').addEventListener('click', placeBid);
-
-        // Enter 키로 입찰하기
-        document.getElementById('bidAmount').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                placeBid();
-            }
-        });
-
-        // 페이지 로드시 안내
-        addBidHistory('🎯 실시간 입찰 테스트 페이지입니다.');
-        addBidHistory('1. 먼저 "연결" 버튼을 클릭하세요.');
-        addBidHistory('2. 상품 ID를 입력하고 "구독" 버튼을 클릭하세요.');
-        addBidHistory('3. 입찰 금액을 입력하고 "입찰하기" 버튼을 클릭하세요.');
-        addBidHistory('4. 다른 탭에서도 같은 상품을 구독하면 실시간 업데이트를 확인할 수 있습니다!');
-    </script>
+    // 페이지 로드시 안내
+    addBidHistory('🎯 실시간 경매 테스트 페이지입니다.', 'broadcast');
+    addBidHistory('1. 먼저 "연결" 버튼을 클릭하세요.', 'broadcast');
+    addBidHistory('2. 상품 ID를 입력하고 "구독" 버튼을 클릭하세요.', 'broadcast');
+    addBidHistory('3. 입찰 금액을 입력하고 "입찰하기" 버튼을 클릭하여 개인 알림을 확인하세요.', 'broadcast');
+</script>
 </body>
 </html>

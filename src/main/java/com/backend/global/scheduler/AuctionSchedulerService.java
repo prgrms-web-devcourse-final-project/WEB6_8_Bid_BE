@@ -1,6 +1,7 @@
 package com.backend.global.scheduler;
 
 import com.backend.domain.bid.repository.BidRepository;
+import com.backend.domain.notification.service.AuctionNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.global.webSocket.service.WebSocketService;
@@ -22,6 +23,7 @@ public class AuctionSchedulerService {
     private final EntityManager entityManager;
     private final BidRepository bidRepository;
     private final WebSocketService webSocketService;
+    private final AuctionNotificationService auctionNotificationService;
 
     //  매분마다 실행되어 종료된 경매들을 확인하고 낙찰 처리
     @Scheduled(fixedRate = 60000) // 1분마다 실행
@@ -41,6 +43,42 @@ public class AuctionSchedulerService {
 
         for (Product product : endedAuctions) {
             processAuctionEnd(product);
+        }
+    }
+
+    // 매분마다 실행되어 10분 후 종료 예정인 경매들에 종료 임박 알림 전송
+    @Scheduled(fixedRate = 60000) // 1분마다 실행
+    @Transactional
+    public void processAuctionsEndingSoon() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime tenMinutesLater = now.plusMinutes(10);
+        
+        // 10분 후 종료 예정인 BIDDING 상태 경매들 조회 (정확히 10분 전 알림을 위해 1분 범위로 조회)
+        List<Product> endingSoonAuctions = entityManager.createQuery(
+                "SELECT p FROM Product p WHERE p.endTime BETWEEN :tenMinutesLater AND :elevenMinutesLater AND p.status = :status", 
+                Product.class)
+                .setParameter("tenMinutesLater", tenMinutesLater)
+                .setParameter("elevenMinutesLater", tenMinutesLater.plusMinutes(1))
+                .setParameter("status", AuctionStatus.BIDDING.getDisplayName())
+                .getResultList();
+
+        log.info("종료 임박 경매 {}건을 처리합니다.", endingSoonAuctions.size());
+
+        for (Product product : endingSoonAuctions) {
+            processAuctionEndingSoon(product);
+        }
+    }
+
+    // 상품 구독하고 있는 개별 사용자들에게 브로드캐스트 알림 전송
+    private void processAuctionEndingSoon(Product product) {
+        try {
+            webSocketService.broadcastAuctionEndingSoon(product.getId(), product.getProductName());
+            log.info("상품 ID: {} ({})에 대해 종료 임박 브로드캐스트 알림을 전송했습니다.",
+                    product.getId(), product.getProductName());
+
+        } catch (Exception e) {
+            log.error("경매 종료 임박 처리 중 오류 발생. 상품 ID: {}, 오류: {}",
+                    product.getId(), e.getMessage(), e);
         }
     }
 
