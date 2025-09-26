@@ -105,6 +105,38 @@ public class MemberService {
         return new RsData<>("200-1", "내 정보가 조회되었습니다.", responseDto);
     }
 
+    public RsData<MemberMyInfoResponseDto> modify(String email, MemberModifyRequestDto memberModifyRequestDto, MultipartFile profileImage) {
+        Member member = findMemberByEmail(email);
+
+        String profileImageUrl = "";
+        if (profileImage != null && !profileImage.isEmpty()) {
+            profileImageUrl = fileService.uploadFile(profileImage, "member");
+        }
+
+        member.updateProfile(
+                memberModifyRequestDto.nickname(),
+                profileImageUrl,
+                memberModifyRequestDto.phoneNumber(),
+                memberModifyRequestDto.address()
+        );
+
+        Member modifiedMember = memberRepository.save(member);
+
+        MemberMyInfoResponseDto responseDto = new MemberMyInfoResponseDto(
+                modifiedMember.getId(),
+                modifiedMember.getEmail(),
+                modifiedMember.getNickname(),
+                modifiedMember.getPhoneNumber(),
+                modifiedMember.getAddress(),
+                modifiedMember.getProfileImageUrl(),
+                modifiedMember.getCreditScore(),
+                modifiedMember.getCreateDate(),
+                modifiedMember.getModifyDate()
+        );
+
+        return new RsData<>("200-4", "내 정보가 수정되었습니다.", responseDto);
+    }
+
     private void checkEmailDuplication(String email) {
         if (memberRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException("이미 사용중인 이메일입니다.");
