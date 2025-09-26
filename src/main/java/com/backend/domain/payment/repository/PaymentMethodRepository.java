@@ -15,6 +15,9 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Lo
     // 같은 회원 내 별칭(alias) 중복 여부 확인..
     boolean existsByMemberAndAlias(Member member, String alias);
 
+    // 나 자신은 빼고 동일 별칭을 쓰는 다른 수단이 있나?(현재 수정 대상 id 제외)
+    boolean existsByMemberAndAliasAndIdNot(Member member, String alias, Long id);
+
     // 회원의 기본 수단 찾기..
     Optional<PaymentMethod> findFirstByMemberAndIsDefaultTrue(Member member);
 

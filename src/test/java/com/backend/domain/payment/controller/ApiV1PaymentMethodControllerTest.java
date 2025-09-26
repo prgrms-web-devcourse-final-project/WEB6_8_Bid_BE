@@ -3,6 +3,7 @@ package com.backend.domain.payment.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.global.security.JwtUtil;
@@ -18,9 +19,9 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -123,4 +124,118 @@ class ApiV1PaymentMethodControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("PUT(CARD): 카드 필드만 수정 성공 (교차타입 미포함)")
+    void edit_card_success() throws Exception {
+        // given: 카드 하나 만들고 id 확보
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+        PaymentMethodCreateRequest c = new PaymentMethodCreateRequest();
+        c.setType("CARD"); c.setAlias("수정대상"); c.setIsDefault(false);
+        c.setBrand("KB"); c.setLast4("1111"); c.setExpMonth(1); c.setExpYear(2030);
+        PaymentMethodResponse saved = paymentMethodService.create(memberId, c);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("경조/여행 전용");
+        req.setIsDefault(true);
+        req.setBrand("SHINHAN");
+        req.setLast4("2222");
+        req.setExpMonth(5);
+        req.setExpYear(2035);
+
+        mvc.perform(put("/api/v1/paymentMethods/{id}", saved.getId())
+                        .header("Authorization", bearer("user1@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(om.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(saved.getId()))
+                .andExpect(jsonPath("$.type").value("CARD"))
+                .andExpect(jsonPath("$.alias").value("경조/여행 전용"))
+                .andExpect(jsonPath("$.brand").value("SHINHAN"))
+                .andExpect(jsonPath("$.last4").value("2222"))
+                .andExpect(jsonPath("$.expMonth").value(5))
+                .andExpect(jsonPath("$.expYear").value(2035))
+                // 반대 타입 필드는 null 유지
+                .andExpect(jsonPath("$.bankName").doesNotExist())
+                .andExpect(jsonPath("$.bankCode").doesNotExist())
+                .andExpect(jsonPath("$.acctLast4").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("PUT(CARD): BANK 필드가 포함되면 400")
+    void edit_card_with_bank_fields_badRequest() throws Exception {
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+        PaymentMethodCreateRequest c = new PaymentMethodCreateRequest();
+        c.setType("CARD"); c.setAlias("수정대상"); c.setIsDefault(false);
+        c.setBrand("KB"); c.setLast4("1111"); c.setExpMonth(1); c.setExpYear(2030);
+        PaymentMethodResponse saved = paymentMethodService.create(memberId, c);
+
+        // 교차 타입 필드 포함
+        String body = """
+            {
+              "alias": "변경시도",
+              "bankName": "KB국민은행"
+            }
+            """;
+
+        mvc.perform(put("/api/v1/paymentMethods/{id}", saved.getId())
+                        .header("Authorization", bearer("user1@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT(BANK): 은행 필드만 수정 성공")
+    void edit_bank_success() throws Exception {
+        Long memberId = memberRepository.findByEmail("user1@example.com").orElseThrow().getId();
+        // given: BANK 생성
+        PaymentMethodCreateRequest b = new PaymentMethodCreateRequest();
+        b.setType("BANK"); b.setAlias("급여통장"); b.setIsDefault(false);
+        b.setBankCode("004"); b.setBankName("KB국민은행"); b.setAcctLast4("5678");
+        PaymentMethodResponse saved = paymentMethodService.create(memberId, b);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("월급통장");
+        req.setIsDefault(false);
+        req.setBankCode("088");
+        req.setBankName("신한");
+        req.setAcctLast4("9999");
+
+        mvc.perform(put("/api/v1/paymentMethods/{id}", saved.getId())
+                        .header("Authorization", bearer("user1@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(om.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(saved.getId()))
+                .andExpect(jsonPath("$.type").value("BANK"))
+                .andExpect(jsonPath("$.alias").value("월급통장"))
+                .andExpect(jsonPath("$.bankCode").value("088"))
+                .andExpect(jsonPath("$.bankName").value("신한"))
+                .andExpect(jsonPath("$.acctLast4").value("9999"))
+                // CARD 필드는 null 유지
+                .andExpect(jsonPath("$.brand").doesNotExist())
+                .andExpect(jsonPath("$.last4").doesNotExist())
+                .andExpect(jsonPath("$.expMonth").doesNotExist())
+                .andExpect(jsonPath("$.expYear").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("PUT: 인증 없이 요청하면 401")
+    void edit_unauthorized() throws Exception {
+        mvc.perform(put("/api/v1/paymentMethods/{id}", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"alias\":\"x\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT: 존재하지 않는 결제수단이면 404")
+    void edit_notFound() throws Exception {
+        // given: 토큰만 유효
+        mvc.perform(put("/api/v1/paymentMethods/{id}", 999999L)
+                        .header("Authorization", bearer("user1@example.com"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"alias\":\"x\"}"))
+                .andExpect(status().isNotFound());
+    }
 }

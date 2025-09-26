@@ -4,6 +4,7 @@ package com.backend.domain.payment.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +27,6 @@ public class ApiV1PaymentMethodController {
     private final MemberRepository memberRepository;
     private final PaymentMethodService paymentMethodService;
 
-    // 결제 수단 등록
     @Operation(summary = "결제 수단 등록", description = "카드, 계좌 등록")
     @PostMapping
     public PaymentMethodResponse create(
@@ -48,7 +48,6 @@ public class ApiV1PaymentMethodController {
         return paymentMethodService.create(memberId, request);
     }
 
-    // 결제 수단 다건 조회..
     @GetMapping
     @Operation(summary = "결제 수단 다건 조회", description = "로그인한 사용자의 결제 수단 목록을 반환합니다.")
     public List<PaymentMethodResponse> list(@AuthenticationPrincipal User user) {
@@ -67,7 +66,6 @@ public class ApiV1PaymentMethodController {
         return paymentMethodService.findAll(memberId);
     }
 
-    // 결제 수단 단건 조회..
     @GetMapping("/{id}")
     @Operation(summary = "결제 수단 단건 조회", description = "로그인한 사용자의 결제 수단 단건을 반환합니다.")
     public PaymentMethodResponse getOne(
@@ -85,5 +83,24 @@ public class ApiV1PaymentMethodController {
         Long memberId = member.getId();
 
         return paymentMethodService.findOne(memberId, paymentMethodId);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "결제 수단 수정", description = "CARD 수정: alias, isDefault, brand, last4, expMonth, expYear만 보내고 bankCode, bankName, acctLast4는 삭제\n\n" +
+            "BANK 수정: alias, isDefault, bankCode(선택), bankName, acctLast4만 보내고 brand, last4, expMonth, expYear는 삭제")
+    public PaymentMethodResponse edit(
+            @AuthenticationPrincipal User user,
+            @PathVariable("id") Long paymentMethodId,
+            @RequestBody PaymentMethodEditRequest request
+    ) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        String email = user.getUsername();
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."));
+
+        return paymentMethodService.edit(member.getId(), paymentMethodId, request);
     }
 }

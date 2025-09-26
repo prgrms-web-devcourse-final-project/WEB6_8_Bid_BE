@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.constant.PaymentMethodType;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
@@ -42,6 +43,35 @@ class PaymentMethodServiceTest {
     @BeforeEach
     void setUp() {
         member = Member.builder().id(1L).email("test@example.com").build();
+    }
+
+    private PaymentMethod cardEntity(Long id, Member m) {
+        PaymentMethod e = PaymentMethod.builder()
+                .member(m)
+                .type(PaymentMethodType.CARD)
+                .alias("카드별칭")
+                .isDefault(false)
+                .brand("VISA")
+                .last4("1111")
+                .expMonth(12)
+                .expYear(2030)
+                .build();
+        ReflectionTestUtils.setField(e, "id", id);   // ★ id 주입
+        return e;
+    }
+
+    private PaymentMethod bankEntity(Long id, Member m) {
+        PaymentMethod e = PaymentMethod.builder()
+                .member(m)
+                .type(PaymentMethodType.BANK)
+                .alias("계좌별칭")
+                .isDefault(false)
+                .bankCode("004")
+                .bankName("KB")
+                .acctLast4("4321")
+                .build();
+        ReflectionTestUtils.setField(e, "id", id);   // ★ id 주입
+        return e;
     }
 
     private PaymentMethodCreateRequest baseReq(String type) {
@@ -388,6 +418,185 @@ class PaymentMethodServiceTest {
 
         verify(memberRepository, times(1)).findById(memberId);
         verify(paymentMethodRepository, times(1)).findByIdAndMember(methodId, member);
+    }
+
+    @Test
+    @DisplayName("CARD: 카드 필드만 부분 수정, BANK 필드는 null로 보장")
+    void edit_card_success_updateCardFields() {
+        // given
+        PaymentMethod entity = cardEntity(10L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+                .thenReturn(false);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("경조/여행 전용");
+        req.setIsDefault(true);
+        req.setBrand("SHINHAN");
+        req.setLast4("2222");
+        req.setExpMonth(5);
+        req.setExpYear(2035);
+        // BANK 필드 미전달 (또는 null)
+
+        // when
+        PaymentMethodResponse res = paymentMethodService.edit(1L, 10L, req);
+
+        // then
+        assertThat(res.getAlias()).isEqualTo("경조/여행 전용");
+        assertThat(res.getIsDefault()).isTrue();
+        assertThat(res.getBrand()).isEqualTo("SHINHAN");
+        assertThat(res.getLast4()).isEqualTo("2222");
+        assertThat(res.getExpMonth()).isEqualTo(5);
+        assertThat(res.getExpYear()).isEqualTo(2035);
+
+        assertThat(res.getBankCode()).isNull();
+        assertThat(res.getBankName()).isNull();
+        assertThat(res.getAcctLast4()).isNull();
+    }
+
+    @Test
+    @DisplayName("CARD: 교차 타입(BANK) 필드가 값으로 오면 400")
+    void edit_card_reject_bankFields() {
+        PaymentMethod entity = cardEntity(10L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setBankName("KB"); // 교차 타입 값
+
+        assertThatThrownBy(() -> paymentMethodService.edit(1L, 10L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode().value())
+                .isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("CARD: BANK 필드가 빈문자/공백이면 무시(정규화)되어 성공")
+    void edit_card_blank_bankFields_areIgnored() {
+        PaymentMethod entity = cardEntity(10L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+                .thenReturn(false);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("새 별칭");
+        req.setBankName("   "); // 공백 → null 정규화
+        req.setBankCode("");     // 빈문자 → null 정규화
+
+        PaymentMethodResponse res = paymentMethodService.edit(1L, 10L, req);
+
+        assertThat(res.getAlias()).isEqualTo("새 별칭");
+        // 교차 타입 필드 영향 없음
+        assertThat(res.getBankName()).isNull();
+        assertThat(res.getBankCode()).isNull();
+    }
+
+    @Test
+    @DisplayName("CARD: 별칭 중복이면 400")
+    void edit_card_alias_duplicate() {
+        PaymentMethod entity = cardEntity(10L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(member, "중복", 10L))
+                .thenReturn(true);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("중복");
+
+        assertThatThrownBy(() -> paymentMethodService.edit(1L, 10L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode().value())
+                .isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("CARD: 기본 전환 시 기존 기본 해제")
+    void edit_card_switch_default() {
+        PaymentMethod entity = cardEntity(10L, member);
+        PaymentMethod otherDefault = cardEntity(20L, member);
+        otherDefault.setIsDefault(true);
+
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+                .thenReturn(Optional.of(otherDefault));
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setIsDefault(true);
+
+        PaymentMethodResponse res = paymentMethodService.edit(1L, 10L, req);
+
+        assertThat(res.getIsDefault()).isTrue();
+        assertThat(otherDefault.getIsDefault()).isFalse(); // 기존 기본 해제 확인
+    }
+
+    @Test
+    @DisplayName("BANK: 은행 필드만 부분 수정, CARD 필드는 null로 보장")
+    void edit_bank_success_updateBankFields() {
+        PaymentMethod entity = bankEntity(11L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(11L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+                .thenReturn(false);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("월급통장");
+        req.setIsDefault(false);
+        req.setBankCode("088");
+        req.setBankName("신한");
+        req.setAcctLast4("9999");
+
+        PaymentMethodResponse res = paymentMethodService.edit(1L, 11L, req);
+
+        assertThat(res.getAlias()).isEqualTo("월급통장");
+        assertThat(res.getBankCode()).isEqualTo("088");
+        assertThat(res.getBankName()).isEqualTo("신한");
+        assertThat(res.getAcctLast4()).isEqualTo("9999");
+
+        assertThat(res.getBrand()).isNull();
+        assertThat(res.getLast4()).isNull();
+        assertThat(res.getExpMonth()).isNull();
+        assertThat(res.getExpYear()).isNull();
+    }
+
+    @Test
+    @DisplayName("BANK: 교차 타입(CARD) 필드가 값으로 오면 400")
+    void edit_bank_reject_cardFields() {
+        PaymentMethod entity = bankEntity(11L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(11L, member)).thenReturn(Optional.of(entity));
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setBrand("VISA"); // 교차 타입 값
+
+        assertThatThrownBy(() -> paymentMethodService.edit(1L, 11L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode().value())
+                .isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("BANK: CARD 필드가 빈문자/공백이면 무시(정규화)되어 성공")
+    void edit_bank_blank_cardFields_areIgnored() {
+        PaymentMethod entity = bankEntity(11L, member);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(11L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+                .thenReturn(false);
+
+        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
+        req.setAlias("새 통장");
+        req.setBrand("   "); // 공백 → null 정규화
+        req.setLast4("");    // 빈문자 → null 정규화
+
+        PaymentMethodResponse res = paymentMethodService.edit(1L, 11L, req);
+
+        assertThat(res.getAlias()).isEqualTo("새 통장");
+        // CARD 쪽은 여전히 null
+        assertThat(res.getBrand()).isNull();
+        assertThat(res.getLast4()).isNull();
     }
 }
 
