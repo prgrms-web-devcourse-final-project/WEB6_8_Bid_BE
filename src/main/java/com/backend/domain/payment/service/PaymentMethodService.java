@@ -138,6 +138,20 @@ public class PaymentMethodService {
                 .toList();
     }
 
+    // 결제 수단 단건 조회..
+    @Transactional(readOnly = true)
+    public PaymentMethodResponse findOne(Long memberId, Long paymentMethodId) {
+        // 회원 검증..
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
+
+        // 본인 소유 결제수단만 조회..
+        PaymentMethod entity = paymentMethodRepository.findByIdAndMember(paymentMethodId, member)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
+
+        return toResponse(entity);
+    }
+
     //엔티티 → 응답 DTO 매핑..
     private PaymentMethodResponse toResponse(PaymentMethod e) {
         return PaymentMethodResponse.builder()
@@ -166,6 +180,7 @@ public class PaymentMethodService {
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
+
 
 
 }

@@ -20,4 +20,7 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Lo
 
     // 결제 수단 전체 조회(기본 수단 먼저, 그다음 최신 생성 순)..
     List<PaymentMethod> findAllByMemberOrderByIsDefaultDescCreateDateDesc(Member member);
+
+    // 결제 수단 단건 조회..
+    Optional<PaymentMethod> findByIdAndMember(Long id, Member member);
 }

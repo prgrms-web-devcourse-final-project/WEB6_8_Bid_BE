@@ -7,11 +7,18 @@ import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
+import com.backend.global.exception.ServiceException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,8 +28,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PaymentMethodServiceTest {
 
-    @Mock private PaymentMethodRepository paymentMethodRepository;
-    @Mock private MemberRepository memberRepository;
+    @Mock
+    private PaymentMethodRepository paymentMethodRepository;
+
+    @Mock
+    private MemberRepository memberRepository;
 
     @InjectMocks
     private PaymentMethodService paymentMethodService;
@@ -285,4 +295,99 @@ class PaymentMethodServiceTest {
         verify(paymentMethodRepository).save(captor.capture());
         assertThat(captor.getValue().getIsDefault()).isTrue();
     }
+
+    @Test
+    @DisplayName("내 결제수단 단건 조회")
+    void success() {
+        // given
+        Long memberId = 1L;
+        Long methodId = 12L;
+
+        Member member = Member.builder()
+                .id(memberId)
+                .email("me@example.com")
+                .build();
+
+        PaymentMethod entity = PaymentMethod.builder()
+                .member(member)
+                .type(PaymentMethodType.CARD) // CARD | BANK
+                .alias("결혼식 카드")
+                .brand("SHINHAN")
+                .last4("1234")
+                .expMonth(12)
+                .expYear(2027)
+                .isDefault(true)
+                .build();
+
+        OffsetDateTime odt = OffsetDateTime.parse("2025-09-23T12:34:56Z");
+        LocalDateTime ldt = odt.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+
+        ReflectionTestUtils.setField(entity, "id", methodId);
+        ReflectionTestUtils.setField(entity, "createDate", ldt);
+        ReflectionTestUtils.setField(entity, "modifyDate", ldt);
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(methodId, member)).thenReturn(Optional.of(entity));
+
+        // when
+        PaymentMethodResponse res = paymentMethodService.findOne(memberId, methodId);
+
+        // then (필요한 핵심 필드만 검증)
+        assertThat(res.getId()).isEqualTo(methodId);
+        assertThat(res.getType()).isEqualTo("CARD");
+        assertThat(res.getAlias()).isEqualTo("결혼식 카드");
+
+        verify(memberRepository, times(1)).findById(memberId);
+        verify(paymentMethodRepository, times(1)).findByIdAndMember(methodId, member);
+    }
+
+    @Test
+    @DisplayName("회원이 존재하지 않으면 404")
+    void memberNotFound() {
+        // given
+        Long memberId = 1L;
+        Long methodId = 12L;
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> paymentMethodService.findOne(memberId, methodId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(rse.getReason()).contains("회원이 존재하지 않습니다.");
+                });
+
+        verify(memberRepository, times(1)).findById(memberId);
+        verify(paymentMethodRepository, never()).findByIdAndMember(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("본인 소유 결제수단이 아니거나 없으면 404")
+    void paymentMethodNotFoundForMember() {
+        // given
+        Long memberId = 1L;
+        Long methodId = 99L;
+
+        Member member = Member.builder()
+                .id(memberId)
+                .email("me@example.com")
+                .build();
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findByIdAndMember(methodId, member)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> paymentMethodService.findOne(memberId, methodId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(rse.getReason()).contains("결제 수단을 찾을 수 없습니다.");
+                });
+
+        verify(memberRepository, times(1)).findById(memberId);
+        verify(paymentMethodRepository, times(1)).findByIdAndMember(methodId, member);
+    }
 }
+
