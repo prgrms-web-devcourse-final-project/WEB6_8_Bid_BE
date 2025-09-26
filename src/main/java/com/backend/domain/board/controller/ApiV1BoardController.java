@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/boards")
-@Tag(name = "게시글", description = "게시글 작성, 조회, 수정, 삭제 관련 API")
+@Tag(name = "Board", description = "게시글 관련 API")
 public class ApiV1BoardController {
 
     private final BoardService boardService;

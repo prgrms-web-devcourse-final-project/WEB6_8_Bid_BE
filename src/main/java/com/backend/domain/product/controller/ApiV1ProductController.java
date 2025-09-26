@@ -1,7 +1,6 @@
 package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.dto.*;
 import com.backend.domain.product.entity.Product;

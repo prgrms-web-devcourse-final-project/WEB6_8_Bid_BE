@@ -4,6 +4,7 @@ import com.backend.domain.member.dto.*;
 import com.backend.domain.member.service.MemberService;
 import com.backend.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @Controller
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+@Tag(name = "Member", description = "회원 관련 API")
 public class ApiV1MemberController {
     private final MemberService memberService;
 
