@@ -4,6 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.constant.PaymentMethodType;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
@@ -152,10 +153,120 @@ public class PaymentMethodService {
         return toResponse(entity);
     }
 
+    // 결제 수단 수정 - 타입 변경 불가...
+    @Transactional
+    public PaymentMethodResponse edit(Long memberId, Long paymentMethodId, PaymentMethodEditRequest req) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
+        PaymentMethod entity = paymentMethodRepository.findByIdAndMember(paymentMethodId, member)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
+
+        // 문자열 정규화: "" / "  " → null
+        req.setAlias(nvlBlankToNull(req.getAlias()));
+        req.setBrand(nvlBlankToNull(req.getBrand()));
+        req.setLast4(nvlBlankToNull(req.getLast4()));
+        req.setBankCode(nvlBlankToNull(req.getBankCode()));
+        req.setBankName(nvlBlankToNull(req.getBankName()));
+        req.setAcctLast4(nvlBlankToNull(req.getAcctLast4()));
+
+        // 타입 불일치 필드가 들어오면 즉시 400..
+        ensureNoCrossTypeFields(entity.getType(), req);
+
+        // 별칭..
+        if (req.getAlias() != null) {
+            String alias = req.getAlias();
+            if (!alias.isEmpty()
+                    && paymentMethodRepository.existsByMemberAndAliasAndIdNot(member, alias, entity.getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 사용 중인 별명(alias)입니다.");
+            }
+            entity.setAlias(alias.isEmpty() ? null : alias);
+        }
+
+        // 기본 여부..
+        if (req.getIsDefault() != null) {
+            if (Boolean.TRUE.equals(req.getIsDefault())) {
+                paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member)
+                        .ifPresent(pm -> { if (!pm.getId().equals(entity.getId())) pm.setIsDefault(false); });
+                entity.setIsDefault(true);
+            } else {
+                entity.setIsDefault(false);
+            }
+        }
+
+        // 타입별 부분 수정..
+        switch (entity.getType()) {
+            case CARD -> {
+                if (req.getBrand()    != null) entity.setBrand(req.getBrand());
+                if (req.getLast4()    != null) entity.setLast4(req.getLast4());
+                if (req.getExpMonth() != null) entity.setExpMonth(req.getExpMonth());
+                if (req.getExpYear()  != null) entity.setExpYear(req.getExpYear());
+
+                // 최소 필드 유지..
+                if (entity.getBrand() == null || entity.getLast4() == null
+                        || entity.getExpMonth() == null || entity.getExpYear() == null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CARD는 brand, last4, expMonth, expYear가 필요합니다.");
+                }
+
+                // 반대 타입 필드는 항상 null 보장..
+                entity.setBankCode(null);
+                entity.setBankName(null);
+                entity.setAcctLast4(null);
+            }
+            case BANK -> {
+                if (req.getBankCode()  != null) entity.setBankCode(req.getBankCode());
+                if (req.getBankName()  != null) entity.setBankName(req.getBankName());
+                if (req.getAcctLast4() != null) entity.setAcctLast4(req.getAcctLast4());
+
+                if (entity.getBankName() == null || entity.getAcctLast4() == null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "BANK는 bankName, acctLast4가 필요합니다. (bankCode 선택)");
+                }
+
+                // 반대 타입 필드는 항상 null 보장..
+                entity.setBrand(null);
+                entity.setLast4(null);
+                entity.setExpMonth(null);
+                entity.setExpYear(null);
+            }
+        }
+
+        return toResponse(entity);
+    }
+
+    // 타입과 맞지 않는 필드가 요청에 포함되면 400 (빈문자 제외)
+    private void ensureNoCrossTypeFields(PaymentMethodType type, PaymentMethodEditRequest req) {
+        boolean hasCardFields =
+                nvlBlankToNull(req.getBrand()) != null ||
+                        nvlBlankToNull(req.getLast4()) != null ||
+                        req.getExpMonth() != null ||
+                        req.getExpYear()  != null;
+
+        boolean hasBankFields =
+                nvlBlankToNull(req.getBankName())  != null ||
+                        nvlBlankToNull(req.getAcctLast4()) != null ||
+                        nvlBlankToNull(req.getBankCode())  != null;
+
+        if (type == PaymentMethodType.CARD && hasBankFields) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CARD 수단에는 BANK 필드를 수정할 수 없습니다.");
+        }
+        if (type == PaymentMethodType.BANK && hasCardFields) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "BANK 수단에는 CARD 필드를 수정할 수 없습니다.");
+        }
+    }
+
+    // 공백/빈문자 → null
+    private String nvlBlankToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+
     //엔티티 → 응답 DTO 매핑..
     private PaymentMethodResponse toResponse(PaymentMethod e) {
         return PaymentMethodResponse.builder()
                 .id(e.getId())
+
                 .type(e.getType().name())
                 .alias(e.getAlias())
                 .isDefault(e.getIsDefault())
