@@ -69,6 +69,27 @@ public class AuctionSchedulerService {
         }
     }
 
+    // 매분마다 실행되어 시작된 경매들을 확인/처리
+    @Scheduled(fixedRate = 60000) // 1분마다 실행
+    @Transactional
+    public void processStartingAuctions() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 시작 시간이 지났지만 아직 BEFORE_START 상태인 경매들 조회
+        List<Product> startingAuctions = entityManager.createQuery(
+                        "SELECT p FROM Product p WHERE p.startTime <= :now AND p.status = :status",
+                        Product.class)
+                .setParameter("now", now)
+                .setParameter("status", AuctionStatus.BEFORE_START.getDisplayName())
+                .getResultList();
+
+        log.info("시작된 경매 {}건을 처리합니다.", startingAuctions.size());
+
+        for (Product product : startingAuctions) {
+            processAuctionStart(product);
+        }
+    }
+
     // 상품 구독하고 있는 개별 사용자들에게 브로드캐스트 알림 전송
     private void processAuctionEndingSoon(Product product) {
         try {
@@ -112,6 +133,24 @@ public class AuctionSchedulerService {
         } catch (Exception e) {
             log.error("경매 종료 처리 중 오류 발생. 상품 ID: {}, 오류: {}", 
                 product.getId(), e.getMessage(), e);
+        }
+    }
+
+    // 개별 경매 시작 처리
+    private void processAuctionStart(Product product) {
+        try {
+            // 상태 업데이트
+            product.setStatus(AuctionStatus.BIDDING.getDisplayName());
+            log.info("상품 ID: {} ({}) 경매가 시작되었습니다.", product.getId(), product.getProductName());
+
+            // 판매자에게 경매 시작 알림 전송
+            webSocketService.broadcastAuctionStart(product.getId(), product.getProductName());
+
+            entityManager.merge(product);
+
+        } catch (Exception e) {
+            log.error("경매 시작 처리 중 오류 발생. 상품 ID: {}, 오류: {}",
+                    product.getId(), e.getMessage(), e);
         }
     }
 }

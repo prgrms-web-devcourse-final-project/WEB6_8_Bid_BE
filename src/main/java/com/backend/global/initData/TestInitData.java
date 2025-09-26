@@ -128,7 +128,6 @@ public class TestInitData {
         Product product9 = productService.createProduct(member4, requestDto9);
         productService.createProductImage(product9, "/image9_1.jpg");
 
-        product9.setStatus("경매 중");
         bidService.createBid(product9.getId(), member1.getId(), new BidRequestDto(900000L));
         product9.setStatus("낙찰");
         product9.setEndTime(LocalDateTime.now());

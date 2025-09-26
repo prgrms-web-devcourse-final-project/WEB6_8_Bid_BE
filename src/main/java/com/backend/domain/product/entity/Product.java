@@ -152,23 +152,6 @@ public class Product extends BaseEntity {
         }
     }
 
-    public String getStatus() {
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(startTime)) {
-            status = AuctionStatus.BEFORE_START.getDisplayName();
-        } else if (now.isBefore(endTime)) {
-            status = AuctionStatus.BIDDING.getDisplayName();
-        } else {
-            status = hasWinner() ? AuctionStatus.SUCCESSFUL.getDisplayName() : AuctionStatus.FAILED.getDisplayName();
-        }
-
-        return status;
-    }
-
-    public boolean hasWinner() {
-        return endTime.isBefore(LocalDateTime.now()) && bids != null && !bids.isEmpty();
-    }
-
     public void checkActorCanModify(Member actor) {
         if (!actor.equals(seller)) {
             throw new ServiceException("403", "상품 수정 권한이 없습니다.");
