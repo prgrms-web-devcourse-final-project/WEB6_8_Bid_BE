@@ -5,6 +5,7 @@ import com.backend.domain.payment.constant.PaymentMethodType;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
 
 @Entity
 @Getter
@@ -12,6 +13,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
+// 지우기(delete) 버튼”을 눌러도, 진짜로 종이를 버리는 게 아니라 삭제됨 스티커를 붙여서 서랍에 그대로 보관해 둠..
+@SQLDelete(sql = "UPDATE payment_method SET deleted = true, active = false WHERE id = ?")
 public class PaymentMethod extends BaseEntity {
 
     // 이 결제수단의 주인(누구꺼인지)..
@@ -54,4 +58,14 @@ public class PaymentMethod extends BaseEntity {
     @Column(length = 4)
     private String acctLast4;                                          // 계좌번호 끝 4자리(예: 5678)..
 
+    @Column(length = 32, nullable = false)
+    private String provider;                                          // 어떤 PG를 통해 결제하는지(예: "toss", "iamport")..
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;                                    // 사용 가능 여부(기본은 true)..
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;                                  // 지워진 것처럼 보이게만 하고, 원장/영수증 보존, 추후 정산 이슈 방지를 위해..
 }

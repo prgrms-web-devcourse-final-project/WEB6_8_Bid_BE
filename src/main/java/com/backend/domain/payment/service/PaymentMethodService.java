@@ -50,7 +50,7 @@ public class PaymentMethodService {
 
         // 별칭 중복 검사(별칭이 있을 때만 체크)..
         if (req.getAlias() != null &&
-                paymentMethodRepository.existsByMemberAndAlias(member, req.getAlias())) {
+                paymentMethodRepository.existsByMemberAndAliasAndDeletedFalse(member, req.getAlias())) {
             throw new IllegalArgumentException("이미 사용 중인 별명(alias)입니다.");
         }
 
@@ -59,11 +59,11 @@ public class PaymentMethodService {
         // - 해당 회원의 첫 결제수단인 경우 자동 기본 지정..
         boolean shouldBeDefault =
                 Boolean.TRUE.equals(req.getIsDefault()) ||
-                        paymentMethodRepository.countByMember(member) == 0;
+                        paymentMethodRepository.countByMemberAndDeletedFalse(member) == 0;
 
         // 새로 기본으로 설정할 경우, 기존 기본을 해제..
         if (shouldBeDefault) {
-            paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member)
+            paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member)
                     .ifPresent(pm -> pm.setIsDefault(false));
         }
 
@@ -112,6 +112,7 @@ public class PaymentMethodService {
                 .token(req.getToken())
                 .alias(req.getAlias())
                 .isDefault(shouldBeDefault)
+
                 // 타입별 필드 적용..
                 .brand(brand)
                 .last4(last4)
@@ -120,6 +121,9 @@ public class PaymentMethodService {
                 .bankCode(bankCode)
                 .bankName(bankName)
                 .acctLast4(acctLast4)
+                .provider( nvlBlankToNull(req.getProvider()) )
+                .active(true)
+                .deleted(false)
                 .build();
 
         paymentMethodRepository.save(entity);
@@ -134,7 +138,7 @@ public class PaymentMethodService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
 
         // 기본 수단 우선 → 최신 생성 순으로 정렬해 반환
-        return paymentMethodRepository.findAllByMemberOrderByIsDefaultDescCreateDateDesc(member)
+        return paymentMethodRepository.findAllByMemberAndDeletedFalseOrderByIsDefaultDescCreateDateDesc(member)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -148,7 +152,7 @@ public class PaymentMethodService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
 
         // 본인 소유 결제수단만 조회..
-        PaymentMethod entity = paymentMethodRepository.findByIdAndMember(paymentMethodId, member)
+        PaymentMethod entity = paymentMethodRepository.findByIdAndMemberAndDeletedFalse(paymentMethodId, member)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
 
         return toResponse(entity);
@@ -160,7 +164,7 @@ public class PaymentMethodService {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
-        PaymentMethod entity = paymentMethodRepository.findByIdAndMember(paymentMethodId, member)
+        PaymentMethod entity = paymentMethodRepository.findByIdAndMemberAndDeletedFalse(paymentMethodId, member)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
 
         // 문자열 정규화: "" / "  " → null
@@ -178,7 +182,7 @@ public class PaymentMethodService {
         if (req.getAlias() != null) {
             String alias = req.getAlias();
             if (!alias.isEmpty()
-                    && paymentMethodRepository.existsByMemberAndAliasAndIdNot(member, alias, entity.getId())) {
+                    && paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(member, alias, entity.getId())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 사용 중인 별명(alias)입니다.");
             }
             entity.setAlias(alias.isEmpty() ? null : alias);
@@ -187,7 +191,7 @@ public class PaymentMethodService {
         // 기본 여부..
         if (req.getIsDefault() != null) {
             if (Boolean.TRUE.equals(req.getIsDefault())) {
-                paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member)
+                paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member)
                         .ifPresent(pm -> { if (!pm.getId().equals(entity.getId())) pm.setIsDefault(false); });
                 entity.setIsDefault(true);
             } else {
@@ -269,7 +273,7 @@ public class PaymentMethodService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
 
-        PaymentMethod target = paymentMethodRepository.findByIdAndMember(paymentMethodId, member)
+        PaymentMethod target = paymentMethodRepository.findByIdAndMemberAndDeletedFalse(paymentMethodId, member)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
 
         boolean wasDefault = Boolean.TRUE.equals(target.getIsDefault());
@@ -278,7 +282,7 @@ public class PaymentMethodService {
 
         Long newDefaultId = null;
         if (wasDefault) {
-            newDefaultId = paymentMethodRepository.findFirstByMemberOrderByCreateDateDesc(member)
+            newDefaultId = paymentMethodRepository.findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member)
                     .map(pm -> { pm.setIsDefault(true); return pm.getId(); })
                     .orElse(null);
         }
@@ -300,6 +304,7 @@ public class PaymentMethodService {
                 .alias(e.getAlias())
                 .isDefault(e.getIsDefault())
 
+                .provider(e.getProvider())
                 .brand(e.getBrand())
                 .last4(e.getLast4())
                 .expMonth(e.getExpMonth())

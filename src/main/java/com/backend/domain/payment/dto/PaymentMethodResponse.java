@@ -16,6 +16,7 @@ public class PaymentMethodResponse {
     private final String type;       // "CARD" / "BANK"..
     private final String alias;      // 별명..
     private final Boolean isDefault; // 자주 사용하는 거 등록..
+    private final String provider;   // PG 제공사(토스/아임포트 등)..
 
     // 카드 전용..
     private final String brand;      // 카드 브랜드(예: SHINHAN)..
