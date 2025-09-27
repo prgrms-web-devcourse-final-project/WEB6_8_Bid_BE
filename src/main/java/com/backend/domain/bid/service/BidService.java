@@ -180,18 +180,6 @@ public class BidService {
         return new RsData<>("200","내 입찰 내역이 조회되었습니다.",response);
     }
 
-    private Map<Long, Long> getCurrentPrices(Set<Long> productIds) {
-        if(productIds.isEmpty()){
-            return Map.of();
-        }
-        List<Object[]> results = bidRepository.findCurrentPricesForProducts(productIds);
-
-        return results.stream().collect(Collectors.toMap(
-                row -> (Long) row[0],
-                row -> (Long) row[1]
-        ));
-    }
-
     private void validateBid(Product product,Member member, Long bidPrice){
         // 1. 상품 존재 확인
         if(product == null){

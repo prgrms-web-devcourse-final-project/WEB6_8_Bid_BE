@@ -7,12 +7,14 @@ import com.backend.domain.notification.service.NotificationService;
 import com.backend.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Notification", description = "알림 관련 API")
@@ -34,9 +36,10 @@ public class ApiV1NotificationController {
     public RsData<NotificationListResponseDto> getNotifications(
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기", example = "10") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "읽음 상태 필터 (true: 읽음, false: 안읽음, null: 전체)", example = "false") @RequestParam(required = false) Boolean isRead
+            @Parameter(description = "읽음 상태 필터 (true: 읽음, false: 안읽음, null: 전체)", example = "false") @RequestParam(required = false) Boolean isRead,
+            @Parameter(hidden = true) @AuthenticationPrincipal User user
     ) {
-        Long memberId = getCurrentMemberId();
+        Long memberId = getCurrentMemberId(user);
         return notificationService.getNotifications(memberId, page, size, isRead);
     }
 
@@ -51,8 +54,9 @@ public class ApiV1NotificationController {
     })
     @PutMapping("/{id}/read")
     public RsData<Void> markAsRead(
-            @Parameter(description = "알림 ID", required = true) @PathVariable Long id) {
-        Long memberId = getCurrentMemberId();
+            @Parameter(description = "알림 ID", required = true) @PathVariable Long id,
+            @Parameter(hidden = true) @AuthenticationPrincipal User user) {
+        Long memberId = getCurrentMemberId(user);
         return notificationService.markAsRead(id, memberId);
     }
 
@@ -64,8 +68,8 @@ public class ApiV1NotificationController {
             content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     @PutMapping("/read-all")
-    public RsData<Integer> markAllAsRead() {
-        Long memberId = getCurrentMemberId();
+    public RsData<Integer> markAllAsRead(@Parameter(hidden = true) @AuthenticationPrincipal User user) {
+        Long memberId = getCurrentMemberId(user);
         return notificationService.markAllAsRead(memberId);
     }
 
@@ -77,14 +81,19 @@ public class ApiV1NotificationController {
             content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     @GetMapping("/unread-count")
-    public RsData<Integer> getUnreadCount() {
-        Long memberId = getCurrentMemberId();
+    public RsData<Integer> getUnreadCount(@Parameter(hidden = true) @AuthenticationPrincipal User user) {
+        Long memberId = getCurrentMemberId(user);
         return notificationService.getUnreadCount(memberId);
     }
 
-    private Long getCurrentMemberId() {
-        Member member = memberRepository.findAll().stream().findFirst()
-                .orElseThrow(() -> new RuntimeException("멤버가 존재하지 않습니다."));
-        return member.getId();
+    private Long getCurrentMemberId(User user) {
+        if (user != null) {
+            return Long.parseLong(user.getUsername());
+        } else {
+            // 테스트용: 인증이 없으면 첫 번째 사용자 사용
+            Member member = memberRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("멤버가 존재하지 않습니다."));
+            return member.getId();
+        }
     }
 }
