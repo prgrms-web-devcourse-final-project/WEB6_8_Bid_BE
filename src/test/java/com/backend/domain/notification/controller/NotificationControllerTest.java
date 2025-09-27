@@ -11,13 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
 
@@ -29,14 +29,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@WithMockUser
 class NotificationControllerTest {
 
-    private MockMvc mockMvc;
-
     @Autowired
-    private WebApplicationContext webApplicationContext;
+    private MockMvc mockMvc;
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -58,9 +58,6 @@ class NotificationControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(webApplicationContext)
-                .build();
         setupTestData();
     }
 
@@ -75,10 +72,10 @@ class NotificationControllerTest {
                 .findFirst()
                 .orElse(products.get(0)); // 첫 번째 상품
 
-        // 기존 알림 데이터 정리 (혹시 있을 수 있는 기존 데이터)
+        // 기존 데이터 정리
         notificationRepository.deleteAll();
 
-        // 읽은 알림 생성
+        // 알림 생성
         readNotification = new Notification(
                 testProduct.getProductName() + " 상품에 새로운 입찰이 등록되었습니다.",
                 "BID_SUCCESS",
@@ -88,7 +85,6 @@ class NotificationControllerTest {
         );
         notificationRepository.save(readNotification);
 
-        // 읽지 않은 알림 1
         unreadNotification1 = new Notification(
                 testProduct.getProductName() + " 상품에서 새로운 입찰이 들어와 밀렸습니다.",
                 "BID_OUTBID",
@@ -98,7 +94,6 @@ class NotificationControllerTest {
         );
         notificationRepository.save(unreadNotification1);
 
-        // 읽지 않은 알림 2
         unreadNotification2 = new Notification(
                 "축하합니다! " + testProduct.getProductName() + " 상품을 낙찰받았습니다!",
                 "AUCTION_WON",
@@ -309,13 +304,13 @@ class NotificationControllerTest {
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().isOk()); // Spring Boot는 음수 페이지를 0으로 처리
+                .andExpect(jsonPath("$.resultCode").value("400-1"));
     }
 
     @Test
-    @DisplayName("다른 사용자의 알림은 조회되지 않음 확인")
+    @DisplayName("다른 사용자의 알림은 조회되지 않음")
     void getNotifications_OnlyOwnNotifications() throws Exception {
-        // Given - 다른 사용자의 알림 생성
+        // 다른 사용자의 알림 생성
         Member otherMember = memberRepository.findByNickname("입찰자2").get();
         List<Product> products = productRepository.findAll();
         Product anotherProduct = products.size() > 1 ? products.get(1) : products.get(0);
@@ -329,7 +324,7 @@ class NotificationControllerTest {
         );
         notificationRepository.save(otherUserNotification);
 
-        // When & Then - 현재 테스트 멤버의 알림만 조회됨
+        // 현재 테스트 멤버의 알림만 조회됨
         mockMvc.perform(get("/notifications")
                         .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")

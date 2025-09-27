@@ -60,22 +60,21 @@ class ApiV1BidControllerTest {
     }
 
     private Product getTestProduct() {
-        // TestInitData에서 생성된 상품들 중 입찰이 있는 상품 사용 (ID로 찾기)
-        // TestInitData에서 product4에 입찰이 있음
+        // TestInitData에서 생성된 상품들 중 입찰이 있는 상품
         List<Product> products = productRepository.findAll();
         return products.stream()
                 .filter(p -> p.getProductName().contains("아이폰 15 Pro 256GB"))
                 .findFirst()
-                .orElse(products.get(3)); // 4번째 상품 (ID 기준)
+                .orElse(products.get(3));
     }
 
     private Product getActiveProduct() {
-        // TestInitData에서 생성된 첫 번째 상품 사용 (경매 중)
+        // TestInitData에서 생성된 첫 번째 상품 사용
         List<Product> products = productRepository.findAll();
         return products.stream()
                 .filter(p -> p.getProductName().contains("iPhone 15 Pro"))
                 .findFirst()
-                .orElse(products.get(0)); // 첫 번째 상품
+                .orElse(products.get(0));
     }
 
     @Test
