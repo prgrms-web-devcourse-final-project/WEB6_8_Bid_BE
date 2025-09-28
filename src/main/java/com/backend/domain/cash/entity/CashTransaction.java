@@ -14,7 +14,7 @@ import lombok.*;
 public class CashTransaction extends BaseEntity {
 
     // 어떤 지갑의 거래인가요?
-    @ManyToOne(fetch = FetchType.LAZY)                    // 한 지갑에 거래가 여러 줄(여러 개)..
+    @ManyToOne(fetch = FetchType.LAZY)                    // 한 지갑에 거래가 여러개..
     @JoinColumn(name = "cash_id", nullable = false)
     private Cash cash;
 
@@ -28,12 +28,13 @@ public class CashTransaction extends BaseEntity {
     private Long amount;
 
     @Column(nullable = false)
-    private Long balanceAfter;                            // 이 거래가 끝난 "직후" 잔액..
+    private Long balanceAfter;                            // 이 거래가 끝난 직후 잔액..
 
     // 왜 돈이 들어오고/나갔는지? (추적용)..
-    @Column(length = 30)
-    private String relatedType;                           // 예: "PAYMENT", "BID", "REFUND"...
+    @Column(length = 32, nullable=false)
+    private String relatedType;                           // 예: "PAYMENT", "BID"..
 
+    @Column(nullable=false)
     private Long relatedId;                               // 예: 결제ID, 입찰ID 등..
 
 }

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>Payments Demo (HTML/JS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+        body { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+        h2 { margin-top: 32px; }
+        .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 16px 0; }
+        .row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; margin: 8px 0; align-items: center; }
+        input, select, button, textarea { padding: 10px; font-size: 14px; }
+        button { cursor: pointer; }
+        code, pre { background: #fafafa; border: 1px solid #eee; padding: 8px; display: block; overflow: auto; }
+        .muted { color: #666; font-size: 12px; }
+        .ok { color: #0a7c2f; }
+        .err { color: #c62828; white-space: pre-wrap; }
+        .flex { display: flex; gap: 8px; align-items: center; }
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    </style>
+</head>
+<body>
+
+<h1>Payments Demo</h1>
+
+<div class="card">
+    <div class="row">
+        <label>API Base URL</label>
+        <input id="apiBase" value="http://localhost:8080/api/v1"> <!-- ← 네 서버 주소로! -->
+    </div>
+    <div class="row">
+        <label>Bearer Token</label>
+        <input id="bearer" placeholder="로그인으로 받은 accessToken 붙여 넣기"> <!-- ← 로그인 후 토큰 -->
+    </div>
+    <div class="row">
+        <label></label>
+        <button id="btnPing">상태 확인(GET /paymentMethods)</button> <!-- ← CORS/토큰 체크 -->
+    </div>
+    <div id="pingOut" class="muted"></div>
+</div>
+
+<h2>1) 결제수단 등록 (POST /paymentMethods)</h2>
+<div class="card">
+    <div class="grid2">
+        <div class="row">
+            <label>type</label>
+            <select id="pmType">
+                <option value="CARD">CARD</option>
+                <option value="BANK">BANK</option>
+            </select> <!-- 수단 타입 -->
+        </div>
+        <div class="row">
+            <label>provider</label>
+            <input id="pmProvider" value="toss"> <!-- PG 식별자 -->
+        </div>
+
+        <div class="row">
+            <label>alias</label>
+            <input id="pmAlias" value="메인카드"> <!-- 별칭 -->
+        </div>
+        <div class="row">
+            <label>isDefault</label>
+            <select id="pmDefault"><option>true</option><option>false</option></select> <!-- 기본 수단 여부 -->
+        </div>
+
+        <!-- 카드 전용 -->
+        <div class="row">
+            <label>brand (CARD)</label>
+            <input id="pmBrand" value="SHINHAN"> <!-- 카드 브랜드 -->
+        </div>
+        <div class="row">
+            <label>last4 (CARD)</label>
+            <input id="pmLast4" value="1234"> <!-- 카드 끝 4자리 -->
+        </div>
+        <div class="row">
+            <label>expMonth (CARD)</label>
+            <input id="pmExpMonth" type="number" value="12"> <!-- 유효월 -->
+        </div>
+        <div class="row">
+            <label>expYear (CARD)</label>
+            <input id="pmExpYear" type="number" value="2027"> <!-- 유효년 -->
+        </div>
+
+        <!-- 계좌 전용(자동이체/CMS라면) -->
+        <div class="row">
+            <label>bankName (BANK)</label>
+            <input id="pmBankName" placeholder="KB국민은행"> <!-- 은행명 -->
+        </div>
+        <div class="row">
+            <label>acctLast4 (BANK)</label>
+            <input id="pmAcctLast4" placeholder="6789"> <!-- 계좌 끝 4자리 -->
+        </div>
+
+        <!-- 공통 -->
+        <div class="row">
+            <label>token</label>
+            <input id="pmToken" placeholder="PG에서 받은 billingKey"> <!-- 빌링키 -->
+        </div>
+    </div>
+    <div class="row">
+        <label></label>
+        <div class="flex">
+            <button id="btnCreate">등록</button> <!-- 수단 등록 -->
+            <button id="btnList">목록 조회</button> <!-- 내 수단 목록 -->
+        </div>
+    </div>
+    <pre id="pmOut" class="muted"></pre>
+</div>
+
+<h2>2) 충전 (POST /payments)</h2>
+<div class="card">
+    <div class="row">
+        <label>paymentMethodId</label>
+        <input id="payMethodId" placeholder="위에서 받은 수단 ID"> <!-- 사용 수단 ID -->
+    </div>
+    <div class="row">
+        <label>amount</label>
+        <input id="payAmount" type="number" value="50000"> <!-- 충전 금액 -->
+    </div>
+    <div class="row">
+        <label>idempotencyKey</label>
+        <input id="payIdem" placeholder="비워두면 자동 UUID 생성"> <!-- 멱등키 -->
+    </div>
+    <div class="row">
+        <label></label>
+        <div class="flex">
+            <button id="btnIdem">UUID 생성</button> <!-- 멱등키 생성 -->
+            <button id="btnCharge">충전 요청</button> <!-- 결제(충전) -->
+        </div>
+    </div>
+    <pre id="payOut" class="muted"></pre>
+</div>
+
+<script>
+    // --- 작은 유틸 ---
+    const byId = (id) => document.getElementById(id);
+    const out = (el, obj, ok=true) => {
+      el.className = ok ? 'ok' : 'err';
+      el.textContent = (typeof obj === 'string') ? obj : JSON.stringify(obj, null, 2);
+    };
+    const uuidv4 = () =>
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+      }); // 간단 UUID v4
+
+    const headers = () => ({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + byId('bearer').value.trim()
+    }); // 공통 헤더
+
+    // --- 0) 핑/상태 체크 (CORS/토큰) ---
+    byId('btnPing').onclick = async () => {
+      try {
+        const res = await fetch(byId('apiBase').value + '/paymentMethods', { headers: headers() });
+        const json = await res.json();
+        out(byId('pingOut'), json, res.ok);
+      } catch (e) {
+        out(byId('pingOut'), String(e), false);
+      }
+    };
+
+    // --- 1) 결제수단 등록 ---
+    byId('btnCreate').onclick = async () => {
+      const type = byId('pmType').value;
+      const body = {
+        type,                                        // CARD/BANK
+        provider: byId('pmProvider').value.trim(),   // PG 식별자
+        token: byId('pmToken').value.trim(),         // PG 빌링키
+        alias: byId('pmAlias').value.trim(),
+        isDefault: byId('pmDefault').value === 'true'
+      };
+      if (type === 'CARD') {
+        body.brand = byId('pmBrand').value.trim();
+        body.last4 = byId('pmLast4').value.trim();
+        body.expMonth = Number(byId('pmExpMonth').value);
+        body.expYear  = Number(byId('pmExpYear').value);
+      } else { // BANK
+        body.bankName  = byId('pmBankName').value.trim();
+        body.acctLast4 = byId('pmAcctLast4').value.trim();
+      }
+
+      try {
+        const res = await fetch(byId('apiBase').value + '/paymentMethods', {
+          method: 'POST', headers: headers(), body: JSON.stringify(body)
+        });
+        const json = await res.json();
+        out(byId('pmOut'), json, res.ok);
+      } catch (e) {
+        out(byId('pmOut'), String(e), false);
+      }
+    };
+
+    // --- 1-2) 결제수단 목록 ---
+    byId('btnList').onclick = async () => {
+      try {
+        const res = await fetch(byId('apiBase').value + '/paymentMethods', { headers: headers() });
+        const json = await res.json();
+        out(byId('pmOut'), json, res.ok);
+      } catch (e) {
+        out(byId('pmOut'), String(e), false);
+      }
+    };
+
+    // --- 2) 멱등키 생성 ---
+    byId('btnIdem').onclick = () => {
+      byId('payIdem').value = uuidv4(); // 매 결제마다 새 UUID 권장
+    };
+
+    // --- 2) 충전 요청 ---
+    byId('btnCharge').onclick = async () => {
+      const body = {
+        paymentMethodId: Number(byId('payMethodId').value),
+        amount: Number(byId('payAmount').value),
+        idempotencyKey: (byId('payIdem').value.trim() || uuidv4())
+      };
+      try {
+        const res = await fetch(byId('apiBase').value + '/payments', {
+          method: 'POST', headers: headers(), body: JSON.stringify(body)
+        });
+        const json = await res.json();
+        out(byId('payOut'), json, res.ok);
+      } catch (e) {
+        out(byId('payOut'), String(e), false);
+      }
+    };
+</script>
+</body>
+</html>

@@ -17,7 +17,7 @@ public class PaymentResponse {
     private final String methodType;      // "CARD"/"BANK"..
     private final String transactionId;   // PG 트랜잭션 ID..
     private final String createdAt;       // 생성/승인 시각(문자열, Z 유지)..
-    private final String modifyDate;      // 갱신 시각(문자열, Z 유지)..
+    private final String paidAt;          // 성공 승인 시각..
     private final String idempotencyKey;  // 멱등키(그대로 에코)..
 
     private final Long cashTransactionId; // 원장 ID(입금 줄)..

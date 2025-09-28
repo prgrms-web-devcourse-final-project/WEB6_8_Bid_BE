@@ -1,5 +1,8 @@
 package com.backend.domain.payment.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,8 +10,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PaymentRequest {
+
+    @NotNull
     private Long paymentMethodId;  // 결제수단 ID..
+
+    @NotNull
+    @Min(1)
     private Long amount;           // 충전 금액(원)..
-    private String currency;       // 통화(KRW)..
-    private String idempotencyKey; // 멱등키..
+
+    @NotBlank
+    private String idempotencyKey; // 멱등키(재시도 동일키)..
 }

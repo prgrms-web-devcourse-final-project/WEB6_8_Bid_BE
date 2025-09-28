@@ -1,5 +1,6 @@
 package com.backend.domain.payment.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,7 +9,11 @@ import lombok.Setter;
 
 // 결제 수단 등록..
 public class PaymentMethodCreateRequest {
+
+    @NotBlank
     private String type;       // "CARD" 또는 "BANK"...
+
+    @NotBlank
     private String token;      // 결제사 토큰..
     private String alias;      // 별명..
     private Boolean isDefault; // 기본 수단 여부..
@@ -23,4 +28,7 @@ public class PaymentMethodCreateRequest {
     private String bankCode;    // 예: 004
     private String bankName;    // 예: KB국민은행
     private String acctLast4;   // "5678"
+
+    @NotBlank
+    private String provider;    // "toss", "iamport" 등..
 }

@@ -92,9 +92,9 @@ class PaymentMethodServiceTest {
         void createCard_success() {
             // given
             when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-            when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(false);
+            when(paymentMethodRepository.existsByMemberAndAliasAndDeletedFalse(member, "별명1")).thenReturn(false);
             // isDefault=true → shouldBeDefault=true → 기존 기본 해제 시도, 없다고 가정
-            when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+            when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member))
                     .thenReturn(Optional.empty());
             when(paymentMethodRepository.save(any(PaymentMethod.class)))
                     .thenAnswer(inv -> inv.getArgument(0));
@@ -130,9 +130,9 @@ class PaymentMethodServiceTest {
         void createBank_success() {
             // given
             when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-            when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(false);
+            when(paymentMethodRepository.existsByMemberAndAliasAndDeletedFalse(member, "별명1")).thenReturn(false);
             // isDefault=true → 기존 기본 하나 있다고 가정
-            when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+            when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member))
                     .thenReturn(Optional.of(PaymentMethod.builder().member(member).isDefault(true).build()));
             when(paymentMethodRepository.save(any(PaymentMethod.class)))
                     .thenAnswer(inv -> inv.getArgument(0));
@@ -184,7 +184,7 @@ class PaymentMethodServiceTest {
                     .build();
 
             // 정렬된 리스트(기본 수단 먼저)를 그대로 리턴
-            when(paymentMethodRepository.findAllByMemberOrderByIsDefaultDescCreateDateDesc(member))
+            when(paymentMethodRepository.findAllByMemberAndDeletedFalseOrderByIsDefaultDescCreateDateDesc(member))
                     .thenReturn(List.of(defaultCard, bank));
 
             // when
@@ -223,7 +223,7 @@ class PaymentMethodServiceTest {
             assertThat(r2.getExpMonth()).isNull();
             assertThat(r2.getExpYear()).isNull();
 
-            verify(paymentMethodRepository).findAllByMemberOrderByIsDefaultDescCreateDateDesc(member);
+            verify(paymentMethodRepository).findAllByMemberAndDeletedFalseOrderByIsDefaultDescCreateDateDesc(member);
         }
     }
 
@@ -283,7 +283,7 @@ class PaymentMethodServiceTest {
         @DisplayName("별명(alias) 중복 시 예외")
         void aliasDuplicate() {
             when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-            when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(true);
+            when(paymentMethodRepository.existsByMemberAndAliasAndDeletedFalse(member, "별명1")).thenReturn(true);
 
             PaymentMethodCreateRequest req = baseReq("CARD");
             req.setBrand("VISA");
@@ -301,13 +301,13 @@ class PaymentMethodServiceTest {
     @DisplayName("새 기본 결제수단 지정 시 기존 기본 해제")
     void newDefaultUnsetsOldDefault() {
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.existsByMemberAndAlias(member, "별명1")).thenReturn(false);
+        when(paymentMethodRepository.existsByMemberAndAliasAndDeletedFalse(member, "별명1")).thenReturn(false);
         // 기존 기본 존재
         PaymentMethod oldDefault = PaymentMethod.builder()
                 .member(member)
                 .isDefault(true)
                 .build();
-        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member))
                 .thenReturn(Optional.of(oldDefault));
         when(paymentMethodRepository.save(any(PaymentMethod.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
@@ -355,9 +355,8 @@ class PaymentMethodServiceTest {
 
         ReflectionTestUtils.setField(entity, "id", methodId);
         ReflectionTestUtils.setField(entity, "createDate", ldt);
-        ReflectionTestUtils.setField(entity, "modifyDate", ldt);
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(methodId, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(methodId, member)).thenReturn(Optional.of(entity));
 
         // when
         PaymentMethodResponse res = paymentMethodService.findOne(memberId, methodId);
@@ -368,7 +367,7 @@ class PaymentMethodServiceTest {
         assertThat(res.getAlias()).isEqualTo("결혼식 카드");
 
         verify(memberRepository, times(1)).findById(memberId);
-        verify(paymentMethodRepository, times(1)).findByIdAndMember(methodId, member);
+        verify(paymentMethodRepository, times(1)).findByIdAndMemberAndDeletedFalse(methodId, member);
     }
 
     @Test
@@ -390,7 +389,7 @@ class PaymentMethodServiceTest {
                 });
 
         verify(memberRepository, times(1)).findById(memberId);
-        verify(paymentMethodRepository, never()).findByIdAndMember(anyLong(), any());
+        verify(paymentMethodRepository, never()).findByIdAndMemberAndDeletedFalse(anyLong(), any());
     }
 
     @Test
@@ -406,7 +405,7 @@ class PaymentMethodServiceTest {
                 .build();
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(methodId, member)).thenReturn(Optional.empty());
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(methodId, member)).thenReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> paymentMethodService.findOne(memberId, methodId))
@@ -418,7 +417,7 @@ class PaymentMethodServiceTest {
                 });
 
         verify(memberRepository, times(1)).findById(memberId);
-        verify(paymentMethodRepository, times(1)).findByIdAndMember(methodId, member);
+        verify(paymentMethodRepository, times(1)).findByIdAndMemberAndDeletedFalse(methodId, member);
     }
 
     @Test
@@ -427,8 +426,8 @@ class PaymentMethodServiceTest {
         // given
         PaymentMethod entity = cardEntity(10L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(any(), anyString(), anyLong()))
                 .thenReturn(false);
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
@@ -461,7 +460,7 @@ class PaymentMethodServiceTest {
     void edit_card_reject_bankFields() {
         PaymentMethod entity = cardEntity(10L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setBankName("KB"); // 교차 타입 값
@@ -477,8 +476,8 @@ class PaymentMethodServiceTest {
     void edit_card_blank_bankFields_areIgnored() {
         PaymentMethod entity = cardEntity(10L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(any(), anyString(), anyLong()))
                 .thenReturn(false);
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
@@ -499,8 +498,8 @@ class PaymentMethodServiceTest {
     void edit_card_alias_duplicate() {
         PaymentMethod entity = cardEntity(10L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(member, "중복", 10L))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(member, "중복", 10L))
                 .thenReturn(true);
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
@@ -520,8 +519,8 @@ class PaymentMethodServiceTest {
         otherDefault.setIsDefault(true);
 
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(10L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrue(member))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member))
                 .thenReturn(Optional.of(otherDefault));
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
@@ -538,8 +537,8 @@ class PaymentMethodServiceTest {
     void edit_bank_success_updateBankFields() {
         PaymentMethod entity = bankEntity(11L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(11L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(11L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(any(), anyString(), anyLong()))
                 .thenReturn(false);
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
@@ -567,7 +566,7 @@ class PaymentMethodServiceTest {
     void edit_bank_reject_cardFields() {
         PaymentMethod entity = bankEntity(11L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(11L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(11L, member)).thenReturn(Optional.of(entity));
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setBrand("VISA"); // 교차 타입 값
@@ -583,8 +582,8 @@ class PaymentMethodServiceTest {
     void edit_bank_blank_cardFields_areIgnored() {
         PaymentMethod entity = bankEntity(11L, member);
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(11L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.existsByMemberAndAliasAndIdNot(any(), anyString(), anyLong()))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(11L, member)).thenReturn(Optional.of(entity));
+        when(paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(any(), anyString(), anyLong()))
                 .thenReturn(false);
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
@@ -606,7 +605,7 @@ class PaymentMethodServiceTest {
         // given
         PaymentMethod target = cardEntity(34L, member); // 기본 아님
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(34L, member)).thenReturn(Optional.of(target));
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(34L, member)).thenReturn(Optional.of(target));
 
         // when
         PaymentMethodDeleteResponse res = paymentMethodService.deleteAndReport(1L, 34L);
@@ -619,7 +618,7 @@ class PaymentMethodServiceTest {
 
         verify(paymentMethodRepository).delete(target);
         // 기본이 아니므로 승계 조회 호출되지 않음
-        verify(paymentMethodRepository, never()).findFirstByMemberOrderByCreateDateDesc(any());
+        verify(paymentMethodRepository, never()).findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(any());
     }
 
     @Test
@@ -631,8 +630,8 @@ class PaymentMethodServiceTest {
         PaymentMethod successor = bankEntity(57L, member); // 승계 대상
 
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(34L, member)).thenReturn(Optional.of(target));
-        when(paymentMethodRepository.findFirstByMemberOrderByCreateDateDesc(member))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(34L, member)).thenReturn(Optional.of(target));
+        when(paymentMethodRepository.findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member))
                 .thenReturn(Optional.of(successor));
 
         // when
@@ -648,7 +647,7 @@ class PaymentMethodServiceTest {
         assertThat(successor.getIsDefault()).isTrue();
 
         verify(paymentMethodRepository).delete(target);
-        verify(paymentMethodRepository).findFirstByMemberOrderByCreateDateDesc(member);
+        verify(paymentMethodRepository).findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member);
     }
 
     @Test
@@ -659,8 +658,8 @@ class PaymentMethodServiceTest {
         target.setIsDefault(true); // 기본 수단
 
         when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMember(34L, member)).thenReturn(Optional.of(target));
-        when(paymentMethodRepository.findFirstByMemberOrderByCreateDateDesc(member))
+        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(34L, member)).thenReturn(Optional.of(target));
+        when(paymentMethodRepository.findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member))
                 .thenReturn(Optional.empty());
 
         // when
@@ -673,7 +672,7 @@ class PaymentMethodServiceTest {
         assertThat(res.getNewDefaultId()).isNull();
 
         verify(paymentMethodRepository).delete(target);
-        verify(paymentMethodRepository).findFirstByMemberOrderByCreateDateDesc(member);
+        verify(paymentMethodRepository).findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member);
     }
 }
 

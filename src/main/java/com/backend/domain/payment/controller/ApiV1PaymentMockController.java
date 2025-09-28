@@ -190,7 +190,7 @@ public class ApiV1PaymentMockController {
                 .methodType("CARD")
                 .transactionId("pg_tx_abc123")
                 .createdAt("2025-09-23T12:35:10Z")
-                .modifyDate("2025-09-23T12:35:10Z")
+                .paidAt("2025-09-23T12:35:10Z")
                 .idempotencyKey("topup-20250923-uid123-001")
                 .cashTransactionId(98765L)
                 .balanceAfter(155000L)
