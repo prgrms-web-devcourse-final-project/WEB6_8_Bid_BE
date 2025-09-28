@@ -40,7 +40,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         Product product = productService.create(actor, request, images);
 
-        return new RsData<>("201", "상품이 등록되었습니다.", ProductDto.fromEntity(product));
+        return RsData.created("상품이 등록되었습니다.", ProductDto.fromEntity(product));
     }
 
     @GetMapping
@@ -58,8 +58,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery, status);
         Page<Product> products = productService.findBySearchPaged(page, size, sort, search);
 
-        return new RsData<>(
-                "200",
+        return RsData.ok(
                 "상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
                         products.map(ProductListDto::fromEntity)
@@ -72,8 +71,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     public RsData<ProductDto> getProduct(@PathVariable Long productId) {
         Product product = productService.getProductById(productId);
 
-        return new RsData<>(
-                "200",
+        return RsData.ok(
                 "상품이 조회되었습니다.",
                 ProductDto.fromEntity(product)
         );
@@ -95,8 +93,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         productService.modifyProduct(product, request, images, deleteImageIds);
 
-        return new RsData<>(
-                "200",
+        return RsData.ok(
                 "상품이 수정되었습니다.",
                 ProductDto.fromEntity(product)
         );
@@ -115,7 +112,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         productService.deleteProduct(product);
 
-        return new RsData<>("200", "상품이 삭제되었습니다.", null);
+        return RsData.ok("상품이 삭제되었습니다.");
     }
 
     @GetMapping("/me")
@@ -131,8 +128,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
-        return new RsData<>(
-                "200",
+        return RsData.ok(
                 "내 상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
                         products.map(MyProductListDto::fromEntity)
@@ -153,8 +149,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
-        return new RsData<>(
-                "200",
+        return RsData.ok(
                 "%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId),
                 PageDto.fromPage(
                         products.map(ProductListByMemberDto::fromEntity)
