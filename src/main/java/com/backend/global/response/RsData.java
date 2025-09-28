@@ -28,20 +28,4 @@ public record RsData<T>(
     public static <T> RsData<T> created(String msg, T data) {
         return new RsData<>(RsStatus.CREATED.getResultCode(), RsStatus.CREATED.getStatusCode(), msg, data);
     }
-
-    public static <T> RsData<T> fail(String msg, T data) {
-        return new RsData<>(RsStatus.BAD_REQUEST.getResultCode(), RsStatus.BAD_REQUEST.getStatusCode(), msg, data);
-    }
-
-    public static <T> RsData<T> notFound(String message) {
-        return new RsData<>(RsStatus.NOT_FOUND.getResultCode(), RsStatus.NOT_FOUND.getStatusCode(), message, null);
-    }
-
-    public static <T> RsData<T> unauthorized(String message) {
-        return new RsData<>(RsStatus.UNAUTHORIZED.getResultCode(), RsStatus.UNAUTHORIZED.getStatusCode(), message, null);
-    }
-
-    public static <T> RsData<T> forbidden(String message) {
-        return new RsData<>(RsStatus.FORBIDDEN.getResultCode(), RsStatus.FORBIDDEN.getStatusCode(), message, null);
-    }
 }
