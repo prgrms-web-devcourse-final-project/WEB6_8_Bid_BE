@@ -1,4 +1,4 @@
-package com.backend.domain.product.dto;
+package com.backend.domain.product.dto.response.component;
 
 import com.backend.domain.member.entity.Member;
 

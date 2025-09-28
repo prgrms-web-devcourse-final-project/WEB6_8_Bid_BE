@@ -3,6 +3,12 @@ package com.backend.domain.product.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.dto.*;
+import com.backend.domain.product.dto.request.ProductCreateRequest;
+import com.backend.domain.product.dto.request.ProductModifyRequest;
+import com.backend.domain.product.dto.response.MyProductListResponse;
+import com.backend.domain.product.dto.response.ProductListByMemberResponse;
+import com.backend.domain.product.dto.response.ProductListResponse;
+import com.backend.domain.product.dto.response.ProductResponse;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
@@ -31,7 +37,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
-    public RsData<ProductDto> createProduct(
+    public RsData<ProductResponse> createProduct(
             @RequestPart("request") @Valid ProductCreateRequest request,
             @RequestPart("images") List<MultipartFile> images,
             @AuthenticationPrincipal User user
@@ -40,12 +46,12 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         Product product = productService.create(actor, request, images);
 
-        return RsData.created("상품이 등록되었습니다.", ProductDto.fromEntity(product));
+        return RsData.created("상품이 등록되었습니다.", ProductResponse.fromEntity(product));
     }
 
     @GetMapping
     @Transactional(readOnly = true)
-    public RsData<PageDto<ProductListDto>> getProducts(
+    public RsData<PageDto<ProductListResponse>> getProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,
@@ -61,25 +67,25 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         return RsData.ok(
                 "상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
-                        products.map(ProductListDto::fromEntity)
+                        products.map(ProductListResponse::fromEntity)
                 )
         );
     }
 
     @GetMapping("/{productId}")
     @Transactional(readOnly = true)
-    public RsData<ProductDto> getProduct(@PathVariable Long productId) {
+    public RsData<ProductResponse> getProduct(@PathVariable Long productId) {
         Product product = productService.getProductById(productId);
 
         return RsData.ok(
                 "상품이 조회되었습니다.",
-                ProductDto.fromEntity(product)
+                ProductResponse.fromEntity(product)
         );
     }
 
     @PutMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
-    public RsData<ProductDto> modifyProduct(
+    public RsData<ProductResponse> modifyProduct(
             @PathVariable Long productId,
             @RequestPart("request") @Valid ProductModifyRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
@@ -95,7 +101,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         return RsData.ok(
                 "상품이 수정되었습니다.",
-                ProductDto.fromEntity(product)
+                ProductResponse.fromEntity(product)
         );
     }
 
@@ -117,7 +123,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
     @GetMapping("/me")
     @Transactional(readOnly = true)
-    public RsData<PageDto<MyProductListDto>> getMyProducts(
+    public RsData<PageDto<MyProductListResponse>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
@@ -131,14 +137,14 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         return RsData.ok(
                 "내 상품 목록이 조회되었습니다.",
                 PageDto.fromPage(
-                        products.map(MyProductListDto::fromEntity)
+                        products.map(MyProductListResponse::fromEntity)
                 )
         );
     }
 
     @GetMapping("/members/{memberId}")
     @Transactional(readOnly = true)
-    public RsData<PageDto<ProductListByMemberDto>> getProductsByMember(
+    public RsData<PageDto<ProductListByMemberResponse>> getProductsByMember(
             @PathVariable Long memberId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -152,7 +158,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         return RsData.ok(
                 "%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId),
                 PageDto.fromPage(
-                        products.map(ProductListByMemberDto::fromEntity)
+                        products.map(ProductListByMemberResponse::fromEntity)
                 )
         );
     }

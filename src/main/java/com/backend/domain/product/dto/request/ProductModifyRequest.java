@@ -1,4 +1,4 @@
-package com.backend.domain.product.dto;
+package com.backend.domain.product.dto.request;
 
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.fasterxml.jackson.annotation.JsonFormat;

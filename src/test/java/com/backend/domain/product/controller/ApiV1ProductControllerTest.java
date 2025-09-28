@@ -2,8 +2,8 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.product.dto.ProductCreateRequest;
-import com.backend.domain.product.dto.ProductModifyRequest;
+import com.backend.domain.product.dto.request.ProductCreateRequest;
+import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;

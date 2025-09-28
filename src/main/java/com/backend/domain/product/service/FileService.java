@@ -1,6 +1,6 @@
 package com.backend.domain.product.service;
 
-import com.backend.global.exception.ProductException;
+import com.backend.domain.product.exception.ProductException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

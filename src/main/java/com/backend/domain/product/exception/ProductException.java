@@ -1,5 +1,6 @@
-package com.backend.global.exception;
+package com.backend.domain.product.exception;
 
+import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsStatus;
 
 public class ProductException extends ServiceException {

@@ -5,7 +5,7 @@ import com.backend.domain.bid.service.BidService;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.service.MemberService;
-import com.backend.domain.product.dto.ProductCreateRequest;
+import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.service.ProductService;
