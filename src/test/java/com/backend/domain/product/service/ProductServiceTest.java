@@ -406,7 +406,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, deleteImageIds))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-8")
+                .hasFieldOrPropertyWithValue("resultCode", "400-9")
                 .hasFieldOrPropertyWithValue("msg", "이미지가 해당 상품에 속하지 않습니다.");
     }
 

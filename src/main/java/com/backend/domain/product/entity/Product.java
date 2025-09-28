@@ -171,13 +171,13 @@ public class Product extends BaseEntity {
 
     public void checkActorCanModify(Member actor) {
         if (!actor.equals(seller)) {
-            throw new ServiceException("403", "상품 수정 권한이 없습니다.");
+            throw ServiceException.forbidden("상품 수정 권한이 없습니다.");
         }
     }
 
     public void checkActorCanDelete(Member actor) {
         if (!actor.equals(seller)) {
-            throw new ServiceException("403", "상품 삭제 권한이 없습니다.");
+            throw ServiceException.forbidden("상품 삭제 권한이 없습니다.");
         }
     }
 
