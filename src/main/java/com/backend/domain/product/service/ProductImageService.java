@@ -18,24 +18,35 @@ public class ProductImageService {
     private final ProductImageRepository productImageRepository;
 
     // ======================================= public methods ======================================= //
+    // 이미지 검증 및 생성 (상품 생성 시 사용)
     public void validateAndCreateImages(Product savedProduct, List<MultipartFile> images) {
+        // 이미지 검증
         validateImagesForCreate(images);
+
+        // 이미지 생성
         createProductImages(savedProduct, images);
     }
 
+    // 이미지 검증 및 수정 (상품 수정 시 사용)
     public void validateAndModifyImages(Product product, List<MultipartFile> images, List<Long> deleteImageIds) {
-        validateImagesForModify(product, images);
+        // 이미지 검증
+        if (images != null && !images.isEmpty()) {
+            validateImagesForModify(product, images);
+        }
 
+        // 이미지 생성
         if (images != null && !images.isEmpty()) {
             createProductImages(product, images);
             productImageRepository.flush();
         }
 
+        // 이미지 삭제
         if (deleteImageIds != null) {
             deleteProductImages(product, deleteImageIds);
         }
     }
 
+    // 상품의 모든 이미지 삭제 (상품 삭제 시 사용)
     public void deleteAllProductImages(Product product) {
         for (ProductImage pi : product.getProductImages()) {
             fileService.deleteFile(pi.getImageUrl());
@@ -58,10 +69,14 @@ public class ProductImageService {
 
     private void deleteProductImages(Product product, List<Long> deleteImageIds) {
         for (Long deleteImageId : deleteImageIds) {
+            // 이미지 존재 검증
             ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(ProductException::imageNotFound);
             if (!productImage.getProduct().getId().equals(product.getId())) throw ProductException.imageNotBelongToProduct();
 
+            // 파일 삭제
             fileService.deleteFile(productImage.getImageUrl());
+
+            // 상품 이미지 삭제
             product.deleteProductImage(productImage);
             productImageRepository.delete(productImage);
         }
@@ -71,10 +86,12 @@ public class ProductImageService {
 
     // ======================================= validation methods ======================================= //
     private void validateImagesForCreate(List<MultipartFile> images) {
+        // 이미지 존재 검증
         if (images == null || images.isEmpty()) {
             throw ProductException.imageRequired();
         }
 
+        // 이미지 개수 검증
         if (images.size() > 5) {
             throw ProductException.imageMaxCountExceeded();
         }
@@ -86,6 +103,8 @@ public class ProductImageService {
         if (images == null || images.isEmpty()) {
             return;
         }
+
+        // 이미지 개수 검증
         if (images.size() + product.getProductImages().size() > 5) {
             throw ProductException.imageMaxCountExceeded();
         }
@@ -97,6 +116,7 @@ public class ProductImageService {
         Set<String> allowedExtensions = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
 
         for (MultipartFile image : images) {
+            // 이미지 존재 검증
             if (image.isEmpty()) {
                 throw ProductException.emptyFile();
             }
