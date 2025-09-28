@@ -63,7 +63,7 @@ class ProductServiceTest {
                 .willReturn(new ProductImage("http://localhost:8080/uploads/products/2/image1.jpg", mockProduct));
 
         // when
-        Product result = productService.create(actor, request, images);
+        Product result = productService.createProduct(actor, request, images);
 
         // then
         assertThat(result).isNotNull();
@@ -93,7 +93,7 @@ class ProductServiceTest {
         List<MultipartFile> images = createValidImages();
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-1")
                 .hasFieldOrPropertyWithValue("msg", "직거래 시 배송지는 필수입니다.");
@@ -108,7 +108,7 @@ class ProductServiceTest {
         List<MultipartFile> images = new ArrayList<>(); // 빈 리스트
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-2")
                 .hasFieldOrPropertyWithValue("msg", "이미지는 필수입니다.");
@@ -123,7 +123,7 @@ class ProductServiceTest {
         List<MultipartFile> images = createTooManyImages(); // 6개
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-3")
                 .hasFieldOrPropertyWithValue("msg", "이미지는 최대 5개까지만 업로드할 수 있습니다.");
@@ -140,7 +140,7 @@ class ProductServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-4")
                 .hasFieldOrPropertyWithValue("msg", "빈 파일은 업로드할 수 없습니다.");
@@ -160,7 +160,7 @@ class ProductServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-5")
                 .hasFieldOrPropertyWithValue("msg", "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
@@ -177,7 +177,7 @@ class ProductServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-7")
                 .hasFieldOrPropertyWithValue("msg", "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
@@ -194,7 +194,7 @@ class ProductServiceTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> productService.create(actor, request, images))
+        assertThatThrownBy(() -> productService.createProduct(actor, request, images))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-6")
                 .hasFieldOrPropertyWithValue("msg", "올바른 파일명이 아닙니다.");
@@ -226,7 +226,7 @@ class ProductServiceTest {
                 .willReturn(new ProductImage("http://localhost:8080/uploads/products/1/image1.jpg", mockProduct));
 
         // when & then - 예외가 발생하지 않아야 함
-        assertThatCode(() -> productService.create(actor, request, images))
+        assertThatCode(() -> productService.createProduct(actor, request, images))
                 .doesNotThrowAnyException();
     }
 
@@ -256,7 +256,7 @@ class ProductServiceTest {
                 .willReturn(new ProductImage("http://localhost:8080/uploads/products/1/image1.jpg", mockProduct));
 
         // when & then - 예외가 발생하지 않아야 함
-        assertThatCode(() -> productService.create(actor, request, images))
+        assertThatCode(() -> productService.createProduct(actor, request, images))
                 .doesNotThrowAnyException();
     }
 
