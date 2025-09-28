@@ -25,6 +25,10 @@ public record RsData<T>(
         return new RsData<>(RsStatus.OK.getResultCode(), RsStatus.OK.getStatusCode(), msg, null);
     }
 
+    public static <T> RsData<T> ok(int detailCode, String msg, T data) {
+        return new RsData<>(RsStatus.OK.getResultCode() + "-" + detailCode, RsStatus.OK.getStatusCode(), msg, data);
+    }
+
     public static <T> RsData<T> created(String msg, T data) {
         return new RsData<>(RsStatus.CREATED.getResultCode(), RsStatus.CREATED.getStatusCode(), msg, data);
     }
