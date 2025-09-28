@@ -48,7 +48,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Product product = productService.createProduct(actor, request, images);
 
         ProductResponse response = productMapper.toResponse(product);
-        return RsData.created("상품이 등록되었습니다.", response);
+        return RsData.created("상품이 등록되었습니다", response);
     }
 
     @GetMapping
@@ -67,7 +67,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Page<Product> products = productService.findBySearchPaged(page, size, sort, search);
 
         PageDto<ProductListItemDto> response = productMapper.toListResponse(products);
-        return RsData.ok("상품 목록이 조회되었습니다.", response);
+        return RsData.ok("상품 목록이 조회되었습니다", response);
     }
 
     @GetMapping("/{productId}")
@@ -76,7 +76,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Product product = productService.getProductById(productId);
 
         ProductResponse response = productMapper.toResponse(product);
-        return RsData.ok("상품이 조회되었습니다.", response);
+        return RsData.ok("상품이 조회되었습니다", response);
     }
 
     @PutMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -96,7 +96,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         productService.modifyProduct(product, request, images, deleteImageIds);
 
         ProductResponse response = productMapper.toResponse(product);
-        return RsData.ok("상품이 수정되었습니다.", response);
+        return RsData.ok("상품이 수정되었습니다", response);
     }
 
     @DeleteMapping("/{productId}")
@@ -112,7 +112,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         productService.deleteProduct(product);
 
-        return RsData.ok("상품이 삭제되었습니다.");
+        return RsData.ok("상품이 삭제되었습니다");
     }
 
     @GetMapping("/me")
@@ -128,7 +128,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
         PageDto<MyProductListItemDto> response = productMapper.toMyListResponse(products);
-        return RsData.ok("내 상품 목록이 조회되었습니다.", response);
+        return RsData.ok("내 상품 목록이 조회되었습니다", response);
     }
 
     @GetMapping("/members/{memberId}")
@@ -140,11 +140,11 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        Member actor = memberService.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다."));
+        Member actor = memberService.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다"));
 
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
         PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponse(products);
-        return RsData.ok("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId), response);
+        return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
     }
 }

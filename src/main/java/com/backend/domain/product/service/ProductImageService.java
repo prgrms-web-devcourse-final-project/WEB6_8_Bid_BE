@@ -41,7 +41,7 @@ public class ProductImageService {
         }
 
         // 이미지 삭제
-        if (deleteImageIds != null) {
+        if (deleteImageIds != null && !deleteImageIds.isEmpty()) {
             deleteProductImages(product, deleteImageIds);
         }
     }
@@ -100,10 +100,6 @@ public class ProductImageService {
     }
 
     private void validateImagesForModify(Product product, List<MultipartFile> images) {
-        if (images == null || images.isEmpty()) {
-            return;
-        }
-
         // 이미지 개수 검증
         if (images.size() + product.getProductImages().size() > 5) {
             throw ProductException.imageMaxCountExceeded();

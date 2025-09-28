@@ -80,7 +80,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.resultCode").value("201"))
-                .andExpect(jsonPath("$.msg").value("상품이 등록되었습니다."))
+                .andExpect(jsonPath("$.msg").value("상품이 등록되었습니다"))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
                 .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
@@ -124,7 +124,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-3"))
-                .andExpect(jsonPath("$.msg").value("이미지는 최대 5개까지만 업로드할 수 있습니다."));
+                .andExpect(jsonPath("$.msg").value("이미지는 최대 5개까지만 업로드할 수 있습니다"));
     }
 
     @Test
@@ -150,7 +150,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-5"))
-                .andExpect(jsonPath("$.msg").value("이미지 파일 크기는 5MB를 초과할 수 없습니다."));
+                .andExpect(jsonPath("$.msg").value("이미지 파일 크기는 5MB를 초과할 수 없습니다"));
     }
 
     @Test
@@ -176,7 +176,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("createProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-7"))
-                .andExpect(jsonPath("$.msg").value("지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)"));
+                .andExpect(jsonPath("$.msg").value("지원하지 않는 파일 형식입니다 (jpg, jpeg, png, gif, webp만 가능)"));
     }
 
 
@@ -198,7 +198,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getProducts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("상품 목록이 조회되었습니다."))
+                .andExpect(jsonPath("$.msg").value("상품 목록이 조회되었습니다"))
                 .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
                 .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
                 .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
@@ -455,7 +455,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getProduct"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("상품이 조회되었습니다."))
+                .andExpect(jsonPath("$.msg").value("상품이 조회되었습니다"))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
                 .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
@@ -490,7 +490,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getProduct"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.resultCode").value("404-1"))
-                .andExpect(jsonPath("$.msg").value("존재하지 않는 상품입니다."));
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 상품입니다"));
     }
 
     @Test
@@ -519,7 +519,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("modifyProduct"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다."))
+                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다"))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
                 .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
@@ -569,7 +569,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("modifyProduct"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다."))
+                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다"))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
                 .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
@@ -617,7 +617,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("modifyProduct"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-2"))
-                .andExpect(jsonPath("$.msg").value("이미지는 필수입니다."));
+                .andExpect(jsonPath("$.msg").value("이미지는 필수입니다"));
     }
 
     @Test
@@ -652,7 +652,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("modifyProduct"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다."))
+                .andExpect(jsonPath("$.msg").value("상품이 수정되었습니다"))
                 .andExpect(jsonPath("$.data.name").value(product.getProductName()))
                 .andExpect(jsonPath("$.data.description").value(product.getDescription()))
                 .andExpect(jsonPath("$.data.category").value(product.getCategory().getDisplayName()))
@@ -698,7 +698,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("modifyProduct"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
-                .andExpect(jsonPath("$.msg").value("상품 수정 권한이 없습니다."));
+                .andExpect(jsonPath("$.msg").value("상품 수정 권한이 없습니다"));
     }
 
     @Test
@@ -718,7 +718,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("deleteProduct"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("상품이 삭제되었습니다."));
+                .andExpect(jsonPath("$.msg").value("상품이 삭제되었습니다"));
     }
 
     @Test
@@ -737,7 +737,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("deleteProduct"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-4"))
-                .andExpect(jsonPath("$.msg").value("경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다."));
+                .andExpect(jsonPath("$.msg").value("경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다"));
     }
 
     @Test
@@ -757,7 +757,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("deleteProduct"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-2"))
-                .andExpect(jsonPath("$.msg").value("상품 삭제 권한이 없습니다."));
+                .andExpect(jsonPath("$.msg").value("상품 삭제 권한이 없습니다"));
     }
 
     @Test
@@ -778,7 +778,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getMyProducts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다."))
+                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다"))
                 .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
                 .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
                 .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
@@ -826,7 +826,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getMyProducts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다."))
+                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다"))
                 .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
                 .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
                 .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
@@ -900,7 +900,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getProductsByMember"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId)))
+                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId)))
                 .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
                 .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
                 .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
@@ -949,7 +949,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().methodName("getProductsByMember"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다.".formatted(memberId)))
+                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId)))
                 .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
                 .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
                 .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))

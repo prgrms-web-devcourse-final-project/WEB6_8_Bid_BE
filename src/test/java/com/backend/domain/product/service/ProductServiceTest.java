@@ -543,7 +543,7 @@ class ProductServiceTest {
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, images, null))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-5")
-                .hasFieldOrPropertyWithValue("msg", "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
+                .hasFieldOrPropertyWithValue("msg", "이미지 파일 크기는 5MB를 초과할 수 없습니다");
     }
 
     @Test
