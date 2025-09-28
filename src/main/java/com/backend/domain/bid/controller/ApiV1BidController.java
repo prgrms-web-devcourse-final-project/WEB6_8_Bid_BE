@@ -6,7 +6,7 @@ import com.backend.domain.bid.dto.BidResponseDto;
 import com.backend.domain.bid.dto.MyBidResponseDto;
 import com.backend.domain.bid.service.BidService;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

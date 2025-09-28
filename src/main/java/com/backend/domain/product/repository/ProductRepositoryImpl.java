@@ -6,7 +6,7 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.Location;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.standard.util.QueryDslUtil;
+import com.backend.global.querydsl.QueryDslUtil;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
