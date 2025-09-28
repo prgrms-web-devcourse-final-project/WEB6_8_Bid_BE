@@ -1,6 +1,6 @@
 package com.backend.global.exception;
 
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import lombok.Getter;
 
 @Getter

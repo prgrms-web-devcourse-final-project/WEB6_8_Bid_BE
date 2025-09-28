@@ -7,7 +7,7 @@ import com.backend.domain.bid.dto.MyBidResponseDto;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.exception.ServiceException;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -3,7 +3,7 @@ package com.backend.domain.member.controller;
 import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.global.config.TestRedisConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

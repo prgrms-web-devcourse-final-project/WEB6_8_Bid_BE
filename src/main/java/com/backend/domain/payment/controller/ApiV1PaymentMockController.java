@@ -2,7 +2,7 @@ package com.backend.domain.payment.controller;
 
 
 import com.backend.domain.payment.dto.*;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
