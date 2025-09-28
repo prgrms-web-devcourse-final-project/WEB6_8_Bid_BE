@@ -1,13 +1,12 @@
 package com.backend.domain.product.dto.response;
 
-import com.backend.domain.product.dto.response.component.BidderDto;
-import com.backend.domain.product.dto.response.component.ReviewDto;
+import com.backend.domain.product.dto.response.component.SellerDto;
 import com.backend.domain.product.entity.Product;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
-public record MyProductListResponse(
+public record ProductListItemDto(
         @NotNull Long productId,
         @NotNull String name,
         @NotNull String category,
@@ -20,11 +19,10 @@ public record MyProductListResponse(
 //        @NotNull Long biddersCount,
         String location,
         @NotNull String thumbnailUrl,
-        BidderDto bidder,
-        ReviewDto review
+        @NotNull SellerDto seller
 ) {
-    public static MyProductListResponse fromEntity(Product entity) {
-        return new MyProductListResponse(
+    public static ProductListItemDto fromEntity(Product entity) {
+        return new ProductListItemDto(
                 entity.getId(),
                 entity.getProductName(),
                 entity.getCategory().getDisplayName(),
@@ -37,8 +35,7 @@ public record MyProductListResponse(
 //                entity.getBiddersCount(),
                 entity.getLocation(),
                 entity.getThumbnail(),
-                BidderDto.fromEntity(entity.getBidder()),
-                ReviewDto.fromEntity(entity.getReview())
+                SellerDto.fromEntity(entity.getSeller())
         );
     }
 }

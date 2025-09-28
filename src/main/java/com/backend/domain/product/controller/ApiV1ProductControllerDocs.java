@@ -2,9 +2,9 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
-import com.backend.domain.product.dto.response.MyProductListResponse;
-import com.backend.domain.product.dto.response.ProductListByMemberResponse;
-import com.backend.domain.product.dto.response.ProductListResponse;
+import com.backend.domain.product.dto.response.MyProductListItemDto;
+import com.backend.domain.product.dto.response.ProductListByMemberItemDto;
+import com.backend.domain.product.dto.response.ProductListItemDto;
 import com.backend.domain.product.dto.response.ProductResponse;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
@@ -53,7 +53,7 @@ public interface ApiV1ProductControllerDocs {
             @ApiResponse(responseCode = "200", description = "상품 목록 조회 성공",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
-    RsData<PageDto<ProductListResponse>> getProducts(
+    RsData<PageDto<ProductListItemDto>> getProducts(
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "상품명 검색어") @RequestParam(required = false) String keyword,
@@ -125,7 +125,7 @@ public interface ApiV1ProductControllerDocs {
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
-    RsData<PageDto<MyProductListResponse>> getMyProducts(
+    RsData<PageDto<MyProductListItemDto>> getMyProducts(
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
@@ -141,7 +141,7 @@ public interface ApiV1ProductControllerDocs {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
-    RsData<PageDto<ProductListByMemberResponse>> getProductsByMember(
+    RsData<PageDto<ProductListByMemberItemDto>> getProductsByMember(
             @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,

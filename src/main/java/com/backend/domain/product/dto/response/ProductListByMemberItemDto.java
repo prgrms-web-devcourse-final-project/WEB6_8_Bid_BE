@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
-public record ProductListByMemberResponse(
+public record ProductListByMemberItemDto(
         @NotNull Long productId,
         @NotNull String name,
         @NotNull String category,
@@ -21,8 +21,8 @@ public record ProductListByMemberResponse(
         @NotNull String thumbnailUrl,
         ReviewDto review
 ) {
-    public static ProductListByMemberResponse fromEntity(Product entity) {
-        return new ProductListByMemberResponse(
+    public static ProductListByMemberItemDto fromEntity(Product entity) {
+        return new ProductListByMemberItemDto(
                 entity.getId(),
                 entity.getProductName(),
                 entity.getCategory().getDisplayName(),
