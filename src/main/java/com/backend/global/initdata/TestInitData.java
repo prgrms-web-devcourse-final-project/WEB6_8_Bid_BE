@@ -8,6 +8,7 @@ import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
+import com.backend.domain.product.service.ProductImageService;
 import com.backend.domain.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +30,11 @@ public class TestInitData {
     private TestInitData self;
 
     private final ProductService productService;
+    private final ProductImageService productImageService;
     private final MemberService memberService;
     private final BidService bidService;
 
     @Bean
-//    @Order(1)
     ApplicationRunner testInitDataApplicationRunner() {
         return args -> {
             self.work1();
@@ -82,32 +83,32 @@ public class TestInitData {
         Member member6 = memberService.findByNickname("나이키키").get();
 
         ProductCreateRequest requestDto1 = new ProductCreateRequest("iPhone 15 Pro", "최신 iPhone 15 Pro 새상품입니다.", 1, 1000000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.BOTH, "서울 서초구");
-        Product product1 = productService.createProduct(member3, requestDto1);
-        productService.createProductImage(product1, "/image1_1.jpg");
+        Product product1 = productService.saveProduct(member3, requestDto1);
+        productImageService.createProductImage(product1, "/image1_1.jpg");
 
         ProductCreateRequest requestDto2 = new ProductCreateRequest("MacBook Pro M3", "MacBook Pro 14인치 M3 칩셋 모델입니다.", 1, 2000000L, LocalDateTime.now().minusMinutes(30), "48시간", DeliveryMethod.BOTH, "서울 서초구");
-        Product product2 = productService.createProduct(member3, requestDto2);
-        productService.createProductImage(product2, "/image2_1.jpg");
+        Product product2 = productService.saveProduct(member3, requestDto2);
+        productImageService.createProductImage(product2, "/image2_1.jpg");
 
         ProductCreateRequest requestDto3 = new ProductCreateRequest("AirPods Pro 2세대", "Apple AirPods Pro 2세대 노이즈캔슬링 이어폰입니다.", 1, 2000000L, LocalDateTime.now().minusMinutes(15), "24시간", DeliveryMethod.TRADE, "서울 홍대");
-        Product product3 = productService.createProduct(member3, requestDto3);
-        productService.createProductImage(product3, "/image3_1.jpg");
+        Product product3 = productService.saveProduct(member3, requestDto3);
+        productImageService.createProductImage(product3, "/image3_1.jpg");
 
         ProductCreateRequest requestDto4 = new ProductCreateRequest("아이폰 15 Pro 256GB", "미개봉 새 제품입니다. 직거래 선호합니다.", 1, 1000000L, LocalDateTime.now().minusHours(2), "24시간", DeliveryMethod.TRADE, "서울 강남구");
-        Product product4 = productService.createProduct(member4, requestDto4);
-        productService.createProductImage(product4, "/image4_1.jpg");
+        Product product4 = productService.saveProduct(member4, requestDto4);
+        productImageService.createProductImage(product4, "/image4_1.jpg");
 
         ProductCreateRequest requestDto5 = new ProductCreateRequest("갤럭시 S24 Ultra 512GB", null, 1, 1200000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
-        Product product5 = productService.createProduct(member4, requestDto5);
-        productService.createProductImage(product5, "/image5_1.jpg");
+        Product product5 = productService.saveProduct(member4, requestDto5);
+        productImageService.createProductImage(product5, "/image5_1.jpg");
 
         ProductCreateRequest requestDto6 = new ProductCreateRequest("구찌 GG 마몽 숄더백", null, 2, 800000L, LocalDateTime.now().minusHours(1), "48시간", DeliveryMethod.TRADE, "부산 해운대");
-        Product product6 = productService.createProduct(member5, requestDto6);
-        productService.createProductImage(product6, "/image6_1.jpg");
+        Product product6 = productService.saveProduct(member5, requestDto6);
+        productImageService.createProductImage(product6, "/image6_1.jpg");
 
         ProductCreateRequest requestDto7 = new ProductCreateRequest("나이키 Air Max", null, 2, 700000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
-        Product product7 = productService.createProduct(member6, requestDto7);
-        productService.createProductImage(product7, "/image7_1.jpg");
+        Product product7 = productService.saveProduct(member6, requestDto7);
+        productImageService.createProductImage(product7, "/image7_1.jpg");
 
 
 //        bidService.createBid(product1.getId(), member1.getId(), new BidRequestDto(1200000L));
@@ -120,13 +121,13 @@ public class TestInitData {
 
         // 경매 시작 전
         ProductCreateRequest requestDto8 = new ProductCreateRequest("뉴발란스 스니커즈", null, 2, 700000L, LocalDateTime.now().plusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
-        Product product8 = productService.createProduct(member6, requestDto8);
-        productService.createProductImage(product8, "/image8_1.jpg");
+        Product product8 = productService.saveProduct(member6, requestDto8);
+        productImageService.createProductImage(product8, "/image8_1.jpg");
 
         // 낙찰
         ProductCreateRequest requestDto9 = new ProductCreateRequest("닌텐도 Switch", null, 2, 700000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
-        Product product9 = productService.createProduct(member4, requestDto9);
-        productService.createProductImage(product9, "/image9_1.jpg");
+        Product product9 = productService.saveProduct(member4, requestDto9);
+        productImageService.createProductImage(product9, "/image9_1.jpg");
 
         bidService.createBid(product9.getId(), member1.getId(), new BidRequestDto(900000L));
         product9.setStatus("낙찰");

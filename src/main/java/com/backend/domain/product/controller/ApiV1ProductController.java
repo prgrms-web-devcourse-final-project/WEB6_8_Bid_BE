@@ -45,7 +45,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @AuthenticationPrincipal User user
     ) {
         Member actor = memberService.findMemberByEmail(user.getUsername());
-        Product product = productService.create(actor, request, images);
+        Product product = productService.createProduct(actor, request, images);
 
         ProductResponse response = productMapper.toResponse(product);
         return RsData.created("상품이 등록되었습니다.", response);
