@@ -9,7 +9,7 @@ import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.enums.*;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
-import com.backend.global.exception.ServiceException;
+import com.backend.global.exception.ProductException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -104,7 +104,7 @@ public class ProductService {
     }
 
     public Product getProductById(Long productId) {
-        return findById(productId).orElseThrow(() -> ServiceException.notFound("존재하지 않는 상품입니다."));
+        return findById(productId).orElseThrow(ProductException::notFound);
     }
 
     private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
@@ -128,15 +128,15 @@ public class ProductService {
 
         if (deleteImageIds != null) {
             for (Long deleteImageId : deleteImageIds) {
-                ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(() -> ServiceException.notFound("존재하지 않는 이미지입니다."));
-                if (!productImage.getProduct().getId().equals(product.getId())) throw ServiceException.badRequest(9, "이미지가 해당 상품에 속하지 않습니다.");
+                ProductImage productImage = productImageRepository.findById(deleteImageId).orElseThrow(ProductException::imageNotFound);
+                if (!productImage.getProduct().getId().equals(product.getId())) throw ProductException.imageNotBelongToProduct();
 
                 fileService.deleteFile(productImage.getImageUrl());
                 product.deleteProductImage(productImage);
                 productImageRepository.delete(productImage);
             }
 
-            if (product.getProductImages().isEmpty()) throw ServiceException.badRequest(2, "이미지는 필수입니다.");
+            if (product.getProductImages().isEmpty()) throw ProductException.imageRequired();
         }
 
         return product;
@@ -144,7 +144,7 @@ public class ProductService {
 
     public void deleteProduct(Product product) {
         if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new ServiceException("400", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
+            throw ProductException.auctionDeleteForbidden();
         }
 
         for (ProductImage pi : product.getProductImages()) {
@@ -158,18 +158,18 @@ public class ProductService {
     private void validateLocation(String location, DeliveryMethod deliveryMethod) {
         if (deliveryMethod == DeliveryMethod.TRADE || deliveryMethod == DeliveryMethod.BOTH) {
             if (location == null || location.isBlank()) {
-                throw ServiceException.badRequest(1, "직거래 시 배송지는 필수입니다.");
+                throw ProductException.locationRequired();
             }
         }
     }
 
     private void validateImagesForCreate(List<MultipartFile> images) {
         if (images == null || images.isEmpty()) {
-            throw ServiceException.badRequest(2, "이미지는 필수입니다.");
+            throw ProductException.imageRequired();
         }
 
         if (images.size() > 5) {
-            throw ServiceException.badRequest(3, "이미지는 최대 5개까지만 업로드할 수 있습니다.");
+            throw ProductException.imageMaxCountExceeded();
         }
 
         validateImages(images);
@@ -180,7 +180,7 @@ public class ProductService {
             return;
         }
         if (images.size() + product.getProductImages().size() > 5) {
-            throw ServiceException.badRequest(3, "이미지는 최대 5개까지만 업로드할 수 있습니다.");
+            throw ProductException.imageMaxCountExceeded();
         }
 
         validateImages(images);
@@ -191,30 +191,30 @@ public class ProductService {
 
         for (MultipartFile image : images) {
             if (image.isEmpty()) {
-                throw ServiceException.badRequest(4, "빈 파일은 업로드할 수 없습니다.");
+                throw ProductException.emptyFile();
             }
 
             // 파일 크기 검증
             if (image.getSize() > 5 * 1024 * 1024) {
-                throw ServiceException.badRequest(5, "이미지 파일 크기는 5MB를 초과할 수 없습니다.");
+                throw ProductException.fileTooLarge();
             }
 
             // 파일 확장자 검증
             String filename = image.getOriginalFilename();
             if (filename == null || !filename.contains(".")) {
-                throw ServiceException.badRequest(6, "올바른 파일명이 아닙니다.");
+                throw ProductException.invalidFileName();
             }
 
             String extension = filename.substring(filename.lastIndexOf(".")).toLowerCase();
             if (!allowedExtensions.contains(extension)) {
-                throw ServiceException.badRequest(7, "지원하지 않는 파일 형식입니다. (jpg, jpeg, png, gif, webp만 가능)");
+                throw ProductException.unsupportedFileType();
             }
         }
     }
 
     public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
         if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw ServiceException.badRequest(2, "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
+            throw ProductException.auctionModifyForbidden();
         }
         validateLocation(request.location(), request.deliveryMethod());
 

@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RsData<Void>> handleServiceException(ServiceException e) {
         HttpStatus httpStatus;
         try {
-            int resultCode = Integer.parseInt(e.getResultCode());
+            int resultCode = Integer.parseInt(e.getResultCode().split("-")[0]);
             httpStatus = HttpStatus.valueOf(resultCode);
         } catch (NumberFormatException ex) {
             httpStatus = HttpStatus.BAD_REQUEST;
