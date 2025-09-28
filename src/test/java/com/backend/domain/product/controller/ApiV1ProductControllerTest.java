@@ -489,7 +489,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("getProduct"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.resultCode").value("404-1"))
                 .andExpect(jsonPath("$.msg").value("존재하지 않는 상품입니다."));
     }
 
@@ -697,7 +697,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("modifyProduct"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.resultCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("상품 수정 권한이 없습니다."));
     }
 
@@ -735,8 +735,8 @@ class ApiV1ProductControllerTest {
         resultActions
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("deleteProduct"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.resultCode").value("400"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403-4"))
                 .andExpect(jsonPath("$.msg").value("경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다."));
     }
 
@@ -756,7 +756,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(handler().handlerType(ApiV1ProductController.class))
                 .andExpect(handler().methodName("deleteProduct"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.resultCode").value("403"))
+                .andExpect(jsonPath("$.resultCode").value("403-2"))
                 .andExpect(jsonPath("$.msg").value("상품 삭제 권한이 없습니다."));
     }
 

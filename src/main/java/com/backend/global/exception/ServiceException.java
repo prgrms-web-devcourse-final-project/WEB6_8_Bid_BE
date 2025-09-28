@@ -22,10 +22,6 @@ public class ServiceException extends RuntimeException {
         return new ServiceException(RsStatus.BAD_REQUEST.getResultCode(), msg);
     }
 
-    public static ServiceException badRequest(int detailCode, String msg) {
-        return new ServiceException(RsStatus.BAD_REQUEST.getResultCode() + "-" + detailCode, msg);
-    }
-
     public static ServiceException unauthorized(String msg) {
         return new ServiceException(RsStatus.UNAUTHORIZED.getResultCode(), msg);
     }

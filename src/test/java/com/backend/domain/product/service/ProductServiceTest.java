@@ -379,7 +379,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.modifyProduct(mockProduct, request, null, deleteImageIds))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "404")
+                .hasFieldOrPropertyWithValue("resultCode", "404-2")
                 .hasFieldOrPropertyWithValue("msg", "존재하지 않는 이미지입니다.");
     }
 
@@ -626,7 +626,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.validateModifyRequest(mockProduct, request))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400-2")
+                .hasFieldOrPropertyWithValue("resultCode", "403-3")
                 .hasFieldOrPropertyWithValue("msg", "경매 시작 시간이 지났으므로 상품 수정이 불가능합니다.");
     }
 
@@ -702,7 +702,7 @@ class ProductServiceTest {
         // when & then
         assertThatThrownBy(() -> productService.deleteProduct(mockProduct))
                 .isInstanceOf(ServiceException.class)
-                .hasFieldOrPropertyWithValue("resultCode", "400")
+                .hasFieldOrPropertyWithValue("resultCode", "403-4")
                 .hasFieldOrPropertyWithValue("msg", "경매 시작 시간이 지났으므로 상품 삭제가 불가능합니다.");
 
         // 파일 삭제나 DB 삭제가 호출되지 않았는지 확인
