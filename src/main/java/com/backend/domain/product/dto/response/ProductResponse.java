@@ -1,13 +1,17 @@
-package com.backend.domain.product.dto;
+package com.backend.domain.product.dto.response;
 
+import com.backend.domain.product.dto.response.component.ProductImageDto;
+import com.backend.domain.product.dto.response.component.SellerDto;
 import com.backend.domain.product.entity.Product;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-public record MyProductListDto(
+public record ProductResponse(
         @NotNull Long productId,
         @NotNull String name,
+        String description,
         @NotNull String category,
         @NotNull Long initialPrice,
         @NotNull Long currentPrice,
@@ -16,15 +20,18 @@ public record MyProductListDto(
         @NotNull Integer auctionDuration,
         @NotNull String status,
 //        @NotNull Long biddersCount,
+        @NotNull String deliveryMethod,
         String location,
-        @NotNull String thumbnailUrl,
-        BidderDto bidder,
-        ReviewDto review
+        @NotNull List<ProductImageDto> images,
+        @NotNull SellerDto seller,
+        @NotNull LocalDateTime createDate,
+        @NotNull LocalDateTime modifyDate
 ) {
-    public static MyProductListDto fromEntity(Product entity) {
-        return new MyProductListDto(
+    public static ProductResponse fromEntity(Product entity) {
+        return new ProductResponse(
                 entity.getId(),
                 entity.getProductName(),
+                entity.getDescription(),
                 entity.getCategory().getDisplayName(),
                 entity.getInitialPrice(),
                 entity.getCurrentPrice(),
@@ -33,10 +40,12 @@ public record MyProductListDto(
                 entity.getDuration(),
                 entity.getStatus(),
 //                entity.getBiddersCount(),
+                entity.getDeliveryMethod().name(),
                 entity.getLocation(),
-                entity.getThumbnail(),
-                BidderDto.fromEntity(entity.getBidder()),
-                ReviewDto.fromEntity(entity.getReview())
+                entity.getProductImages().stream().map(ProductImageDto::fromEntity).toList(),
+                SellerDto.fromEntity(entity.getSeller()),
+                entity.getCreateDate(),
+                entity.getModifyDate()
         );
     }
 }

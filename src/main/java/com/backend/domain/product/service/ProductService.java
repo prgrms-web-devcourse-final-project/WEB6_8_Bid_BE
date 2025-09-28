@@ -1,15 +1,15 @@
 package com.backend.domain.product.service;
 
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.product.dto.ProductCreateRequest;
-import com.backend.domain.product.dto.ProductModifyRequest;
+import com.backend.domain.product.dto.request.ProductCreateRequest;
+import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.enums.*;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
-import com.backend.global.exception.ProductException;
+import com.backend.domain.product.exception.ProductException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

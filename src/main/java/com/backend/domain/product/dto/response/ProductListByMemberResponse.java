@@ -1,11 +1,12 @@
-package com.backend.domain.product.dto;
+package com.backend.domain.product.dto.response;
 
+import com.backend.domain.product.dto.response.component.ReviewDto;
 import com.backend.domain.product.entity.Product;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
-public record ProductListByMemberDto(
+public record ProductListByMemberResponse(
         @NotNull Long productId,
         @NotNull String name,
         @NotNull String category,
@@ -20,8 +21,8 @@ public record ProductListByMemberDto(
         @NotNull String thumbnailUrl,
         ReviewDto review
 ) {
-    public static ProductListByMemberDto fromEntity(Product entity) {
-        return new ProductListByMemberDto(
+    public static ProductListByMemberResponse fromEntity(Product entity) {
+        return new ProductListByMemberResponse(
                 entity.getId(),
                 entity.getProductName(),
                 entity.getCategory().getDisplayName(),

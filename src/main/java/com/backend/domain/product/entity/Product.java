@@ -2,13 +2,13 @@ package com.backend.domain.product.entity;
 
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.product.dto.ProductModifyRequest;
+import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.review.entity.Review;
-import com.backend.global.exception.ProductException;
+import com.backend.domain.product.exception.ProductException;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
