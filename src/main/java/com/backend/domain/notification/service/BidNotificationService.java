@@ -1,7 +1,7 @@
 package com.backend.domain.notification.service;
 
 import com.backend.domain.product.entity.Product;
-import com.backend.global.webSocket.service.WebSocketService;
+import com.backend.global.websocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

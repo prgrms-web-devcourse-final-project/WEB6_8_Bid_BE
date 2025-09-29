@@ -127,7 +127,7 @@ class FileServiceTest {
         assertThatThrownBy(() -> fileService.uploadFile(mockFile, "test"))
                 .isInstanceOf(ServiceException.class)
                 .hasFieldOrPropertyWithValue("resultCode", "400-8")
-                .hasFieldOrPropertyWithValue("msg", "이미지 파일 업로드에 실패했습니다.");
+                .hasFieldOrPropertyWithValue("msg", "이미지 파일 업로드에 실패했습니다");
     }
 
     @Test

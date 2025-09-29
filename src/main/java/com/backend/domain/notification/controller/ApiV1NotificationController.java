@@ -4,7 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.notification.dto.NotificationListResponseDto;
 import com.backend.domain.notification.service.NotificationService;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

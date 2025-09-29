@@ -2,7 +2,7 @@ package com.backend.domain.member.controller;
 
 import com.backend.domain.member.dto.*;
 import com.backend.domain.member.service.MemberService;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

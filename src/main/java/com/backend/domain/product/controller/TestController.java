@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.backend.domain.product.entity.Product;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,7 @@
 package com.backend.global.exception;
 
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
+import com.backend.global.response.RsStatus;
 import lombok.Getter;
 
 @Getter
@@ -15,5 +16,21 @@ public class ServiceException extends RuntimeException {
     }
     public RsData<Void> getRsData() {
         return new RsData<>(resultCode, msg, null);
+    }
+
+    public static ServiceException badRequest(String msg) {
+        return new ServiceException(RsStatus.BAD_REQUEST.getResultCode(), msg);
+    }
+
+    public static ServiceException unauthorized(String msg) {
+        return new ServiceException(RsStatus.UNAUTHORIZED.getResultCode(), msg);
+    }
+
+    public static ServiceException forbidden(String msg) {
+        return new ServiceException(RsStatus.FORBIDDEN.getResultCode(), msg);
+    }
+
+    public static ServiceException notFound(String msg) {
+        return new ServiceException(RsStatus.NOT_FOUND.getResultCode(), msg);
     }
 }

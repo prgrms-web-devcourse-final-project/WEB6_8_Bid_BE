@@ -2,13 +2,13 @@ package com.backend.domain.product.entity;
 
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.product.dto.ProductModifyRequest;
+import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.review.entity.Review;
-import com.backend.global.exception.ServiceException;
+import com.backend.domain.product.exception.ProductException;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -154,13 +154,13 @@ public class Product extends BaseEntity {
 
     public void checkActorCanModify(Member actor) {
         if (!actor.equals(seller)) {
-            throw new ServiceException("403", "상품 수정 권한이 없습니다.");
+            throw ProductException.accessModifyForbidden();
         }
     }
 
     public void checkActorCanDelete(Member actor) {
         if (!actor.equals(seller)) {
-            throw new ServiceException("403", "상품 삭제 권한이 없습니다.");
+            throw ProductException.accessDeleteForbidden();
         }
     }
 

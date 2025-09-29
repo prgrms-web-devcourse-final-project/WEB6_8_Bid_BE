@@ -10,7 +10,7 @@ import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
