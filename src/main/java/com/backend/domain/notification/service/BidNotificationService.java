@@ -1,6 +1,8 @@
 package com.backend.domain.notification.service;
 
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.webSocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,8 @@ import java.util.Map;
 public class BidNotificationService {
 
     private final WebSocketService webSocketService;
+    private final NotificationQueueService notificationQueueService;
+    private final MemberRepository memberRepository;
 
     //  입찰 성공 알림
     public void notifyBidSuccess(Long userId, Product product, Long bidAmount) {
@@ -28,6 +32,13 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(userId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "BID_SUCCESS", product);
+        }
+        
         log.info("입찰 성공 알림 전송 - 사용자: {}, 상품: {}, 금액: {}", userId, product.getId(), bidAmount);
     }
 
@@ -45,6 +56,13 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(userId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "BID_OUTBID", product);
+        }
+
         log.info("입찰 밀림 알림 전송 - 사용자: {}, 상품: {}", userId, product.getId());
     }
 
@@ -61,6 +79,13 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(winnerId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(winnerId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "AUCTION_WON", product);
+        }
+
         log.info("낙찰 알림 전송 - 사용자: {}, 상품: {}, 낙찰가: {}", winnerId, product.getId(), finalPrice);
     }
 
@@ -78,6 +103,13 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(userId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "AUCTION_LOST", product);
+        }
+
         log.info("낙찰 실패 알림 전송 - 사용자: {}, 상품: {}", userId, product.getId());
     }
 }

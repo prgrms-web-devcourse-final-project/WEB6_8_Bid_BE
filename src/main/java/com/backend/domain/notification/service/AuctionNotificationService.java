@@ -1,6 +1,8 @@
 package com.backend.domain.notification.service;
 
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.webSocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,8 @@ import java.util.Map;
 public class AuctionNotificationService {
 
     private final WebSocketService webSocketService;
+    private final NotificationQueueService notificationQueueService;
+    private final MemberRepository memberRepository;
 
     // 경매 시작 알림
     public void notifyAuctionStart(Long userId, Product product) {
@@ -30,6 +34,13 @@ public class AuctionNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(userId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "AUCTION_START", product);
+        }
+
         log.info("경매 시작 알림 전송 - 사용자: {}, 상품: {}", userId, product.getId());
     }
 
@@ -48,6 +59,13 @@ public class AuctionNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(userId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "AUCTION_ENDING_SOON", product);
+        }
+
         log.info("경매 종료 임박 알림 전송 - 사용자: {}, 상품: {}, 남은 시간: {}분", userId, product.getId(), remainingMinutes);
     }
 
@@ -67,6 +85,13 @@ public class AuctionNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
+        
+        // DB 큐에도 저장
+        Member member = memberRepository.findById(userId).orElse(null);
+        if (member != null) {
+            notificationQueueService.enqueueNotification(member, message, "AUCTION_END", product);
+        }
+
         log.info("경매 종료 알림 전송 - 사용자: {}, 상품: {}, 결과: {}", userId, product.getId(), hasWinner ? "낙찰" : "유찰");
     }
 }

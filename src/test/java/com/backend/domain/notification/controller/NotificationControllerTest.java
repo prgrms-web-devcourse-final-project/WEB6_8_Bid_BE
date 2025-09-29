@@ -76,31 +76,34 @@ class NotificationControllerTest {
         notificationRepository.deleteAll();
 
         // 알림 생성
-        readNotification = new Notification(
-                testProduct.getProductName() + " 상품에 새로운 입찰이 등록되었습니다.",
-                "BID_SUCCESS",
-                true,
-                testMember,
-                testProduct
-        );
+        readNotification = new Notification();
+        readNotification.setMessage(testProduct.getProductName() + " 상품에 새로운 입찰이 등록되었습니다.");
+        readNotification.setNotificationType("BID_SUCCESS");
+        readNotification.setIsRead(true);
+        readNotification.setMember(testMember);
+        readNotification.setProduct(testProduct);
+        readNotification.setQueueStatus(Notification.QueueStatus.SENT);
+        readNotification.setRetryCount(0);
         notificationRepository.save(readNotification);
 
-        unreadNotification1 = new Notification(
-                testProduct.getProductName() + " 상품에서 새로운 입찰이 들어와 밀렸습니다.",
-                "BID_OUTBID",
-                false,
-                testMember,
-                testProduct
-        );
+        unreadNotification1 = new Notification();
+        unreadNotification1.setMessage(testProduct.getProductName() + " 상품에서 새로운 입찰이 들어와 밀렸습니다.");
+        unreadNotification1.setNotificationType("BID_OUTBID");
+        unreadNotification1.setIsRead(false);
+        unreadNotification1.setMember(testMember);
+        unreadNotification1.setProduct(testProduct);
+        unreadNotification1.setQueueStatus(Notification.QueueStatus.SENT);
+        unreadNotification1.setRetryCount(0);
         notificationRepository.save(unreadNotification1);
 
-        unreadNotification2 = new Notification(
-                "축하합니다! " + testProduct.getProductName() + " 상품을 낙찰받았습니다!",
-                "AUCTION_WON",
-                false,
-                testMember,
-                testProduct
-        );
+        unreadNotification2 = new Notification();
+        unreadNotification2.setMessage("축하합니다! " + testProduct.getProductName() + " 상품을 낙찰받았습니다!");
+        unreadNotification2.setNotificationType("AUCTION_WON");
+        unreadNotification2.setIsRead(false);
+        unreadNotification2.setMember(testMember);
+        unreadNotification2.setProduct(testProduct);
+        unreadNotification2.setQueueStatus(Notification.QueueStatus.SENT);
+        unreadNotification2.setRetryCount(0);
         notificationRepository.save(unreadNotification2);
     }
 
@@ -315,13 +318,14 @@ class NotificationControllerTest {
         List<Product> products = productRepository.findAll();
         Product anotherProduct = products.size() > 1 ? products.get(1) : products.get(0);
         
-        Notification otherUserNotification = new Notification(
-                "다른 사용자의 알림입니다.",
-                "BID_SUCCESS",
-                false,
-                otherMember,
-                anotherProduct
-        );
+        Notification otherUserNotification = new Notification();
+        otherUserNotification.setMessage("다른 사용자의 알림입니다.");
+        otherUserNotification.setNotificationType("BID_SUCCESS");
+        otherUserNotification.setIsRead(false);
+        otherUserNotification.setMember(otherMember);
+        otherUserNotification.setProduct(anotherProduct);
+        otherUserNotification.setQueueStatus(Notification.QueueStatus.SENT);
+        otherUserNotification.setRetryCount(0);
         notificationRepository.save(otherUserNotification);
 
         // 현재 테스트 멤버의 알림만 조회됨

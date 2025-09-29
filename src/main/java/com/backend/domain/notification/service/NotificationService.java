@@ -89,7 +89,12 @@ public class NotificationService {
                 notification.getIsRead(),
                 productId,
                 productName,
-                notification.getCreateDate()
+                notification.getCreateDate(),
+                notification.getQueueStatus(),
+                notification.getRetryCount(),
+                notification.getScheduledTime(),
+                notification.getSentTime(),
+                notification.getErrorMessage()
         );
     }
 }
