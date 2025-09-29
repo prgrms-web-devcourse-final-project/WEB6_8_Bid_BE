@@ -81,13 +81,19 @@ export default function() {
 
 // 테스트 종료 후 요약
 export function handleSummary(data) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+
+    const duration = data.metrics.http_req_duration?.values || {};
+    const reqs = data.metrics.http_reqs?.values || {};
+    const errors = data.metrics.errors?.values || {};
+
     console.log('\n=== 현재 상태 성능 테스트 결과 ===');
-    console.log(`평균 응답시간: ${data.metrics.http_req_duration.values.avg.toFixed(2)}ms`);
-    console.log(`P95 응답시간: ${data.metrics.http_req_duration.values['p(95)'].toFixed(2)}ms`);
-    console.log(`P99 응답시간: ${data.metrics.http_req_duration.values['p(99)'].toFixed(2)}ms`);
-    console.log(`최대 응답시간: ${data.metrics.http_req_duration.values.max.toFixed(2)}ms`);
-    console.log(`총 요청 수: ${data.metrics.http_reqs.values.count}`);
-    console.log(`에러율: ${(data.metrics.errors.values.rate * 100).toFixed(2)}%`);
+    console.log(`평균 응답시간: ${duration.avg?.toFixed(2) || 'N/A'}ms`);
+    console.log(`P95 응답시간: ${duration['p(95)']?.toFixed(2) || 'N/A'}ms`);
+    console.log(`P99 응답시간: ${duration['p(99)']?.toFixed(2) || 'N/A'}ms`);
+    console.log(`최대 응답시간: ${duration.max?.toFixed(2) || 'N/A'}ms`);
+    console.log(`총 요청 수: ${reqs.count || 0}`);
+    console.log(`에러율: ${errors.rate ? (errors.rate * 100).toFixed(2) : '0.00'}%`);
 
     return {
         'stdout': JSON.stringify(data, null, 2),
