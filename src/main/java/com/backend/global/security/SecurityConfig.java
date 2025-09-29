@@ -26,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // 정적 리소스(/static, /public, /resources, /META-INF/resources)..
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
@@ -39,10 +39,9 @@ public class SecurityConfig {
                                 "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",
                                 "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                "/api/*/products",
-                                "/api/*/products/{productId:\\d+}",
-                                "/api/*/products/members/{memberId:\\d+}"
-                        ).permitAll()
+                                "/api/*/products", "/api/*/products/{productId:\\d+}",
+                                "/api/*/products/members/{memberId:\\d+}").permitAll()
+                        .requestMatchers("/api/*/test-data/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
@@ -50,7 +49,6 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
-
         return http.build();
     }
 
