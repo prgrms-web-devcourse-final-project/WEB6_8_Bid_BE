@@ -1,5 +1,7 @@
 package com.backend.domain.notification.dto;
 
+import com.backend.domain.notification.entity.Notification;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,6 +21,11 @@ public record NotificationListResponseDto (
             Boolean isRead,
             Long productId,
             String productName,
-            LocalDateTime createDate
+            LocalDateTime createDate,
+            Notification.QueueStatus queueStatus,
+            Integer retryCount,
+            LocalDateTime scheduledTime,
+            LocalDateTime sentTime,
+            String errorMessage
     ) {}
 }
