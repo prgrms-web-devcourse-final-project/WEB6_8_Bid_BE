@@ -4,7 +4,10 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.service.MemberService;
 import com.backend.domain.payment.dto.PaymentRequest;
 import com.backend.domain.payment.dto.PaymentResponse;
+import com.backend.domain.payment.dto.TossIssueBillingKeyRequest;
+import com.backend.domain.payment.dto.TossIssueBillingKeyResponse;
 import com.backend.domain.payment.service.PaymentService;
+import com.backend.domain.payment.service.TossBillingClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,9 +29,10 @@ public class ApiV1PaymentController {
 
     private final MemberService memberService;
     private final PaymentService paymentService;
+    private final TossBillingClient tossBillingClient;
 
     @PostMapping
-    @Operation(summary="지갑 충전 요청", description="idempotencyKey로 중복 충전 방지")
+    @Operation(summary="지갑 충전 요청", description="idempotencyKey로 중복 충전 방지, 일단은 idempotencyKey 아무키로 등록해주세요!.")
     public PaymentResponse charge(
             @AuthenticationPrincipal User user,
             @RequestBody @Valid PaymentRequest req
@@ -40,5 +44,18 @@ public class ApiV1PaymentController {
         Member actor = memberService.findMemberByEmail(user.getUsername());
 
         return paymentService.charge(actor, req);
+    }
+
+    @PostMapping("/toss/issue-billing-key")
+    public TossIssueBillingKeyResponse issueBillingKey(
+            @AuthenticationPrincipal User user,
+            @RequestBody TossIssueBillingKeyRequest req
+    ) {
+        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+
+        Member me = memberService.findMemberByEmail(user.getUsername());
+        String customerKey = "user-" + me.getId();   // ★ 프런트 값 무시하고 서버에서 생성
+
+        return tossBillingClient.issueBillingKey(customerKey, req.getAuthKey());
     }
 }

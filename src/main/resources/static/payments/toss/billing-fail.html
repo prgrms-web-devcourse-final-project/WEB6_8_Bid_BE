@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>빌링 실패</title>
+<pre id="out"></pre>
+<script>
+  const p = new URLSearchParams(location.search);
+  const code = p.get('code');
+  const message = p.get('message');
+  document.getElementById('out').textContent = JSON.stringify({ code, message }, null, 2);
+</script>

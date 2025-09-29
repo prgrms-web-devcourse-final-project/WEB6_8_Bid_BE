@@ -15,7 +15,7 @@ public class PaymentRequest {
     private Long paymentMethodId;  // 결제수단 ID..
 
     @NotNull
-    @Min(1)
+    @Min(100)
     private Long amount;           // 충전 금액(원)..
 
     @NotBlank
