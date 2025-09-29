@@ -1,7 +1,7 @@
 package com.backend.domain.notification.controller;
 
 import com.backend.domain.notification.service.NotificationQueueService;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
