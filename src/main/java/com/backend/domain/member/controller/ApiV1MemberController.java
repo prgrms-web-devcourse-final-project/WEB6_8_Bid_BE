@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -83,13 +84,11 @@ public class ApiV1MemberController {
         return ResponseEntity.ok(myInfoResponse);
     }
 
-    @Operation(summary = "내 정보 수정 Mock API", description = "내 정보 수정")
+    @Operation(summary = "내 정보 수정 API", description = "내 정보 수정")
     @PutMapping("/members/me")
-    public ResponseEntity<RsData<MemberMyInfoResponseDto>> myInfoModify(@RequestBody MemberModifyRequestDto memberModifyRequestDto, Authentication authentication) {
-        return ResponseEntity.ok(new RsData<>("200-1", "내 정보가 수정되었습니다.",
-                new MemberMyInfoResponseDto(1L, "test@test.com", "test", "010-1111-1111",
-                        "서울특별시 영등포구...", "https://example.com/profile.jpg", 50, LocalDateTime.now(), LocalDateTime.now())
-        ));
+    public ResponseEntity<RsData<MemberMyInfoResponseDto>> myInfoModify(@RequestPart MemberModifyRequestDto memberModifyRequestDto, @RequestPart(required = false) MultipartFile profileImage, Authentication authentication) {
+        RsData<MemberMyInfoResponseDto> myInfoModifyResponse = memberService.modify(authentication.getName(), memberModifyRequestDto, profileImage);
+        return ResponseEntity.status(myInfoModifyResponse.statusCode()).body(myInfoModifyResponse);
     }
 
     @Operation(summary = "판매자 정보 Mock API", description = "판매자 정보 확인")

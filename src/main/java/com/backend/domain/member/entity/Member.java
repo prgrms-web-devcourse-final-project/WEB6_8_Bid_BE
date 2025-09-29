@@ -50,6 +50,13 @@ public class Member extends BaseEntity {
         this.refreshToken = refreshToken;
     }
 
+    public void updateProfile(String nickname, String profileImageUrl, String phone, String address) {
+        this.nickname = nickname;
+        this.profileImageUrl = profileImageUrl;
+        this.phoneNumber = phone;
+        this.address = address;
+    }
+
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
 
