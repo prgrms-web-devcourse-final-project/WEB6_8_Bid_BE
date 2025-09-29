@@ -15,17 +15,13 @@ public class WebSocketService {
     
     private final SimpMessagingTemplate messagingTemplate;
     
-    /**
-     * 특정 토픽에 메시지 브로드캐스트
-     */
+    // 특정 토픽에 메시지 브로드캐스트
     public void sendToTopic(String topic, WebSocketMessage message) {
         log.info("토픽 {} 에 메시지 전송: {}", topic, message);
         messagingTemplate.convertAndSend("/topic/" + topic, message);
     }
 
-    /**
-     * 입찰 정보 브로드캐스트 (상품별)
-     */
+    // 입찰 정보 브로드캐스트 (상품별)
     public void broadcastBidUpdate(Long productId, Object bidData) {
         WebSocketMessage message = WebSocketMessage.of(
                 WebSocketMessage.MessageType.BID,
@@ -36,9 +32,7 @@ public class WebSocketService {
         sendToTopic("bid/" + productId, message);
     }
 
-    /**
-     * 경매 종료 임박 알림 브로드캐스트
-     */
+    // 경매 종료 임박 알림 브로드캐스트
     public void broadcastAuctionEndingSoon(Long productId, String productName) {
         String content = String.format("'%s' 경매가 10분 후 종료됩니다!", productName);
             
@@ -57,9 +51,7 @@ public class WebSocketService {
         sendToTopic("bid/" + productId, message);
     }
 
-    /**
-     * 개인 알림 전송 (특정 사용자)
-     */
+    // 개인 알림 전송 (특정 사용자)
     public void sendNotificationToUser(String userId, String message, Object data) {
         WebSocketMessage webSocketMessage = WebSocketMessage.of(
                 WebSocketMessage.MessageType.NOTIFICATION,
@@ -71,9 +63,7 @@ public class WebSocketService {
         log.info("개인 알림 전송 - 사용자: {}, 메시지: {}", userId, message);
     }
 
-    /**
-     * 경매 종료 알림 브로드캐스트
-     */
+    // 경매 종료 알림 브로드캐스트
     public void broadcastAuctionEnd(Long productId, boolean isSuccessful, Long finalPrice) {
         String content = isSuccessful ? 
             "경매가 종료되었습니다! 낙찰가: " + finalPrice.toString() + "원" : 

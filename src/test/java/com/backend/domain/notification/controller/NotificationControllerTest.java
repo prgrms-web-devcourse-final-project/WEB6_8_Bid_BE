@@ -5,37 +5,38 @@ import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.notification.entity.Notification;
 import com.backend.domain.notification.repository.NotificationRepository;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.repository.ProductRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@WithMockUser
 class NotificationControllerTest {
 
-    private MockMvc mockMvc;
-
     @Autowired
-    private WebApplicationContext webApplicationContext;
+    private MockMvc mockMvc;
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -57,72 +58,57 @@ class NotificationControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders
-                .webAppContextSetup(webApplicationContext)
-                .build();
         setupTestData();
     }
 
     private void setupTestData() {
-            // 테스트 회원 생성
-            testMember = Member.builder()
-                    .email("test@example.com")
-                    .password("password123")
-                    .nickname("testuser")
-                    .authority("USER")
-                    .creditScore(100)
-                    .build();
-            memberRepository.save(testMember);
+        // TestInitData에서 생성된 멤버 사용
+        testMember = memberRepository.findByNickname("입찰자1").get();
+        
+        // TestInitData에서 생성된 첫 번째 상품 사용
+        List<Product> products = productRepository.findAll();
+        testProduct = products.stream()
+                .filter(p -> p.getProductName().contains("iPhone 15 Pro"))
+                .findFirst()
+                .orElse(products.get(0)); // 첫 번째 상품
 
-            // 테스트 상품 생성
-            testProduct = new Product(
-                    "테스트 상품",
-                    "테스트 상품 설명",
-                    ProductCategory.DIGITAL_ELECTRONICS,
-                    10000L,
-                    LocalDateTime.now().plusMinutes(10),
-                    24,
-                    DeliveryMethod.DELIVERY,
-                    "서울시 강남구",
-                    testMember
-            );
-            productRepository.save(testProduct);
+        // 기존 데이터 정리
+        notificationRepository.deleteAll();
 
-            // 읽은 알림 생성
-            readNotification = new Notification(
-                    "읽은 알림입니다.",
-                    "NEW_BID",
-                    true,
-                    testMember,
-                    testProduct
-            );
-            notificationRepository.save(readNotification);
+        // 알림 생성
+        readNotification = new Notification(
+                testProduct.getProductName() + " 상품에 새로운 입찰이 등록되었습니다.",
+                "BID_SUCCESS",
+                true,
+                testMember,
+                testProduct
+        );
+        notificationRepository.save(readNotification);
 
-            // 읽지 않은 알림 1
-            unreadNotification1 = new Notification(
-                    "읽지 않은 알림 1입니다.",
-                    "OUTBID",
-                    false,
-                    testMember,
-                    testProduct
-            );
-            notificationRepository.save(unreadNotification1);
+        unreadNotification1 = new Notification(
+                testProduct.getProductName() + " 상품에서 새로운 입찰이 들어와 밀렸습니다.",
+                "BID_OUTBID",
+                false,
+                testMember,
+                testProduct
+        );
+        notificationRepository.save(unreadNotification1);
 
-            // 읽지 않은 알림 2
-            unreadNotification2 = new Notification(
-                    "읽지 않은 알림 2입니다.",
-                    "AUCTION_WON",
-                    false,
-                    testMember,
-                    testProduct
-            );
-            notificationRepository.save(unreadNotification2);
+        unreadNotification2 = new Notification(
+                "축하합니다! " + testProduct.getProductName() + " 상품을 낙찰받았습니다!",
+                "AUCTION_WON",
+                false,
+                testMember,
+                testProduct
+        );
+        notificationRepository.save(unreadNotification2);
     }
 
     @Test
     @DisplayName("전체 알림 목록 조회 - 성공")
     void getNotifications_Success() throws Exception {
         mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -142,6 +128,7 @@ class NotificationControllerTest {
     @DisplayName("읽지 않은 알림만 조회 - 성공")
     void getNotifications_UnreadOnly_Success() throws Exception {
         mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .param("isRead", "false")
@@ -159,6 +146,7 @@ class NotificationControllerTest {
     @DisplayName("읽은 알림만 조회 - 성공")
     void getNotifications_ReadOnly_Success() throws Exception {
         mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .param("isRead", "true")
@@ -175,6 +163,7 @@ class NotificationControllerTest {
     @DisplayName("페이징 처리 확인")
     void getNotifications_Paging_Success() throws Exception {
         mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "2")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -192,6 +181,7 @@ class NotificationControllerTest {
         Long notificationId = unreadNotification1.getId();
 
         mockMvc.perform(put("/notifications/{id}/read", notificationId)
+                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -211,6 +201,7 @@ class NotificationControllerTest {
         Long nonExistentId = 999999L;
 
         mockMvc.perform(put("/notifications/{id}/read", nonExistentId)
+                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound())
@@ -222,6 +213,7 @@ class NotificationControllerTest {
     @DisplayName("모든 알림 읽음 처리 - 성공")
     void markAllAsRead_Success() throws Exception {
         mockMvc.perform(put("/notifications/read-all")
+                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -241,6 +233,7 @@ class NotificationControllerTest {
         notificationRepository.markAllAsRead(testMember.getId());
 
         mockMvc.perform(put("/notifications/read-all")
+                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -250,9 +243,23 @@ class NotificationControllerTest {
     }
 
     @Test
+    @DisplayName("읽지 않은 알림 개수 조회 - 성공")
+    void getUnreadCount_Success() throws Exception {
+        mockMvc.perform(get("/notifications/unread-count")
+                        .with(user(String.valueOf(testMember.getId())))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("읽지 않은 알림 개수가 조회되었습니다."))
+                .andExpect(jsonPath("$.data").value(2));
+    }
+
+    @Test
     @DisplayName("알림 응답 데이터 구조 검증")
     void getNotifications_ResponseStructure() throws Exception {
         mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -262,19 +269,70 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.data.content[0].message").exists())
                 .andExpect(jsonPath("$.data.content[0].type").exists())
                 .andExpect(jsonPath("$.data.content[0].isRead").exists())
-                .andExpect(jsonPath("$.data.content[0].productId").exists())
-                .andExpect(jsonPath("$.data.content[0].productName").exists())
+                .andExpect(jsonPath("$.data.content[0].productId").value(testProduct.getId()))
+                .andExpect(jsonPath("$.data.content[0].productName").value(testProduct.getProductName()))
                 .andExpect(jsonPath("$.data.content[0].createDate").exists());
+    }
+
+    @Test
+    @DisplayName("알림 내용과 타입 검증")
+    void getNotifications_ContentValidation() throws Exception {
+        mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
+                        .param("page", "0")
+                        .param("size", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                // 최신순으로 정렬되므로 unreadNotification2가 첫 번째
+                .andExpect(jsonPath("$.data.content[0].type").value("AUCTION_WON"))
+                .andExpect(jsonPath("$.data.content[0].isRead").value(false))
+                // 두 번째는 unreadNotification1
+                .andExpect(jsonPath("$.data.content[1].type").value("BID_OUTBID"))
+                .andExpect(jsonPath("$.data.content[1].isRead").value(false))
+                // 세 번째는 readNotification
+                .andExpect(jsonPath("$.data.content[2].type").value("BID_SUCCESS"))
+                .andExpect(jsonPath("$.data.content[2].isRead").value(true));
     }
 
     @Test
     @DisplayName("잘못된 페이지 파라미터")
     void getNotifications_InvalidPageParameter() throws Exception {
         mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "-1")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
-                .andExpect(status().is(409)); // Spring Boot는 음수 페이지를 0으로 처리
+                .andExpect(jsonPath("$.resultCode").value("400-1"));
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 알림은 조회되지 않음")
+    void getNotifications_OnlyOwnNotifications() throws Exception {
+        // 다른 사용자의 알림 생성
+        Member otherMember = memberRepository.findByNickname("입찰자2").get();
+        List<Product> products = productRepository.findAll();
+        Product anotherProduct = products.size() > 1 ? products.get(1) : products.get(0);
+        
+        Notification otherUserNotification = new Notification(
+                "다른 사용자의 알림입니다.",
+                "BID_SUCCESS",
+                false,
+                otherMember,
+                anotherProduct
+        );
+        notificationRepository.save(otherUserNotification);
+
+        // 현재 테스트 멤버의 알림만 조회됨
+        mockMvc.perform(get("/notifications")
+                        .with(user(String.valueOf(testMember.getId())))
+                        .param("page", "0")
+                        .param("size", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(3)) // 여전히 3개만
+                .andExpect(jsonPath("$.data.totalElements").value(3));
     }
 }
