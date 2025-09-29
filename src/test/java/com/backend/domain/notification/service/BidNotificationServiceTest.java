@@ -6,6 +6,7 @@ import com.backend.domain.notification.entity.Notification;
 import com.backend.domain.notification.repository.NotificationRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
+import com.backend.global.websocket.service.WebSocketService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,9 +21,10 @@ import java.util.List;
 
 import static com.backend.domain.product.enums.DeliveryMethod.TRADE;
 import static com.backend.domain.product.enums.ProductCategory.DIGITAL_ELECTRONICS;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -43,7 +45,7 @@ class BidNotificationServiceTest {
     private ProductRepository productRepository;
     
     @MockitoBean
-    private com.backend.global.webSocket.service.WebSocketService webSocketService;
+    private WebSocketService webSocketService;
 
     @BeforeEach
     void setUp() {

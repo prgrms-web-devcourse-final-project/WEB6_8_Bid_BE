@@ -6,6 +6,7 @@ import com.backend.domain.notification.entity.Notification;
 import com.backend.domain.notification.repository.NotificationRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
+import com.backend.global.websocket.service.WebSocketService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class NotificationQueueIntegrationTest {
     private ProductRepository productRepository;
     
     @MockitoBean
-    private com.backend.global.webSocket.service.WebSocketService webSocketService;
+    private WebSocketService webSocketService;
 
     @BeforeEach
     void setUp() {
