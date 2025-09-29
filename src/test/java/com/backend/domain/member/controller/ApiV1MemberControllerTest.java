@@ -1,10 +1,13 @@
 package com.backend.domain.member.controller;
 
 import com.backend.domain.member.dto.LoginRequestDto;
+import com.backend.domain.member.dto.MemberModifyRequestDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.global.config.TestRedisConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import java.nio.charset.StandardCharsets;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -21,13 +29,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(classes = TestRedisConfiguration.class)
+@SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@Import(TestRedisConfiguration.class)
 class ApiV1MemberControllerTest {
 
     @Autowired
@@ -354,5 +364,61 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.email").value("myinfo@example.com"))
                 .andExpect(jsonPath("$.data.nickname").value("myinfoUser"))
                 .andExpect(jsonPath("$.data.address").value("My Address"));
+    }
+
+    @Test
+    @DisplayName("내 정보 수정 성공")
+    void t11() throws Exception {
+        // Given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "modify@example.com", "password123", "beforeModify", "01011112222", "Before Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        // 로그인하여 토큰 발급
+        LoginRequestDto loginDto = new LoginRequestDto("modify@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+
+        String responseBody = loginResult.andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(responseBody).get("data").get("accessToken").asText();
+
+        MemberModifyRequestDto modifyDto = new MemberModifyRequestDto(
+                "afterModify", "01099998888", "After Address");
+
+        MockMultipartFile profileImage = new MockMultipartFile(
+                "profileImage",
+                "hello.txt",
+                MediaType.TEXT_PLAIN_VALUE,
+                "Hello, World!".getBytes()
+        );
+
+        MockMultipartFile modifyDtoPart = new MockMultipartFile(
+                "memberModifyRequestDto",
+                "",
+                "application/json",
+                objectMapper.writeValueAsString(modifyDto).getBytes(StandardCharsets.UTF_8)
+        );
+
+
+        // When
+        ResultActions resultActions = mockMvc.perform(multipart(HttpMethod.PUT, "/api/v1/members/me")
+                        .file(profileImage)
+                        .file(modifyDtoPart)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andDo(print());
+
+        // Then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-4"))
+                .andExpect(jsonPath("$.msg").value("내 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.nickname").value("afterModify"))
+                .andExpect(jsonPath("$.data.phoneNumber").value("01099998888"))
+                .andExpect(jsonPath("$.data.address").value("After Address"))
+                .andExpect(jsonPath("$.data.profileImageUrl").exists());
     }
 }

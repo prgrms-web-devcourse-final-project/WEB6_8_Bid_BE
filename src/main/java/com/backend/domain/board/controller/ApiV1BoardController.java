@@ -6,7 +6,7 @@ import com.backend.domain.board.entity.Board;
 import com.backend.domain.board.service.BoardService;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;

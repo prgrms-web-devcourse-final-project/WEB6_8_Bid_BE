@@ -32,13 +32,13 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
             notificationQueueService.enqueueNotification(member, message, "BID_SUCCESS", product);
         }
-        
+
         log.info("입찰 성공 알림 전송 - 사용자: {}, 상품: {}, 금액: {}", userId, product.getId(), bidAmount);
     }
 
@@ -56,7 +56,7 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
@@ -79,7 +79,7 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(winnerId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(winnerId).orElse(null);
         if (member != null) {
@@ -103,7 +103,7 @@ public class BidNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {

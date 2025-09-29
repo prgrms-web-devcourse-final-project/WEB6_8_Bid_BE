@@ -4,7 +4,7 @@ import com.backend.domain.cash.dto.CashResponse;
 import com.backend.domain.cash.dto.CashTransactionItemResponse;
 import com.backend.domain.cash.dto.CashTransactionResponse;
 import com.backend.domain.cash.dto.CashTransactionsResponse;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;

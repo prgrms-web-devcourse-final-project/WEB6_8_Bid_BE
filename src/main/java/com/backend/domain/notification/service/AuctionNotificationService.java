@@ -34,7 +34,7 @@ public class AuctionNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
@@ -59,7 +59,7 @@ public class AuctionNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
@@ -85,7 +85,7 @@ public class AuctionNotificationService {
         );
 
         webSocketService.sendNotificationToUser(userId.toString(), message, data);
-        
+
         // DB 큐에도 저장
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {

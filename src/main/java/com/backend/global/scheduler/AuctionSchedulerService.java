@@ -4,7 +4,7 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.notification.service.AuctionNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
-import com.backend.global.webSocket.service.WebSocketService;
+import com.backend.global.websocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

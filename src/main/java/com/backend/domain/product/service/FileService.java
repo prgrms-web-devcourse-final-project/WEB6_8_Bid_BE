@@ -1,6 +1,6 @@
 package com.backend.domain.product.service;
 
-import com.backend.global.exception.ServiceException;
+import com.backend.domain.product.exception.ProductException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -45,7 +45,7 @@ public class FileService {
             return fileUrl;
         } catch (Exception e) {
             log.error("로컬 파일 업로드 실패: {}", file.getOriginalFilename(), e);
-            throw new ServiceException("400-8", "이미지 파일 업로드에 실패했습니다.");
+            throw ProductException.fileUploadFailed();
         }
     }
 

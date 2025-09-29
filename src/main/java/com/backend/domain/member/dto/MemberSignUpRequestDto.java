@@ -19,7 +19,7 @@ public record MemberSignUpRequestDto(
         String nickname,
 
         @NotBlank(message = "휴대폰 번호는 필수 입력값입니다.")
-        String phone,
+        String phoneNumber,
 
         @NotBlank(message = "주소는 필수 입력값입니다.")
         String address

@@ -4,7 +4,7 @@ import com.backend.domain.notification.dto.NotificationListResponseDto;
 import com.backend.domain.notification.entity.Notification;
 import com.backend.domain.notification.repository.NotificationRepository;
 import com.backend.domain.product.entity.Product;
-import com.backend.global.rsData.RsData;
+import com.backend.global.response.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
