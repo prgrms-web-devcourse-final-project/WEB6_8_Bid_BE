@@ -45,4 +45,3 @@ k6-tests/results
 ### env ###
 .env
 *.env
-.env.*
