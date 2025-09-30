@@ -36,6 +36,9 @@ jobs:
         
       - name: Run tests
         run: ./gradlew test --no-daemon
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         
       - name: Upload test results
         uses: actions/upload-artifact@v4
