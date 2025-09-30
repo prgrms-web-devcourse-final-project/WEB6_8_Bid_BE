@@ -10,6 +10,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.service.ProductImageService;
 import com.backend.domain.product.service.ProductService;
+import com.backend.domain.product.service.ProductSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -33,12 +34,14 @@ public class TestInitData {
     private final ProductImageService productImageService;
     private final MemberService memberService;
     private final BidService bidService;
+    private final ProductSyncService productSyncService;
 
     @Bean
     ApplicationRunner testInitDataApplicationRunner() {
         return args -> {
             self.work1();
             self.work2();
+            productSyncService.reindexAllProducts();
         };
     }
 

@@ -7,6 +7,7 @@ import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.service.ProductSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -29,11 +30,13 @@ public class BaseInitData  {
     private final PasswordEncoder passwordEncoder;
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
+    private final ProductSyncService productSyncService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner(){
         return args -> {
             self.work1();
+            productSyncService.reindexAllProducts();
         };
     }
 
