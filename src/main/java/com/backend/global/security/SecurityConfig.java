@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
 
                         // 공개 API (기존)..
+                        .requestMatchers("/favicon.ico", "/h2-console/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",
                                 "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
@@ -45,6 +47,8 @@ public class SecurityConfig {
 
                         .anyRequest().authenticated()
                 )
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
