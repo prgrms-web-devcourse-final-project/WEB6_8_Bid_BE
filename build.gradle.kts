@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     java
     id("org.springframework.boot") version "3.5.5"
@@ -31,6 +33,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation ("org.springframework.boot:spring-boot-starter-websocket")
+    implementation ("org.springframework.boot:spring-boot-starter-webflux")
+
 
     // 스프링부트 추가 기능
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")

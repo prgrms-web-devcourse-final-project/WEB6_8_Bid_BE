@@ -1,6 +1,7 @@
 package com.backend.global.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,16 +26,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/webjars/**", "/api/v1/bids/**", "/notifications/**", "/ws/**", "/*.html", "/static/**", "/bid-test.html", "/websocket-test.html", "/api/test/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/*/products", "/api/*/products/{productId:\\d+}", "/api/*/products/members/{memberId:\\d+}").permitAll()
+                        // 정적 리소스(/static, /public, /resources, /META-INF/resources)..
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+
+                        // 토스 리다이렉트용 정적 페이지..
+                        .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
+
+                        // 공개 API (기존)..
+                        .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",
+                                "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/*/products",
+                                "/api/*/products/{productId:\\d+}",
+                                "/api/*/products/members/{memberId:\\d+}"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
+
         return http.build();
     }
 
