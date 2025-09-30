@@ -8,23 +8,23 @@ import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.payment.constant.PaymentStatus;
-import com.backend.domain.payment.dto.PaymentRequest;
-import com.backend.domain.payment.dto.PaymentResponse;
-import com.backend.domain.payment.dto.PgChargeResultResponse;
+import com.backend.domain.payment.dto.*;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
+import java.time.*;
 
-    @Slf4j
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -33,7 +33,7 @@ public class PaymentService {
     private final PaymentMethodRepository paymentMethodRepository;          // 수단..
     private final CashRepository cashRepository;                            // 지갑..
     private final CashTransactionRepository cashTransactionRepository;      // 원장..
-    private final TossBillingClient tossBillingClient;
+    private final TossBillingClientService tossBillingClientService;
     private static final long MIN_AMOUNT = 100L;                            // 최소 100원
     private static final long MAX_AMOUNT_PER_TX = 1_000_000L;               // 1회 한도(예시)..
 
@@ -96,7 +96,7 @@ public class PaymentService {
         String customerKey = "user-" + actor.getId();
         PgChargeResultResponse res;
         try {
-            res = tossBillingClient.charge(
+            res = tossBillingClientService.charge(
                     pm.getToken(),           // billingKey
                     req.getAmount(),         // 금액
                     req.getIdempotencyKey(),  // 멱등키
@@ -146,6 +146,76 @@ public class PaymentService {
         return toResponse(payment, newBalance, tx.getId());
     }
 
+    @Transactional(readOnly = true)
+    public MyPaymentsResponse getMyPayments(Member member, int page1Base, int size) {
+        int page0 = Math.max(0, page1Base - 1);
+        PageRequest pageable = PageRequest.of(page0, Math.max(1, size));
+
+        Page<Payment> page = paymentRepository.findAllByMemberOrderByIdDesc(member, pageable);
+
+        var items = page.getContent().stream()
+                .map(this::toListItem)
+                .toList();
+
+        return MyPaymentsResponse.builder()
+                .page(page1Base)
+                .size(size)
+                .total(page.getTotalElements())
+                .items(items)
+                .build();
+    }
+
+    private MyPaymentListItemResponse toListItem(Payment p) {
+        String provider   = p.getProvider();
+        String methodType = p.getMethodType();
+
+        // 결제 건에 연결된 입금 원장 찾아서 id/balanceAfter 세팅..
+        var txOpt = cashTransactionRepository
+                .findFirstByRelatedTypeAndRelatedIdOrderByIdDesc(RelatedType.PAYMENT, p.getId());
+
+        Long cashTxId     = txOpt.map(CashTransaction::getId).orElse(null);
+        Long balanceAfter = txOpt.map(CashTransaction::getBalanceAfter).orElse(null);
+
+        return MyPaymentListItemResponse.builder()
+                .paymentId(p.getId())
+                .status(p.getStatus() != null ? p.getStatus().name() : null)
+                .amount(p.getAmount())
+                .provider(provider)
+                .methodType(methodType)
+                .createdAt(p.getCreateDate())
+                .cashTransactionId(cashTxId)
+                .balanceAfter(balanceAfter)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public MyPaymentResponse getMyPaymentDetail(Member member, Long paymentId) {
+        Payment p = paymentRepository.findByIdAndMember(paymentId, member)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제를 찾을 수 없습니다."));
+
+        // 결제 성공 시 연결된 입금 원장 조회 (없으면 null)..
+        var txOpt = cashTransactionRepository
+                .findFirstByRelatedTypeAndRelatedIdOrderByIdDesc(RelatedType.PAYMENT, p.getId());
+
+        Long cashTxId     = txOpt.map(CashTransaction::getId).orElse(null);
+        Long balanceAfter = txOpt.map(CashTransaction::getBalanceAfter).orElse(null);
+
+        return MyPaymentResponse.builder()
+                .paymentId(p.getId())
+                .paymentMethodId(p.getPaymentMethod() != null ? p.getPaymentMethod().getId() : null)
+                .status(p.getStatus() != null ? p.getStatus().name() : null)
+                .amount(p.getAmount())
+                .provider(p.getProvider())
+                .methodType(p.getMethodType())
+                .transactionId(p.getTransactionId())
+                .idempotencyKey(p.getIdempotencyKey())
+                .createdAt(p.getCreateDate())
+                .paidAt(p.getPaidAt())
+                .cashTransactionId(cashTxId)
+                .balanceAfter(balanceAfter)
+                .build();
+    }
+
     private Cash newCash(Member m) {                                              // 새 지갑(0원)..
         return Cash.builder().member(m).balance(0L).build();
     }
@@ -160,10 +230,8 @@ public class PaymentService {
                 .provider(p.getProvider())                              // PG 제공사 스냅샷("toss" 등)..
                 .methodType(p.getMethodType())                          // 결제수단 타입 스냅샷("CARD"/"BANK")..
                 .transactionId(p.getTransactionId())                    // PG 트랜잭션 ID(있으면)..
-                .createdAt(p.getCreateDate() == null ? null :           // 결제 레코드 생성 시각..
-                        p.getCreateDate().toString())
-                .paidAt(p.getPaidAt() == null ? null :                  // 결제 승인 확정 시각..
-                        p.getPaidAt().toString())
+                .createdAt(p.getCreateDate())                           // 결제 레코드 생성 시각..
+                .paidAt(p.getPaidAt())                                  // 결제 승인 확정 시각..
                 .idempotencyKey(p.getIdempotencyKey())                  // 멱등키(중복요청 식별용)..
                 .cashTransactionId(cashTxId)                            // 현 충전으로 생성된 원장(입금) 레코드 ID..
                 //  ↳ 멱등 재호출이면 새로 만든 원장이 없으므로 null(이미 같은 거래가 처리돼서 새롭게 적을 입금 기록이 없다는 뜻)..

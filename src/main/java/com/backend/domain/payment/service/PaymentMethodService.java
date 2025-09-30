@@ -313,8 +313,8 @@ public class PaymentMethodService {
                 .bankName(e.getBankName())
                 .acctLast4(e.getAcctLast4())
 
-                .createDate(e.getCreateDate() == null ? null : e.getCreateDate().format(DATE_TIME))
-                .modifyDate(e.getModifyDate() == null ? null : e.getModifyDate().format(DATE_TIME))
+                .createDate(e.getCreateDate())
+                .modifyDate(e.getModifyDate())
                 .expireDate((e.getExpYear() != null && e.getExpMonth() != null)
                         ? String.format("%04d-%02d", e.getExpYear(), e.getExpMonth())
                         : null)

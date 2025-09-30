@@ -23,7 +23,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TossBillingClient {
+public class TossBillingClientService {
 
     @Value("${pg.toss.secretKey}")
     private String secretKey;

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "Payment", description = "결제 관련 API")
@@ -32,8 +33,8 @@ public class ApiV1PaymentMockController {
                 .bankCode(null)
                 .bankName(null)
                 .acctLast4(null)
-                .createDate("2025-09-23T12:34:56Z")
-                .modifyDate("2025-09-23T12:34:56Z")
+                .createDate(LocalDateTime.parse("2025-09-23T12:34:56"))
+                .modifyDate(LocalDateTime.parse("2025-09-23T12:34:56Z"))
                 .expireDate("2027-12")
                 .build();
 
@@ -50,8 +51,8 @@ public class ApiV1PaymentMockController {
                 .bankCode("004")
                 .bankName("KB국민은행")
                 .acctLast4("5678")
-                .createDate("2025-08-11T09:10:00Z")
-                .modifyDate("2025-08-11T09:10:00Z")
+                .createDate(LocalDateTime.parse("2025-08-11T09:10:00"))
+                .modifyDate(LocalDateTime.parse("2025-08-11T09:10:00Z"))
                 .expireDate(null)
                 .build();
 
@@ -84,8 +85,8 @@ public class ApiV1PaymentMockController {
                     .bankCode(null)
                     .bankName(null)
                     .acctLast4(null)
-                    .createDate("2025-09-23T12:34:56Z")
-                    .modifyDate("2025-09-23T12:34:56Z")
+                    .createDate(LocalDateTime.parse("2025-09-23T12:34:56"))
+                    .modifyDate(LocalDateTime.parse("2025-09-23T12:34:56Z"))
                     .expireDate("2027-12")
                     .build();
         } else {
@@ -103,8 +104,8 @@ public class ApiV1PaymentMockController {
                     .bankCode("004")
                     .bankName("KB국민은행")
                     .acctLast4("5678")
-                    .createDate("2025-08-11T09:10:00Z")
-                    .modifyDate("2025-08-11T09:10:00Z")
+                    .createDate(LocalDateTime.parse("2025-08-11T09:10:00"))
+                    .modifyDate(LocalDateTime.parse("2025-08-11T09:10:00Z"))
                     .expireDate(null)
                     .build();
         }
@@ -131,8 +132,8 @@ public class ApiV1PaymentMockController {
                 .bankCode(null)
                 .bankName(null)
                 .acctLast4(null)
-                .createDate("2025-09-23T13:20:00Z")
-                .modifyDate("2025-09-23T13:20:00Z")
+                .createDate(LocalDateTime.parse("2025-09-23T13:20:00"))
+                .modifyDate(LocalDateTime.parse("2025-09-23T13:20:00Z"))
                 .expireDate("2028-03")
                 .build();
 
@@ -151,7 +152,7 @@ public class ApiV1PaymentMockController {
                 .id(id)
                 .alias("경조사용 카드")
                 .isDefault(false)
-                .modifyDate("2025-09-23T13:45:00Z")
+                .modifyDate(LocalDateTime.parse("2025-09-23T13:45:00"))
                 .build();
 
         RsData<PaymentMethodEditResponse> body =
@@ -189,8 +190,8 @@ public class ApiV1PaymentMockController {
                 .provider("toss")
                 .methodType("CARD")
                 .transactionId("pg_tx_abc123")
-                .createdAt("2025-09-23T12:35:10Z")
-                .paidAt("2025-09-23T12:35:10Z")
+                .createdAt(LocalDateTime.parse("2025-09-23T12:35:10"))
+                .paidAt(LocalDateTime.parse("2025-09-23T12:35:10Z"))
                 .idempotencyKey("topup-20250923-uid123-001")
                 .cashTransactionId(98765L)
                 .balanceAfter(155000L)
@@ -211,27 +212,21 @@ public class ApiV1PaymentMockController {
         // 성공..
         MyPaymentListItemResponse item1 = MyPaymentListItemResponse.builder()
                 .paymentId(101L)
-                .paymentMethodId(12L)
                 .status("SUCCESS")
                 .amount(50000L)
-                .currency("KRW")
                 .provider("toss")
                 .methodType("CARD")
-                .transactionId("pg_tx_abc123")          // 성공이라 있음..
-                .createdAt("2025-09-23T12:35:10Z")
+                .createdAt(LocalDateTime.parse("2025-09-23T12:35:10"))
                 .build();
 
         // 실패..
         MyPaymentListItemResponse item2 = MyPaymentListItemResponse.builder()
                 .paymentId(99L)
-                .paymentMethodId(21L)
                 .status("FAILED")
                 .amount(30000L)
-                .currency("KRW")
                 .provider("toss")
                 .methodType("CARD")
-                .transactionId(null)                    // 실패라서 없음..
-                .createdAt("2025-09-15T08:10:00Z")
+                .createdAt(LocalDateTime.parse("2025-09-15T08:10:00"))
                 .build();
 
         List<MyPaymentListItemResponse> items = List.of(item1, item2);
@@ -258,12 +253,10 @@ public class ApiV1PaymentMockController {
                 .paymentMethodId(12L)
                 .status("SUCCESS")
                 .amount(50000L)
-                .currency("KRW")
                 .provider("toss")
                 .methodType("CARD")
                 .transactionId("pg_tx_abc123")
-                .createdAt("2025-09-23T12:35:10Z")
-                .modifyDate("2025-09-23T12:35:10Z")
+                .createdAt(LocalDateTime.parse("2025-09-23T12:35:10"))
                 .idempotencyKey("topup-20250923-uid123-001")
                 .cashTransactionId(98765L)
                 .balanceAfter(155000L)
