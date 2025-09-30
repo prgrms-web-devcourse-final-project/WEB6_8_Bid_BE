@@ -1,6 +1,7 @@
 package com.backend.domain.payment.service;
 
 import com.backend.domain.cash.constant.CashTxType;
+import com.backend.domain.cash.constant.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.repository.CashRepository;
@@ -133,7 +134,7 @@ public class PaymentService {
                 .type(CashTxType.DEPOSIT)                                         // 입금..
                 .amount(req.getAmount())
                 .balanceAfter(newBalance)
-                .relatedType("PAYMENT")                                           // 근거: PAYMENT..
+                .relatedType(RelatedType.PAYMENT)                                           // 근거: PAYMENT..
                 .relatedId(payment.getId())
                 .build();
         cashTransactionRepository.save(tx);

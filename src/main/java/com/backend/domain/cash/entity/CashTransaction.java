@@ -1,6 +1,7 @@
 package com.backend.domain.cash.entity;
 
 import com.backend.domain.cash.constant.CashTxType;
+import com.backend.domain.cash.constant.RelatedType;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,8 +32,9 @@ public class CashTransaction extends BaseEntity {
     private Long balanceAfter;                            // 이 거래가 끝난 직후 잔액..
 
     // 왜 돈이 들어오고/나갔는지? (추적용)..
-    @Column(length = 32, nullable=false)
-    private String relatedType;                           // 예: "PAYMENT", "BID"..
+    @Enumerated(EnumType.STRING)
+    @Column(name = "related_type", length = 32, nullable = false)
+    private RelatedType relatedType;                      // 예: "PAYMENT", "BID"..
 
     @Column(nullable=false)
     private Long relatedId;                               // 예: 결제ID, 입찰ID 등..

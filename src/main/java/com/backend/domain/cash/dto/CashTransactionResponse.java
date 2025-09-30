@@ -31,5 +31,6 @@ public class CashTransactionResponse {
     @Builder
     public static class Links {
         private final String paymentDetail; // 예: "/payments/me/101"
+        private final String bidDetail;     // 예: /api/v1/bids/products/{productId}
     }
 }
