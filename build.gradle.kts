@@ -63,6 +63,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("com.github.codemonstur:embedded-redis:1.4.2")
+    implementation("net.datafaker:datafaker:2.1.0")
 }
 
 tasks.withType<Test> {

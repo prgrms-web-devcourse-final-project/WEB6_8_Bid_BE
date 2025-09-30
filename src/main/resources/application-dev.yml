@@ -16,3 +16,6 @@ file:
   upload:
     path: ./uploads
     base-url: http://localhost:8080/uploads
+testdata:
+  generation:
+    enabled: true

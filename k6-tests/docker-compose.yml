@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  k6:
+    image: grafana/k6:latest
+    container_name: k6-load-test
+    working_dir: /scripts
+    volumes:
+      - ./:/scripts
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: run getProducts-test.js

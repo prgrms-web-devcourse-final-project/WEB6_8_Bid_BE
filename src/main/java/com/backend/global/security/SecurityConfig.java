@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +27,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // 정적 리소스(/static, /public, /resources, /META-INF/resources)..
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
@@ -35,22 +36,23 @@ public class SecurityConfig {
                         .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
 
                         // 공개 API (기존)..
+                        .requestMatchers("/favicon.ico", "/h2-console/**").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",
                                 "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                "/api/*/products",
-                                "/api/*/products/{productId:\\d+}",
-                                "/api/*/products/members/{memberId:\\d+}"
-                        ).permitAll()
+                                "/api/*/products", "/api/*/products/{productId:\\d+}",
+                                "/api/*/products/members/{memberId:\\d+}").permitAll()
+                        .requestMatchers("/api/*/test-data/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
-
         return http.build();
     }
 

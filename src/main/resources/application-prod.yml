@@ -9,3 +9,6 @@ file:
   upload:
     path: ${user.home}/uploads
     base-url: ${BACKEND_BASE_URL}/uploads
+testdata:
+  generation:
+    enabled: false

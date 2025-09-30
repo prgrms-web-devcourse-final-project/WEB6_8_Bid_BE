@@ -22,7 +22,16 @@ import java.util.List;
 import static java.time.LocalDateTime.now;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = {
+        // 기본 목록 조회 (상태, 최신순)
+        @Index(name = "idx_status_create", columnList = "status, create_date DESC"),
+        // 판매자 목록 조회 (회원, 상태, 최신순)
+        @Index(name = "idx_seller_status_create", columnList = "seller_id, status, create_date DESC"),
+        // 카테고리 목록 조회 (카테고리, 상태, 최신순)
+        @Index(name = "idx_category_status_create", columnList = "category, status, create_date DESC"),
+        // 지역 목록 조회 (지역, 상태, 최신순)
+        @Index(name = "idx_location_status_create", columnList = "location, status, create_date DESC")
+})
 @Getter
 @NoArgsConstructor
 public class Product extends BaseEntity {
