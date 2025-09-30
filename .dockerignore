@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Gradle
+.gradle
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Terraform
+terraform/
+
+# GitHub
+.github/
+
+# Test
+**/test/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# Database
+*.db
+*.mv.db
+*.trace.db
+
+# Environment
+.env
+.env.local
+
+# Docker
+docker-compose.yml
+Dockerfile
