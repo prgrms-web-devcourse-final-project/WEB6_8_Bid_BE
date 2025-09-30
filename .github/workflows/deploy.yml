@@ -84,6 +84,8 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ENVIRONMENT: ${{ steps.env.outputs.environment }}
+          PG_TOSS_CLIENT_KEY: ${{ secrets.PG_TOSS_CLIENT_KEY }}
+          PG_TOSS_SECRET_KEY: ${{ secrets.PG_TOSS_SECRET_KEY }}
         run: |
           IMAGE_TAG=$GITHUB_SHA
           IMAGE_URI=$ECR_REGISTRY/team12-ecr-1:$IMAGE_TAG
