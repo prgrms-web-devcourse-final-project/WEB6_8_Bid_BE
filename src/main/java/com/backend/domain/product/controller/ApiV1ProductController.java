@@ -73,9 +73,9 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         return RsData.ok("상품 목록이 조회되었습니다", response);
     }
 
-    @GetMapping
+    @GetMapping("/es")
     @Transactional(readOnly = true)
-    public RsData<PageDto<ProductListItemDto>> getProductsByElastic(
+    public RsData<PageDto<ProductListItemDto>> getProductsByElasticsearch(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,

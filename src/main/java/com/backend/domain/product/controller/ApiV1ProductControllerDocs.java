@@ -65,6 +65,23 @@ public interface ApiV1ProductControllerDocs {
     );
 
 
+    @Operation(summary = "상품 목록 조회 (ElasticSearch)", description = "ElasticSearch를 사용하여 상품 목록을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "상품 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<PageDto<ProductListItemDto>> getProductsByElasticsearch(
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "상품명 검색어") @RequestParam(required = false) String keyword,
+            @Parameter(description = "상품 카테고리 (번호)") @RequestParam(required = false) Integer[] category,
+            @Parameter(description = "직거래 시 지역") @RequestParam(required = false) String[] location,
+            @Parameter(description = "배송 가능 여부") @RequestParam(required = false) Boolean isDelivery,
+            @Parameter(description = "경매 상태") @RequestParam(defaultValue = "BIDDING") AuctionStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+    );
+
+
     @Operation(summary = "상품 상세 조회", description = "상품을 ID로 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "상품 상세 조회 성공",

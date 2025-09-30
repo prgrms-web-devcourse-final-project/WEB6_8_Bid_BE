@@ -41,7 +41,7 @@ public record ProductListItemDto(
         );
     }
 
-    public static ProductListItemDto fromDocument(ProductDocument document) {
+    public static ProductListItemDto fromDocument(ProductDocument document, SellerDto sellerDto) {
         return new ProductListItemDto(
                 document.getProductId(),
                 document.getProductName(),
@@ -55,7 +55,7 @@ public record ProductListItemDto(
 //                document.getBidderCount(),
                 document.getLocation(),
                 document.getThumbnailUrl(),
-                new SellerDto(document.getSellerId(), document.getSellerNickname(), null, null, null)
+                sellerDto
         );
     }
 }
