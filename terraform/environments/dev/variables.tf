@@ -10,6 +10,12 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "team_name" {
+  description = "Team name (not used directly, see locals.tf)"
+  type        = string
+  default     = "team12"
+}
+
 variable "vpc_cidr" {
   description = "CIDR block for VPC"
   type        = string
@@ -37,17 +43,17 @@ variable "private_subnet_cidrs" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.small"
+  default     = "t3.micro"
 }
 
 variable "ami_id" {
   description = "AMI ID for EC2 instances"
   type        = string
-  default     = "" # Auto Scaling Group이 자동으로 최신 Amazon Linux 2 AMI 사용
+  default     = ""
 }
 
 variable "key_pair_name" {
-  description = "EC2 Key Pair name"
+  description = "bid-ssh"
   type        = string
 }
 
@@ -60,7 +66,7 @@ variable "asg_min_size" {
 variable "asg_max_size" {
   description = "Maximum size of the Auto Scaling Group"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "asg_desired_capacity" {
@@ -89,6 +95,12 @@ variable "db_username" {
 
 variable "db_password" {
   description = "Database password"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_secret" {
+  description = "JWT secret key"
   type        = string
   sensitive   = true
 }

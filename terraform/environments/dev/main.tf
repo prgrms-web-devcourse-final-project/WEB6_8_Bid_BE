@@ -9,11 +9,10 @@ terraform {
   }
   
   backend "s3" {
-    bucket         = "auction-app-terraform-state"
+    bucket         = "team12-terraform-state"
     key            = "dev/terraform.tfstate"
     region         = "ap-northeast-2"
     encrypt        = true
-    dynamodb_table = "terraform-lock"
   }
 }
 
@@ -21,11 +20,25 @@ provider "aws" {
   region = var.aws_region
   
   default_tags {
-    tags = {
-      Environment = var.environment
-      Project     = "auction-app"
-      ManagedBy   = "terraform"
-    }
+    tags = merge(local.common_tags, {
+      Team = "team12"
+    })
+  }
+}
+
+# AMI 데이터 소스
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+  
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
 
@@ -36,7 +49,7 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   
   tags = {
-    Name = "auction-app-vpc-${var.environment}"
+    Name = local.vpc_name
   }
 }
 
@@ -45,7 +58,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
   
   tags = {
-    Name = "auction-app-igw-${var.environment}"
+    Name = local.igw_name
   }
 }
 
@@ -59,7 +72,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
   
   tags = {
-    Name = "auction-app-public-subnet-${var.environment}-${count.index + 1}"
+    Name = "${local.public_subnet_prefix}-${count.index + 1}"
   }
 }
 
@@ -72,7 +85,7 @@ resource "aws_subnet" "private" {
   availability_zone = var.availability_zones[count.index]
   
   tags = {
-    Name = "auction-app-private-subnet-${var.environment}-${count.index + 1}"
+    Name = "${local.private_subnet_prefix}-${count.index + 1}"
   }
 }
 
@@ -86,7 +99,7 @@ resource "aws_route_table" "public" {
   }
   
   tags = {
-    Name = "auction-app-public-rt-${var.environment}"
+    Name = "${local.team_prefix}-public-rt-1"
   }
 }
 
@@ -98,13 +111,14 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Security Group for ALB
-resource "aws_security_group" "alb" {
-  name        = "auction-app-alb-sg-${var.environment}"
-  description = "Security group for Application Load Balancer"
+# Security Group for EC2
+resource "aws_security_group" "ec2" {
+  name        = local.ec2_sg_name
+  description = "Security group for EC2 instances - Team12"
   vpc_id      = aws_vpc.main.id
   
   ingress {
+    description = "HTTP from anywhere"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -112,45 +126,31 @@ resource "aws_security_group" "alb" {
   }
   
   ingress {
+    description = "HTTPS from anywhere"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+  ingress {
+    description = "Application port"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   
-  tags = {
-    Name = "auction-app-alb-sg-${var.environment}"
-  }
-}
-
-# Security Group for EC2
-resource "aws_security_group" "ec2" {
-  name        = "auction-app-ec2-sg-${var.environment}"
-  description = "Security group for EC2 instances"
-  vpc_id      = aws_vpc.main.id
-  
   ingress {
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-  
-  ingress {
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # 운영환경에서는 특정 IP로 제한 필요
+    cidr_blocks = ["0.0.0.0/0"]
   }
   
   egress {
+    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -158,17 +158,18 @@ resource "aws_security_group" "ec2" {
   }
   
   tags = {
-    Name = "auction-app-ec2-sg-${var.environment}"
+    Name = local.ec2_sg_name
   }
 }
 
 # Security Group for RDS
 resource "aws_security_group" "rds" {
-  name        = "auction-app-rds-sg-${var.environment}"
-  description = "Security group for RDS instance"
+  name        = local.rds_sg_name
+  description = "Security group for RDS MySQL - Team12"
   vpc_id      = aws_vpc.main.id
   
   ingress {
+    description     = "MySQL from EC2"
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
@@ -176,6 +177,7 @@ resource "aws_security_group" "rds" {
   }
   
   egress {
+    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -183,62 +185,22 @@ resource "aws_security_group" "rds" {
   }
   
   tags = {
-    Name = "auction-app-rds-sg-${var.environment}"
+    Name = local.rds_sg_name
   }
 }
 
-# Application Load Balancer
-resource "aws_lb" "main" {
-  name               = "auction-app-alb-${var.environment}"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = aws_subnet.public[*].id
+# Elastic IP for EC2
+resource "aws_eip" "main" {
+  domain = "vpc"
   
   tags = {
-    Name = "auction-app-alb-${var.environment}"
-  }
-}
-
-# Target Group
-resource "aws_lb_target_group" "main" {
-  name     = "auction-app-tg-${var.environment}"
-  port     = 8080
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
-  
-  health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    interval            = 30
-    matcher             = "200"
-    path                = "/actuator/health"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-    timeout             = 5
-    unhealthy_threshold = 2
-  }
-  
-  tags = {
-    Name = "auction-app-tg-${var.environment}"
-  }
-}
-
-# ALB Listener
-resource "aws_lb_listener" "main" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = "80"
-  protocol          = "HTTP"
-  
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.main.arn
+    Name = "${local.team_prefix}-eip-1"
   }
 }
 
 # IAM Role for EC2
 resource "aws_iam_role" "ec2" {
-  name = "auction-app-ec2-role-${var.environment}"
+  name = "${local.team_prefix}-ec2-role-1"
   
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -252,6 +214,10 @@ resource "aws_iam_role" "ec2" {
       }
     ]
   })
+  
+  tags = {
+    Name = "${local.team_prefix}-ec2-role-1"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "ec2_ecr" {
@@ -270,14 +236,18 @@ resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
 }
 
 resource "aws_iam_instance_profile" "ec2" {
-  name = "auction-app-ec2-profile-${var.environment}"
+  name = "${local.team_prefix}-ec2-profile-1"
   role = aws_iam_role.ec2.name
+  
+  tags = {
+    Name = "${local.team_prefix}-ec2-profile-1"
+  }
 }
 
 # Launch Template
 resource "aws_launch_template" "main" {
-  name_prefix   = "auction-app-lt-${var.environment}-"
-  image_id      = var.ami_id
+  name_prefix   = "${local.launch_template_name}-"
+  image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   key_name      = var.key_pair_name
   
@@ -288,28 +258,39 @@ resource "aws_launch_template" "main" {
   network_interfaces {
     associate_public_ip_address = true
     security_groups             = [aws_security_group.ec2.id]
+    delete_on_termination       = true
   }
   
   user_data = base64encode(templatefile("${path.module}/user-data.sh", {
-    environment     = var.environment
-    ecr_repository  = aws_ecr_repository.main.repository_url
-    aws_region      = var.aws_region
+    environment    = var.environment
+    ecr_repository = aws_ecr_repository.main.repository_url
+    aws_region     = var.aws_region
+    rds_endpoint   = aws_db_instance.main.endpoint
+    db_username    = var.db_username
+    db_password    = var.db_password
+    jwt_secret     = var.jwt_secret
   }))
   
   tag_specifications {
     resource_type = "instance"
-    tags = {
-      Name = "auction-app-instance-${var.environment}"
-    }
+    tags = merge(local.common_tags, {
+      Name = "${local.team_prefix}-instance-1"
+    })
+  }
+  
+  tag_specifications {
+    resource_type = "volume"
+    tags = merge(local.common_tags, {
+      Name = "${local.team_prefix}-volume-1"
+    })
   }
 }
 
 # Auto Scaling Group
 resource "aws_autoscaling_group" "main" {
-  name                = "auction-app-asg-${var.environment}"
+  name                = local.asg_name
   vpc_zone_identifier = aws_subnet.public[*].id
-  target_group_arns   = [aws_lb_target_group.main.arn]
-  health_check_type   = "ELB"
+  health_check_type   = "EC2"  # ALB 없으므로 EC2 헬스체크
   health_check_grace_period = 300
   
   min_size         = var.asg_min_size
@@ -323,24 +304,36 @@ resource "aws_autoscaling_group" "main" {
   
   tag {
     key                 = "Name"
-    value               = "auction-app-instance-${var.environment}"
+    value               = "${local.team_prefix}-instance-1"
+    propagate_at_launch = true
+  }
+  
+  tag {
+    key                 = "Team"
+    value               = "team12"
+    propagate_at_launch = true
+  }
+  
+  tag {
+    key                 = "Environment"
+    value               = var.environment
     propagate_at_launch = true
   }
 }
 
 # RDS Subnet Group
 resource "aws_db_subnet_group" "main" {
-  name       = "auction-app-db-subnet-${var.environment}"
+  name       = "${local.team_prefix}-db-subnet-1"
   subnet_ids = aws_subnet.private[*].id
   
   tags = {
-    Name = "auction-app-db-subnet-${var.environment}"
+    Name = "${local.team_prefix}-db-subnet-1"
   }
 }
 
 # RDS Instance
 resource "aws_db_instance" "main" {
-  identifier     = "auction-app-db-${var.environment}"
+  identifier     = local.rds_name
   engine         = "mysql"
   engine_version = "8.0"
   instance_class = var.db_instance_class
@@ -360,17 +353,19 @@ resource "aws_db_instance" "main" {
   backup_window          = "03:00-04:00"
   maintenance_window     = "mon:04:00-mon:05:00"
   
-  skip_final_snapshot = var.environment == "dev" ? true : false
-  final_snapshot_identifier = var.environment == "dev" ? null : "auction-app-db-final-snapshot-${var.environment}"
+  skip_final_snapshot       = var.environment == "dev" ? true : false
+  final_snapshot_identifier = var.environment == "dev" ? null : "${local.rds_name}-final-snapshot"
+  
+  publicly_accessible = false
   
   tags = {
-    Name = "auction-app-db-${var.environment}"
+    Name = local.rds_name
   }
 }
 
 # ECR Repository
 resource "aws_ecr_repository" "main" {
-  name                 = "auction-app-${var.environment}"
+  name                 = local.ecr_name
   image_tag_mutability = "MUTABLE"
   
   image_scanning_configuration {
@@ -378,7 +373,7 @@ resource "aws_ecr_repository" "main" {
   }
   
   tags = {
-    Name = "auction-app-ecr-${var.environment}"
+    Name = local.ecr_name
   }
 }
 
@@ -392,9 +387,9 @@ resource "aws_ecr_lifecycle_policy" "main" {
         rulePriority = 1
         description  = "Keep last 10 images"
         selection = {
-          tagStatus     = "any"
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
         }
         action = {
           type = "expire"
@@ -406,10 +401,10 @@ resource "aws_ecr_lifecycle_policy" "main" {
 
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/aws/ec2/auction-app-${var.environment}"
+  name              = "/aws/ec2/${local.team_prefix}-app"
   retention_in_days = var.environment == "prod" ? 30 : 7
   
   tags = {
-    Name = "auction-app-logs-${var.environment}"
+    Name = "${local.team_prefix}-logs-1"
   }
 }

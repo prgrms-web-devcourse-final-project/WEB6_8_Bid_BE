@@ -13,14 +13,14 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
 }
 
-output "alb_dns_name" {
-  description = "ALB DNS name"
-  value       = aws_lb.main.dns_name
+output "elastic_ip" {
+  description = "Elastic IP for EC2 (API endpoint)"
+  value       = aws_eip.main.public_ip
 }
 
-output "alb_zone_id" {
-  description = "ALB zone ID"
-  value       = aws_lb.main.zone_id
+output "api_endpoint" {
+  description = "API endpoint URL (http://ELASTIC_IP:8080)"
+  value       = "http://${aws_eip.main.public_ip}:8080"
 }
 
 output "rds_endpoint" {
@@ -48,4 +48,9 @@ output "ecr_repository_arn" {
 output "asg_name" {
   description = "Auto Scaling Group name"
   value       = aws_autoscaling_group.main.name
+}
+
+output "ssh_command" {
+  description = "SSH command to connect to EC2"
+  value       = "ssh -i ${var.key_pair_name}.pem ec2-user@${aws_eip.main.public_ip}"
 }
