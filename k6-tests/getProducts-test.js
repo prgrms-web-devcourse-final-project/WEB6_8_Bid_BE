@@ -18,17 +18,18 @@ export const options = {
         'http_req_duration': ['p(95)<1000', 'p(99)<2000'],
         'errors': ['rate<0.05'],
     },
+    summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
 };
 
 const BASE_URL = 'http://host.docker.internal:8080';  // Docker에서 로컬 접근
 
 // 다양한 검색 시나리오
 const scenarios = [
-    { name: '키워드_일반', params: `keyword=${encodeURIComponent('아이폰')}&page=1&size=20` },
-    { name: '키워드_희소', params: `keyword=${encodeURIComponent('MacBook Pro M3')}&page=1&size=20` },
-    { name: '카테고리', params: 'category=1&page=1&size=20' },
-    { name: '지역', params: `location=${encodeURIComponent('서울')}&page=1&size=20` },
-    { name: '복합검색', params: `keyword=${encodeURIComponent('아이폰')}&category=1&location=${encodeURIComponent('서울')}&page=1&size=20` },
+    { name: '키워드_일반', params: `keyword=${encodeURIComponent('아이폰')}` },
+    { name: '키워드_희소', params: `keyword=${encodeURIComponent('MacBook Pro M3')}` },
+    { name: '카테고리', params: 'category=1' },
+    { name: '지역', params: `location=${encodeURIComponent('서울')}` },
+    { name: '복합검색', params: `keyword=${encodeURIComponent('아이폰')}&category=1&location=${encodeURIComponent('서울')}` },
     { name: '페이징', params: 'page=5&size=20' },
 ];
 
