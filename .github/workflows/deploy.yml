@@ -124,13 +124,8 @@ jobs:
             --preferences '{"MinHealthyPercentage": 50}'
           
           echo "Deployment initiated for team12-asg-1"
-          
-      - name: Wait for deployment
-        run: |
-          echo "Waiting for instance refresh to complete..."
-          aws autoscaling wait instance-refresh-complete \
-            --auto-scaling-group-name team12-asg-1 \
-            --max-attempts 60
+          echo "Instance refresh started. Waiting 5 minutes for deployment..."
+          sleep 300
           
       - name: Health Check
         run: |
@@ -181,34 +176,20 @@ jobs:
           
       - name: Deploy Application
         run: |
-          cd terraform/environments/prod
-          ASG_NAME=$(terraform output -raw asg_name)
-          
-          # Gradual rollout with 90% healthy instances maintained
+          # Trigger instance refresh to deploy new version (Production)
           aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name $ASG_NAME \
+            --auto-scaling-group-name team12-asg-1 \
             --preferences '{"MinHealthyPercentage": 90, "InstanceWarmup": 300}'
           
-          echo "Production deployment initiated for $ASG_NAME"
-          
-      - name: Wait for deployment
-        run: |
-          cd terraform/environments/prod
-          ASG_NAME=$(terraform output -raw asg_name)
-          
-          echo "Waiting for instance refresh to complete..."
-          aws autoscaling wait instance-refresh-complete \
-            --auto-scaling-group-name $ASG_NAME \
-            --max-attempts 60
+          echo "Production deployment initiated for team12-asg-1"
+          echo "Instance refresh started. Waiting 8 minutes for deployment..."
+          sleep 480
           
       - name: Health Check
         run: |
-          cd terraform/environments/prod
-          ELASTIC_IP=$(terraform output -raw elastic_ip)
-          
-          echo "Running health check on https://$ELASTIC_IP"
+          echo "Running health check on https://api.bid-market.shop"
           for i in {1..30}; do
-            if curl -f -k https://$ELASTIC_IP/actuator/health; then
+            if curl -f https://api.bid-market.shop/actuator/health; then
               echo "Production deployment successful!"
               exit 0
             fi
