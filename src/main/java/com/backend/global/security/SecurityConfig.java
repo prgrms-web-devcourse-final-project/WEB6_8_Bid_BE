@@ -66,7 +66,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 오리진 설정
-        configuration.setAllowedOrigins(List.of("https://cdpn.io", "http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of(
+                "https://cdpn.io",
+                "http://localhost:3000",
+                "https://bid-market.shop",
+                "https://www.bid-market.shop",
+                "https://api.bid-market.shop"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
 
         // 자격 증명 허용 설정

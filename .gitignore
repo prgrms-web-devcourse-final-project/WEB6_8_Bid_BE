@@ -41,6 +41,8 @@ db_dev.mv.db
 db_dev.trace.db
 src/main/generated/
 k6-tests/results
+*.pem
+*.key
 
 ### env ###
 .env
