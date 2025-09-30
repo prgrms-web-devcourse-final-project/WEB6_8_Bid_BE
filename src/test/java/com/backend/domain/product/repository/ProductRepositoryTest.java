@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -24,6 +25,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 class ProductRepositoryTest {
     @Autowired
     private ProductRepository productRepository;
+
+    @MockitoBean
+    private ProductElasticRepository productElasticRepository;
 
     @Test
     @DisplayName("키워드로 상품을 검색할 수 있다 - 아이폰")

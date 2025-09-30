@@ -5,6 +5,14 @@ spring:
     redis:
       repositories:
         enabled: false
+    elasticsearch:
+      repositories:
+        enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
   datasource:
     url: jdbc:h2:mem:db_test;MODE=MySQL
     username: sa

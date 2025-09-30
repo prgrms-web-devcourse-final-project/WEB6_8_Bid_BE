@@ -2,14 +2,15 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
-import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
+import com.backend.domain.product.repository.ProductElasticRepository;
 import com.backend.domain.product.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -24,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +53,9 @@ class ApiV1ProductControllerTest {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    @MockitoBean
+    private ProductElasticRepository productElasticRepository;
 
     @Test
     @DisplayName("상품 생성")

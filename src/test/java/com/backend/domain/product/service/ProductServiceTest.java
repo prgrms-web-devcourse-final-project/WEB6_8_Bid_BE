@@ -41,6 +41,9 @@ class ProductServiceTest {
     private FileService fileService;
 
     @Mock
+    private ProductSyncService productSyncService;
+
+    @Mock
     private ProductImageService productImageService;
 
     @InjectMocks
