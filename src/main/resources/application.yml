@@ -1,6 +1,8 @@
 spring:
   application:
     name: backend
+  config:
+    import: optional:file:.env[.properties]
   profiles:
     active: dev
   h2:
@@ -31,6 +33,11 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+pg:
+  toss:
+    clientKey: ${PG_TOSS_CLIENT_KEY}
+    secretKey: ${PG_TOSS_SECRET_KEY}
 
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8

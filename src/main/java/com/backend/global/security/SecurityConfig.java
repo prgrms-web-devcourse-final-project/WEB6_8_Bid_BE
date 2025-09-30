@@ -1,11 +1,13 @@
 package com.backend.global.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,10 +29,26 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/webjars/**", "/api/v1/bids/**", "/notifications/**", "/ws/**", "/*.html", "/static/**", "/bid-test.html", "/websocket-test.html", "/api/test/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/*/products", "/api/*/products/{productId:\\d+}", "/api/*/products/members/{memberId:\\d+}").permitAll()
+                        // 정적 리소스(/static, /public, /resources, /META-INF/resources)..
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+
+                        // 토스 리다이렉트용 정적 페이지..
+                        .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
+
+                        // 공개 API (기존)..
+                        .requestMatchers("/favicon.ico", "/h2-console/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",
+                                "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/*/products", "/api/*/products/{productId:\\d+}",
+                                "/api/*/products/members/{memberId:\\d+}").permitAll()
+                        .requestMatchers("/api/*/test-data/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

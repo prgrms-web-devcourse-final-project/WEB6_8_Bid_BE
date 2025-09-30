@@ -1,0 +1,101 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>빌링 성공</title>
+<h2>빌링키 발급 완료 처리</h2>
+
+<label>API Base</label>
+<input id="base" value="http://localhost:8080/api/v1" style="width:420px"><br>
+<label>Bearer Token</label>
+<input id="token" style="width:420px"><br>
+<button id="btn">서버에 최종 발급 요청 → 결제수단 저장</button>
+<pre id="out"></pre>
+
+<script>
+    const p = new URLSearchParams(location.search);
+    const customerKey = p.get('customerKey');
+    const authKey     = p.get('authKey');
+
+    const $out = document.getElementById('out');
+    const print = (obj) => $out.textContent = JSON.stringify(obj, null, 2);
+
+    async function postJson(url, body, token) {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(body)
+      });
+      const text = await r.text();               // ← 항상 text로 받아둠
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${text}`);
+      return text ? JSON.parse(text) : {};
+    }
+
+    function unwrap(resp) {
+      // 서버가 {resultCode, data} 형태로 줄 수도 있으니 방어
+      if (resp && typeof resp === 'object' && 'data' in resp && resp.data) return resp.data;
+      return resp;
+    }
+
+    function digitsLast4(s) {
+      if (!s) return null;
+      const only = String(s).replace(/\D/g, ''); // 숫자만
+      return only.length >= 4 ? only.slice(-4) : null;
+    }
+
+    document.getElementById('btn').onclick = async () => {
+      const base  = document.getElementById('base').value.trim();
+      const token = document.getElementById('token').value.trim();
+
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+
+      try {
+        // 1) authKey -> billingKey 교환
+        let issue = await postJson(base + '/payments/toss/issue-billing-key',
+          { customerKey, authKey }, token);
+        issue = unwrap(issue);                   // 필요시 data 해제
+        print({ step: 'issue', issue });
+
+        if (!issue || !issue.billingKey) {
+          print({ step: 'issue-failed', issue });
+          btn.disabled = false;
+          return;
+        }
+
+        // 2) 결제수단 저장에 필요한 필드 구성
+        const last4   = digitsLast4(issue.cardNumber) || '1111';
+        const expMonth = issue.expMonth ?? issue.expiryMonth ?? issue.expireMonth ?? null;
+        const expYear  = issue.expYear  ?? issue.expiryYear  ?? issue.expireYear  ?? null;
+
+        // 디버그 출력(서버 400날 때 참고)
+        print({ step: 'before-save', payload: {
+          type: 'CARD', provider: 'toss', token: issue.billingKey,
+          alias: '메인카드', isDefault: true,
+          brand: issue.cardBrand || 'TEST',
+          last4, expMonth, expYear
+        }, rawIssue: issue });
+
+        // 3) 결제수단 저장
+        let saved = await postJson(base + '/paymentMethods', {
+          type: 'CARD',
+          provider: 'toss',
+          token: issue.billingKey,
+          alias: '메인카드',
+          isDefault: true,
+          brand: issue.cardBrand || 'TEST',
+          last4,
+          expMonth,
+          expYear
+        }, token);
+        saved = unwrap(saved);
+
+        print({ step: 'done', issue, saved });
+      } catch (e) {
+        print({ error: String(e) });
+      } finally {
+        btn.disabled = false;
+      }
+    };
+</script>

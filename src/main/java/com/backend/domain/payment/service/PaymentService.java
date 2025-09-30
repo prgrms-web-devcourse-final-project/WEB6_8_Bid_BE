@@ -9,17 +9,21 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.payment.constant.PaymentStatus;
 import com.backend.domain.payment.dto.PaymentRequest;
 import com.backend.domain.payment.dto.PaymentResponse;
+import com.backend.domain.payment.dto.PgChargeResultResponse;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
+    @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -28,19 +32,22 @@ public class PaymentService {
     private final PaymentMethodRepository paymentMethodRepository;          // 수단..
     private final CashRepository cashRepository;                            // 지갑..
     private final CashTransactionRepository cashTransactionRepository;      // 원장..
-
+    private final TossBillingClient tossBillingClient;
+    private static final long MIN_AMOUNT = 100L;                            // 최소 100원
     private static final long MAX_AMOUNT_PER_TX = 1_000_000L;               // 1회 한도(예시)..
 
     @Transactional                                                    // 원자성 보장..
     public PaymentResponse charge(Member actor, PaymentRequest req) {
 
         // 입력 검증..
-        if (req.getAmount() == null || req.getAmount() <= 0)         // 금액 필수/양수..
-            throw new IllegalArgumentException("금액은 1원 이상이어야 합니다.");
-        if (req.getAmount() > MAX_AMOUNT_PER_TX)                     // 한도 체크..
-            throw new IllegalArgumentException("1회 최대 충전 한도를 초과했습니다.");
-        if (req.getIdempotencyKey() == null || req.getIdempotencyKey().isBlank()) // 멱등키 필수..
-            throw new IllegalArgumentException("idempotencyKey가 필요합니다.");
+        if (req.getAmount() == null || req.getAmount() < MIN_AMOUNT)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "최소 결제 금액은 100원입니다.");
+
+        if (req.getAmount() > MAX_AMOUNT_PER_TX)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"1회 최대 충전 한도를 초과했습니다.");
+
+        if (req.getIdempotencyKey() == null || req.getIdempotencyKey().isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "idempotencyKey가 필요합니다.");
 
         // 멱등 선조회(같은 회원+키면 기존 결과 그대로 반환)..
         var existingOpt = paymentRepository.findByMemberAndIdempotencyKey(actor, req.getIdempotencyKey());
@@ -53,9 +60,13 @@ public class PaymentService {
         // 결제수단 검증(본인 소유 + 삭제X + active)..
         PaymentMethod pm = paymentMethodRepository
                 .findByIdAndMemberAndDeletedFalse(req.getPaymentMethodId(), actor) // 삭제 안 된 본인 수단..
-                .orElseThrow(() -> new IllegalArgumentException("결제수단을 찾을 수 없습니다."));
-        if (Boolean.FALSE.equals(pm.getActive()))                                   // 비활성 차단..
-            throw new IllegalArgumentException("비활성화된 결제수단입니다.");
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제수단을 찾을 수 없습니다."));
+
+        if (Boolean.FALSE.equals(pm.getActive()) || Boolean.TRUE.equals(pm.getDeleted()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비활성/삭제된 결제수단입니다.");
+
+        if (pm.getToken() == null || pm.getToken().isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이 결제수단에는 billingKey가 없습니다. 카드 등록(빌링키 발급) 후 사용하세요.");
 
         // payments: PENDING 생성..
         Payment payment = Payment.builder()
@@ -77,9 +88,39 @@ public class PaymentService {
                 .build();
         payment = paymentRepository.save(payment);
 
-        // (PG 모의) 승인 성공 가정 → 트랜잭션ID 발급..
-        String txId = "pg_" + payment.getId() + "_" + System.currentTimeMillis(); // 간단 모의..
-        payment.setTransactionId(txId);
+        log.info("[PM] id={}, token(billingKey)={}, brand={}, last4={}",
+                pm.getId(), pm.getToken(), pm.getBrand(), pm.getLast4());
+
+        // (PG 모의) → (실제 토스 빌링 결제)로 교체..
+        String customerKey = "user-" + actor.getId();
+        PgChargeResultResponse res;
+        try {
+            res = tossBillingClient.charge(
+                    pm.getToken(),           // billingKey
+                    req.getAmount(),         // 금액
+                    req.getIdempotencyKey(),  // 멱등키
+                    customerKey
+            );
+        } catch (ResponseStatusException ex) {
+            // 실패 상태로 마킹(선택)
+            payment.setStatus(PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+
+            // 4xx/5xx 그대로 클라이언트에 전달
+            throw ex;
+        }
+
+        // (tossBillingClient가 onStatus 에러를 던지도록 바꿨다면 아래는 안전망 정도로 유지)
+        if (!res.isSuccess()) {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setTransactionId(res.getTransactionId()); // 있을 수도/없을 수도
+            paymentRepository.save(payment);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "PG 승인 실패: " + res.getFailureMsg());
+        }
+
+        // 성공: PG에서 받은 키를 트랜잭션 ID로 저장...
+        payment.setTransactionId(res.getTransactionId());
 
         // 지갑 잠금 후 잔액 증가 + 원장 DEPOSIT 기록..
         Cash cash = cashRepository.findWithLockByMember(actor)                     // 비관적 잠금..

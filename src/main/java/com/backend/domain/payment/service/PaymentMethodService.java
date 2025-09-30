@@ -74,9 +74,8 @@ public class PaymentMethodService {
         switch (type) {
             case CARD -> {
                 // 필수값 체크..
-                if (isBlank(req.getBrand()) || isBlank(req.getLast4()) ||
-                        req.getExpMonth() == null || req.getExpYear() == null) {
-                    throw new IllegalArgumentException("CARD는 brand, last4, expMonth, expYear가 필요합니다.");
+                if (isBlank(req.getBrand()) || isBlank(req.getLast4())){
+                    throw new IllegalArgumentException("CARD는 brand, last4가 필요합니다. (expMonth/expYear는 선택)");
                 }
                 // 카드 필드 채우기..
                 brand = req.getBrand();
