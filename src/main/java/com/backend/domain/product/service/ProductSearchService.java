@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class ProductSearchService {
     private final ProductElasticRepository productElasticRepository;
 
+    // Elasticsearch를 이용한 검색
     public Page<ProductDocument> searchProducts(
             int page,
             int size,
@@ -25,6 +26,18 @@ public class ProductSearchService {
     ) {
         Pageable pageable = getPageable(page, size, sort);
         return productElasticRepository.searchProducts(pageable, search);
+    }
+
+    // 문서 저장/업데이트
+    public void indexProduct(ProductDocument document) {
+        productElasticRepository.save(document);
+        log.info("Indexed product: {}", document.getProductId());
+    }
+
+    // 문서 삭제
+    public void deleteProduct(String id) {
+        productElasticRepository.deleteById(id);
+        log.info("Deleted product from index: {}", id);
     }
 
     private Pageable getPageable(int page, int size, ProductSearchSortType sort) {

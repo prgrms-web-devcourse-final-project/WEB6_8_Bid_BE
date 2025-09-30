@@ -79,7 +79,7 @@ public class ProductDocument {
                 .productId(product.getId())
                 .productName(product.getProductName())
                 .description(product.getDescription())
-                .category(product.getCategory().getDisplayName())
+                .category(product.getCategory().name())
                 .initialPrice(product.getInitialPrice())
                 .currentPrice(product.getCurrentPrice())
                 .startTime(product.getStartTime())
