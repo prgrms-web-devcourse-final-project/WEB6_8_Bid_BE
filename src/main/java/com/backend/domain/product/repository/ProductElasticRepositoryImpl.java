@@ -83,7 +83,13 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
 
         // 배송 가능 여부
         if (search.isDelivery() != null && search.isDelivery()) {
-            boolQuery.filter(f -> f.term(t -> t.field("deliveryMethod").value(DeliveryMethod.DELIVERY.name())));
+            boolQuery.filter(f -> f.terms(t -> t
+                    .field("deliveryMethod")
+                    .terms(terms -> terms.value(List.of(
+                            FieldValue.of(DeliveryMethod.DELIVERY.name()),
+                            FieldValue.of(DeliveryMethod.BOTH.name())
+                    )))
+            ));
         }
 
         // 상태

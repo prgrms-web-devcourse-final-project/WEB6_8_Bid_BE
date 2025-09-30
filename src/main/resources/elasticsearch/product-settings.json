@@ -21,9 +21,7 @@
       "nori_part_of_speech": {
         "type": "nori_part_of_speech",
         "stoptags": [
-          "E",
           "IC",
-          "J",
           "MAG",
           "MAJ",
           "MM",

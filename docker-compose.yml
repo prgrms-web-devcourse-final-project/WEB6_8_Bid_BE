@@ -12,7 +12,9 @@ services:
       redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.3
+    build:
+      context: .
+      dockerfile: elasticsearch.Dockerfile
     container_name: my-elasticsearch
     environment:
       - discovery.type=single-node   # 싱글 노드 설정 (운영 모드에서는 multi-node로 변경)
@@ -35,6 +37,7 @@ services:
     restart: unless-stopped
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
       - elasticsearch
     networks:

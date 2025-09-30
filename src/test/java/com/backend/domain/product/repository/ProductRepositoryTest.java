@@ -118,12 +118,12 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).hasSize(4);
         assertThat(result.getContent())
                 .extracting(Product::getProductName)
-                .containsExactlyInAnyOrder("갤럭시 S24 Ultra 512GB", "나이키 Air Max");
+                .containsExactlyInAnyOrder("나이키 Air Max", "갤럭시 S24 Ultra 512GB", "MacBook Pro M3", "iPhone 15 Pro");
         assertThat(result.getContent())
-                .allMatch(product -> product.getDeliveryMethod() == DeliveryMethod.DELIVERY);
+                .allMatch(product -> product.getDeliveryMethod() == DeliveryMethod.DELIVERY || product.getDeliveryMethod() == DeliveryMethod.BOTH);
     }
 
     @Test
@@ -137,7 +137,7 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent()).hasSize(3);
         assertThat(result.getContent().get(0).getProductName()).isEqualTo("갤럭시 S24 Ultra 512GB");
     }
 
