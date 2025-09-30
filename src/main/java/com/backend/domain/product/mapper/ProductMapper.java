@@ -1,5 +1,6 @@
 package com.backend.domain.product.mapper;
 
+import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.response.MyProductListItemDto;
 import com.backend.domain.product.dto.response.ProductListByMemberItemDto;
 import com.backend.domain.product.dto.response.ProductListItemDto;
@@ -33,8 +34,16 @@ public class ProductMapper {
         return mapToPageDto(product, ProductListByMemberItemDto::fromEntity);
     }
 
+    public PageDto<ProductListItemDto> toListResponseFromDocument(Page<ProductDocument> products) {
+        return mapToPageDtoFromDocuments(products, ProductListItemDto::fromDocument);
+    }
+
     // 제네릭 헬퍼 메서드
     private <T> PageDto<T> mapToPageDto(Page<Product> products, Function<Product, T> mapper) {
         return PageDto.fromPage(products.map(mapper));
+    }
+
+    private <T> PageDto<T> mapToPageDtoFromDocuments(Page<ProductDocument> documents, Function<ProductDocument, T> mapper) {
+        return PageDto.fromPage(documents.map(mapper));
     }
 }

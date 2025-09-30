@@ -2,6 +2,7 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.service.MemberService;
+import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
@@ -14,6 +15,7 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.mapper.ProductMapper;
+import com.backend.domain.product.service.ProductSearchService;
 import com.backend.domain.product.service.ProductService;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.page.dto.PageDto;
@@ -36,6 +38,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     private final ProductService productService;
     private final MemberService memberService;
     private final ProductMapper productMapper;
+    private final ProductSearchService productSearchService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
@@ -67,6 +70,25 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Page<Product> products = productService.findBySearchPaged(page, size, sort, search);
 
         PageDto<ProductListItemDto> response = productMapper.toListResponse(products);
+        return RsData.ok("상품 목록이 조회되었습니다", response);
+    }
+
+    @GetMapping
+    @Transactional(readOnly = true)
+    public RsData<PageDto<ProductListItemDto>> getProductsByElastic(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer[] category,
+            @RequestParam(required = false) String[] location,
+            @RequestParam(required = false) Boolean isDelivery,
+            @RequestParam(defaultValue = "BIDDING") AuctionStatus status,
+            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+    ) {
+        ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery, status);
+        Page<ProductDocument> products = productSearchService.searchProducts(page, size, sort, search);
+
+        PageDto<ProductListItemDto> response = productMapper.toListResponseFromDocument(products);
         return RsData.ok("상품 목록이 조회되었습니다", response);
     }
 

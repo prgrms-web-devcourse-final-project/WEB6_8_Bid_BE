@@ -25,6 +25,7 @@ import java.util.Optional;
 public class ProductService {
     private final ProductImageService productImageService;
     private final ProductRepository productRepository;
+    private final ProductSyncService productSyncService;
 
     // ======================================= create methods ======================================= //
     @Transactional
@@ -37,6 +38,9 @@ public class ProductService {
 
         // 이미지 검증 및 저장
         productImageService.validateAndCreateImages(savedProduct, images);
+
+        // Elasticsearch 동기화
+        productSyncService.syncProductCreation(savedProduct);
 
         return savedProduct;
     }
@@ -107,6 +111,9 @@ public class ProductService {
         // 이미지 검증 및 수정
         productImageService.validateAndModifyImages(product, images, deleteImageIds);
 
+        // Elasticsearch 동기화
+        productSyncService.syncProductUpdate(product);
+
         return product;
     }
 
@@ -120,6 +127,9 @@ public class ProductService {
         // 이미지 및 Product 삭제
         productImageService.deleteAllProductImages(product);
         productRepository.delete(product);
+
+        // Elasticsearch 동기화
+        productSyncService.syncProductDeletion(product.getId());
     }
 
     // ======================================= validation methods ======================================= //

@@ -34,4 +34,13 @@ public enum ProductCategory {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid category ID: " + id));
     }
+
+    // 이름으로 displayName 찾기
+    public static String fromName(String name) {
+        return Arrays.stream(values())
+                .filter(category -> category.name().equals(name))
+                .map(ProductCategory::getDisplayName)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid category name: " + name));
+    }
 }
