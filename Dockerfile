@@ -21,6 +21,12 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+ARG PG_TOSS_CLIENT_KEY
+ARG PG_TOSS_SECRET_KEY
+
+ENV PG_TOSS_CLIENT_KEY=${PG_TOSS_CLIENT_KEY}
+ENV PG_TOSS_SECRET_KEY=${PG_TOSS_SECRET_KEY}
+
 # Add non-root user
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
