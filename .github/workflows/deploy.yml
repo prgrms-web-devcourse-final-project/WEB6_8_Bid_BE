@@ -82,7 +82,7 @@ jobs:
           ENVIRONMENT: ${{ steps.env.outputs.environment }}
         run: |
           IMAGE_TAG=$GITHUB_SHA
-          IMAGE_URI=$ECR_REGISTRY/auction-app-$ENVIRONMENT:$IMAGE_TAG
+          IMAGE_URI=$ECR_REGISTRY/team12-ecr-1:$IMAGE_TAG
           
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
@@ -91,8 +91,8 @@ jobs:
           echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           
           # Also tag as latest
-          docker tag $IMAGE_URI $ECR_REGISTRY/auction-app-$ENVIRONMENT:latest
-          docker push $ECR_REGISTRY/auction-app-$ENVIRONMENT:latest
+          docker tag $IMAGE_URI $ECR_REGISTRY/team12-ecr-1:latest
+          docker push $ECR_REGISTRY/team12-ecr-1:latest
   
   deploy-dev:
     name: Deploy to Development
@@ -112,52 +112,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
           
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
-          
-      - name: Terraform Init
-        run: |
-          cd terraform/environments/dev
-          terraform init
-          
-      - name: Terraform Apply
-        run: |
-          cd terraform/environments/dev
-          terraform apply -auto-approve
-          
       - name: Deploy Application
         run: |
-          # Get ASG name from Terraform output
-          cd terraform/environments/dev
-          ASG_NAME=$(terraform output -raw asg_name)
-          
           # Trigger instance refresh to deploy new version
           aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name $ASG_NAME \
+            --auto-scaling-group-name team12-asg-1 \
             --preferences '{"MinHealthyPercentage": 50}'
           
-          echo "Deployment initiated for $ASG_NAME"
+          echo "Deployment initiated for team12-asg-1"
           
       - name: Wait for deployment
         run: |
-          cd terraform/environments/dev
-          ASG_NAME=$(terraform output -raw asg_name)
-          
           echo "Waiting for instance refresh to complete..."
           aws autoscaling wait instance-refresh-complete \
-            --auto-scaling-group-name $ASG_NAME \
+            --auto-scaling-group-name team12-asg-1 \
             --max-attempts 60
           
       - name: Health Check
         run: |
-          cd terraform/environments/dev
-          ALB_DNS=$(terraform output -raw alb_dns_name)
-          
-          echo "Running health check on http://$ALB_DNS"
+          echo "Running health check on https://api.bid-market.shop"
           for i in {1..30}; do
-            if curl -f http://$ALB_DNS/actuator/health; then
+            if curl -f https://api.bid-market.shop/actuator/health; then
               echo "Health check passed!"
               exit 0
             fi
@@ -225,11 +200,11 @@ jobs:
       - name: Health Check
         run: |
           cd terraform/environments/prod
-          ALB_DNS=$(terraform output -raw alb_dns_name)
+          ELASTIC_IP=$(terraform output -raw elastic_ip)
           
-          echo "Running health check on http://$ALB_DNS"
+          echo "Running health check on https://$ELASTIC_IP"
           for i in {1..30}; do
-            if curl -f http://$ALB_DNS/actuator/health; then
+            if curl -f -k https://$ELASTIC_IP/actuator/health; then
               echo "Production deployment successful!"
               exit 0
             fi
