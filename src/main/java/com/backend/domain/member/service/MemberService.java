@@ -6,6 +6,7 @@ import com.backend.domain.member.dto.MemberModifyRequestDto;
 import com.backend.domain.member.dto.MemberMyInfoResponseDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.dto.MemberSignUpResponseDto;
+import com.backend.domain.member.dto.MemberInfoResponseDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.service.FileService;
@@ -164,5 +165,12 @@ public class MemberService {
 
     public Optional<Member> findById(Long memberId) {
         return memberRepository.findById(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    public MemberInfoResponseDto getMemberInfo(Long memberId) {
+        Member member = findById(memberId)
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 유저입니다."));
+        return new MemberInfoResponseDto(member);
     }
 }

@@ -33,7 +33,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "cloud.aws.credentials.access-key=",
+        "cloud.aws.credentials.secret-key=",
+        "pg.toss.secretKey=test_sk_1234567890"
+})
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
@@ -420,5 +424,29 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.phoneNumber").value("01099998888"))
                 .andExpect(jsonPath("$.data.address").value("After Address"))
                 .andExpect(jsonPath("$.data.profileImageUrl").exists());
+    }
+
+    @Test
+    @DisplayName("멤버 정보 조회 성공")
+    void t12() throws Exception {
+        // given
+        // 회원가입을 통해 테스트할 멤버 생성
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "test12@example.com", "password123", "testUser12", "01012345678", "Test Address");
+        ResultActions signUpResult = mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        String responseBody = signUpResult.andReturn().getResponse().getContentAsString();
+        long memberId = objectMapper.readTree(responseBody).get("data").get("memberId").asLong();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/{memberId}", memberId))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("조회 성공"))
+                .andExpect(jsonPath("$.data.id").value(memberId))
+                .andExpect(jsonPath("$.data.nickname").value("testUser12"));
     }
 }
