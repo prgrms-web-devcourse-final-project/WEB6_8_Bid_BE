@@ -35,8 +35,7 @@ public class SecurityConfig {
                         // 토스 리다이렉트용 정적 페이지..
                         .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
 
-                        // 공개 API (기존)..
-
+                        // 공개 API - 루트, 파비콘, h2-console, actuator health
                         .requestMatchers("/", "/favicon.ico", "/h2-console/**", "/actuator/health").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",

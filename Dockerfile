@@ -9,12 +9,14 @@ ARG PG_TOSS_SECRET_KEY
 ENV PG_TOSS_CLIENT_KEY=${PG_TOSS_CLIENT_KEY}
 ENV PG_TOSS_SECRET_KEY=${PG_TOSS_SECRET_KEY}
 
-# Add non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
-
-# Copy pre-built jar from local build
+# Copy pre-built jar BEFORE switching user
 COPY build/libs/backend-0.0.1-SNAPSHOT.jar app.jar
+
+# Add non-root user and change ownership
+RUN addgroup -S spring && adduser -S spring -G spring && \
+    chown spring:spring /app/app.jar
+
+USER spring:spring
 
 # Expose port
 EXPOSE 8080
