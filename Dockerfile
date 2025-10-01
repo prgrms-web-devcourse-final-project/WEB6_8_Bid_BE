@@ -1,5 +1,5 @@
 # STEP 1: Build Stage (빌드 환경)
-
+#
 FROM eclipse-temurin:21-jdk-alpine AS build
 
 # Gradle 사용 시 필요한 도구 설치
@@ -13,7 +13,8 @@ WORKDIR /app
 COPY . .
 
 # Clean Build 실행 (SecurityConfig 변경 사항 포함)
-RUN ./gradlew bootJar
+# 항상 깨끗하게 빌드하여 최신 JAR 파일을 생성
+RUN ./gradlew clean bootJar
 
 #
 # STEP 2: Runtime Stage (실행 환경)
