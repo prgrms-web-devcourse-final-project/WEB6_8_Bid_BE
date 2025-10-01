@@ -109,7 +109,7 @@ public class MemberService {
     public RsData<MemberMyInfoResponseDto> modify(String email, MemberModifyRequestDto memberModifyRequestDto, MultipartFile profileImage) {
         Member member = findMemberByEmail(email);
 
-        String profileImageUrl = "";
+        String profileImageUrl = Optional.ofNullable(member.getProfileImageUrl()).orElse("");
         if (profileImage != null && !profileImage.isEmpty()) {
             profileImageUrl = fileService.uploadFile(profileImage, "member");
         }

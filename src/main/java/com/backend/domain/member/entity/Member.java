@@ -42,6 +42,7 @@ public class Member extends BaseEntity {
 
     private String profileImageUrl;
 
+    @Column(name = "refresh_token", columnDefinition = "TEXT")
     private String refreshToken;
 
     private int creditScore;
