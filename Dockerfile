@@ -7,13 +7,13 @@ RUN apk add --no-cache bash
 
 WORKDIR /app
 
-# 소스 코드 전체를 빌드 환경에 복사 (소스 코드 변경 시 이 Layer의 캐시가 깨집니다)
-# COPY 명령 이전에 git log 등으로 파일 변경을 확인하는 것이 일반적이지만,
-# Dockerfile 내에서는 이 COPY가 캐시를 깨는 주요 트리거입니다.
+# 소스 코드 전체를 빌드 환경에 복사
 COPY . .
 
+# gradlew에 실행 권한 부여
+RUN chmod +x ./gradlew
+
 # Clean Build 실행 (SecurityConfig 변경 사항 포함)
-# 항상 깨끗하게 빌드하여 최신 JAR 파일을 생성
 RUN ./gradlew clean bootJar
 
 #
