@@ -1,22 +1,4 @@
-# Build stage
-FROM gradle:8.5-jdk21 AS builder
-
-WORKDIR /app
-
-# Copy Gradle files
-COPY build.gradle.kts settings.gradle.kts ./
-COPY gradle gradle
-
-# Download dependencies
-RUN gradle dependencies --no-daemon || true
-
-# Copy source code
-COPY src ./src
-
-# Build application
-RUN gradle clean build -x test --no-daemon
-
-# Runtime stage
+# Runtime stage only
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
@@ -31,8 +13,8 @@ ENV PG_TOSS_SECRET_KEY=${PG_TOSS_SECRET_KEY}
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-# Copy built jar from builder
-COPY --from=builder /app/build/libs/*.jar app.jar
+# Copy pre-built jar from local build
+COPY build/libs/backend-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port
 EXPOSE 8080
