@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -30,8 +32,8 @@ public class PaymentMethodResponse {
     private final String acctLast4;  // 계좌 끝 4자리..
 
     // 시간..
-    private final String createDate; // 생성..
-    private final String modifyDate; // 변경..
+    private final LocalDateTime createDate; // 생성..
+    private final LocalDateTime modifyDate; // 변경..
 
     private final String expireDate; // "YYYY-MM"
 }

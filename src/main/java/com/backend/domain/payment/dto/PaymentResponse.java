@@ -3,6 +3,8 @@ package com.backend.domain.payment.dto;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 
@@ -16,8 +18,8 @@ public class PaymentResponse {
     private final String provider;        // 예: "toss"..
     private final String methodType;      // "CARD"/"BANK"..
     private final String transactionId;   // PG 트랜잭션 ID..
-    private final String createdAt;       // 생성/승인 시각(문자열, Z 유지)..
-    private final String paidAt;          // 성공 승인 시각..
+    private final LocalDateTime createdAt;       // 생성/승인 시각(문자열, Z 유지)..
+    private final LocalDateTime paidAt;          // 성공 승인 시각..
     private final String idempotencyKey;  // 멱등키(그대로 에코)..
 
     private final Long cashTransactionId; // 원장 ID(입금 줄)..

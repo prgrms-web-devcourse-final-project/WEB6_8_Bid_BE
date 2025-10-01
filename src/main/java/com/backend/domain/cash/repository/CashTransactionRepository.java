@@ -1,5 +1,6 @@
 package com.backend.domain.cash.repository;
 
+import com.backend.domain.cash.constant.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import org.springframework.data.domain.Page;
@@ -15,4 +16,9 @@ public interface CashTransactionRepository extends JpaRepository<CashTransaction
 
     // 단건 상세..
     Optional<CashTransaction> findByIdAndCash(Long id, Cash cash);
+
+    // paymentId로 연결된 가장 최신 원장 1건 찾기...
+    Optional<CashTransaction> findFirstByRelatedTypeAndRelatedIdOrderByIdDesc(
+            RelatedType relatedType, Long relatedId
+    );
 }
