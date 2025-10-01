@@ -8,6 +8,7 @@ import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
+import com.backend.domain.product.enums.SaleStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -29,8 +30,36 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
 
     @Override
     public Page<ProductDocument> searchProducts(Pageable pageable, ProductSearchDto search) {
+        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+
+        // 필터 적용
+        applyFilters(boolQuery, search);
+
+        return createPagedQuery(boolQuery, pageable);
+    }
+
+    @Override
+    public Page<ProductDocument> searchProductsByMember(Pageable pageable, Long actorId, SaleStatus status) {
+        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+
+        // 필터 적용
+        if (actorId != null) boolQuery.filter(f -> f.term(t -> t.field("sellerId").value(actorId)));
+        if (status != null) boolQuery.filter(f -> f.term(t -> t.field("status").value(status.getDisplayName())));
+
+        return createPagedQuery(boolQuery, pageable);
+    }
+
+
+    private Page<ProductDocument> createPagedQuery(BoolQuery.Builder boolQuery, Pageable pageable) {
+        // 정렬 적용
+        List<SortOptions> sortOptions = applySorting(pageable.getSort());
+
         // 검색 쿼리 생성
-        Query query = buildSearchQuery(pageable, search);
+        Query query = NativeQuery.builder()
+                .withQuery(q -> q.bool(boolQuery.build()))
+                .withPageable(pageable)
+                .withSort(sortOptions)
+                .build();
 
         // 검색 실행
         SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(query, ProductDocument.class);
@@ -40,23 +69,6 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         long totalHits = searchHits.getTotalHits();
 
         return new PageImpl<>(content, pageable, totalHits);
-    }
-
-
-    private Query buildSearchQuery(Pageable pageable, ProductSearchDto search) {
-        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
-
-        // 필터 적용
-        applyFilters(boolQuery, search);
-
-        // 정렬 적용
-        List<SortOptions> sortOptions = applySorting(pageable.getSort());
-
-        return NativeQuery.builder()
-                .withQuery(q -> q.bool(boolQuery.build()))
-                .withPageable(pageable)
-                .withSort(sortOptions)
-                .build();
     }
 
     private void applyFilters(BoolQuery.Builder boolQuery, ProductSearchDto search) {

@@ -6,8 +6,11 @@ import com.backend.domain.product.dto.response.MyProductListItemDto;
 import com.backend.domain.product.dto.response.ProductListByMemberItemDto;
 import com.backend.domain.product.dto.response.ProductListItemDto;
 import com.backend.domain.product.dto.response.ProductResponse;
+import com.backend.domain.product.dto.response.component.BidderDto;
+import com.backend.domain.product.dto.response.component.ReviewDto;
 import com.backend.domain.product.dto.response.component.SellerDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.service.ProductService;
 import com.backend.global.page.dto.PageDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +22,7 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class ProductMapper {
     private final MemberService memberService;
+    private final ProductService productService;
 
     // ======================================= Entity → Response 변환 ======================================= //
     // Product -> ProductResponse (상품 생성, 상세 조회, 수정)
@@ -32,18 +36,28 @@ public class ProductMapper {
     }
 
     // Page<Product> -> PageDto<MyProductListItemDto> (내 상품 목록 조회)
-    public PageDto<MyProductListItemDto> toMyListResponse(Page<Product> product) {
-        return mapToPageDto(product, MyProductListItemDto::fromEntity);
+    public PageDto<MyProductListItemDto> toMyListResponse(Page<Product> products) {
+        return mapToPageDto(products, MyProductListItemDto::fromEntity);
     }
 
     // Page<Product> -> PageDto<ProductListByMemberItemDto> (특정 회원의 상품 목록 조회)
-    public PageDto<ProductListByMemberItemDto> toListByMemberResponse(Page<Product> product) {
-        return mapToPageDto(product, ProductListByMemberItemDto::fromEntity);
+    public PageDto<ProductListByMemberItemDto> toListByMemberResponse(Page<Product> products) {
+        return mapToPageDto(products, ProductListByMemberItemDto::fromEntity);
     }
 
     // Page<ProductDocument> -> PageDto<ProductListItemDto> (상품 목록 조회 - ElasticSearch)
     public PageDto<ProductListItemDto> toListResponseFromDocument(Page<ProductDocument> products) {
         return mapToPageDtoFromDocuments(products, doc -> ProductListItemDto.fromDocument(doc, getSellerDto(doc)));
+    }
+
+    // Page<ProductDocument> -> PageDto<MyProductListItemDto> (내 상품 목록 조회 - ElasticSearch)
+    public PageDto<MyProductListItemDto> toMyListResponseFromDocument(Page<ProductDocument> products) {
+        return mapToPageDtoFromDocuments(products, doc -> MyProductListItemDto.fromDocument(doc, getBidderDto(doc), getReviewDto(doc)));
+    }
+
+    // Page<ProductDocument> -> PageDto<ProductListByMemberItemDto> (특정 회원의 상품 목록 조회 - ElasticSearch)
+    public PageDto<ProductListByMemberItemDto> toListByMemberResponseFromDocument(Page<ProductDocument> products) {
+        return mapToPageDtoFromDocuments(products, doc -> ProductListByMemberItemDto.fromDocument(doc, getReviewDto(doc)));
     }
 
 
@@ -63,5 +77,17 @@ public class ProductMapper {
         return memberService.findById(document.getSellerId())
                 .map(SellerDto::fromEntity)
                 .orElse(null);
+    }
+
+    // ProductDocument -> BidderDto (내 상품 목록 조회 - Elasticsearch)
+    private BidderDto getBidderDto(ProductDocument document) {
+        Product product = productService.findById(document.getProductId()).get();
+        return BidderDto.fromEntity(product.getBidder());
+    }
+
+    // ProductDocument -> ReviewDto (내 상품 목록 조회, 특정 회원의 상품 목록 조회 - Elasticsearch)
+    private ReviewDto getReviewDto(ProductDocument document) {
+        Product product = productService.findById(document.getProductId()).get();
+        return ReviewDto.fromEntity(product.getReview());
     }
 }

@@ -153,6 +153,22 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         return RsData.ok("내 상품 목록이 조회되었습니다", response);
     }
 
+    @GetMapping("/es/me")
+    @Transactional(readOnly = true)
+    public RsData<PageDto<MyProductListItemDto>> getMyProductsByElasticsearch(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
+            @AuthenticationPrincipal User user
+    ) {
+        Member actor = memberService.findMemberByEmail(user.getUsername());
+        Page<ProductDocument> products = productSearchService.searchProductsByMember(page, size, sort, actor, status);
+
+        PageDto<MyProductListItemDto> response = productMapper.toMyListResponseFromDocument(products);
+        return RsData.ok("내 상품 목록이 조회되었습니다", response);
+    }
+
     @GetMapping("/members/{memberId}")
     @Transactional(readOnly = true)
     public RsData<PageDto<ProductListByMemberItemDto>> getProductsByMember(
@@ -167,6 +183,23 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
         PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponse(products);
+        return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
+    }
+
+    @GetMapping("/es/members/{memberId}")
+    @Transactional(readOnly = true)
+    public RsData<PageDto<ProductListByMemberItemDto>> getProductsByMemberAndElasticsearch(
+            @PathVariable Long memberId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+    ) {
+        Member actor = memberService.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다"));
+
+        Page<ProductDocument> products = productSearchService.searchProductsByMember(page, size, sort, actor, status);
+
+        PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponseFromDocument(products);
         return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
     }
 }

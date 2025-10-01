@@ -1,7 +1,9 @@
 package com.backend.domain.product.dto.response;
 
+import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.response.component.ReviewDto;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.enums.ProductCategory;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
@@ -36,6 +38,24 @@ public record ProductListByMemberItemDto(
                 entity.getLocation(),
                 entity.getThumbnail(),
                 ReviewDto.fromEntity(entity.getReview())
+        );
+    }
+
+    public static ProductListByMemberItemDto fromDocument(ProductDocument document, ReviewDto reviewDto) {
+        return new ProductListByMemberItemDto(
+                document.getProductId(),
+                document.getProductName(),
+                ProductCategory.fromName(document.getCategory()),
+                document.getInitialPrice(),
+                document.getCurrentPrice(),
+                document.getStartTime(),
+                document.getEndTime(),
+                document.getDuration(),
+                document.getStatus(),
+                document.getBidderCount(),
+                document.getLocation(),
+                document.getThumbnailUrl(),
+                reviewDto
         );
     }
 }

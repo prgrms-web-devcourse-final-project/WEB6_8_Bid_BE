@@ -1,8 +1,10 @@
 package com.backend.domain.product.service;
 
+import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.repository.ProductElasticRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +21,17 @@ public class ProductSearchService {
 
     // Elasticsearch를 이용한 검색
     public Page<ProductDocument> searchProducts(
-            int page,
-            int size,
-            ProductSearchSortType sort,
-            ProductSearchDto search
+            int page, int size, ProductSearchSortType sort, ProductSearchDto search
     ) {
         Pageable pageable = getPageable(page, size, sort);
         return productElasticRepository.searchProducts(pageable, search);
+    }
+
+    public Page<ProductDocument> searchProductsByMember(
+            int page, int size, ProductSearchSortType sort, Member actor, SaleStatus status
+    ) {
+        Pageable pageable = getPageable(page, size, sort);
+        return productElasticRepository.searchProductsByMember(pageable, actor.getId(), status);
     }
 
     // 문서 저장/업데이트
