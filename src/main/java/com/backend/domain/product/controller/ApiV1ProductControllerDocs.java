@@ -151,6 +151,22 @@ public interface ApiV1ProductControllerDocs {
     );
 
 
+    @Operation(summary = "내 상품 조회 (Elasticsearch)", description = "Elasticsearch를 사용하여 내가 올린 상품들을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "내 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<PageDto<MyProductListItemDto>> getMyProductsByElasticsearch(
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
+            @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
+    );
+
+
     @Operation(summary = "특정 회원 상품 조회", description = "특정 회원이 올린 상품들을 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "특정 회원 상품 조회 성공",
@@ -159,6 +175,22 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<PageDto<ProductListByMemberItemDto>> getProductsByMember(
+            @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
+            @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+    );
+
+
+    @Operation(summary = "특정 회원 상품 조회 (Elasticsearch)", description = "Elasticsearch를 사용하여 특정 회원이 올린 상품들을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "특정 회원 상품 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<PageDto<ProductListByMemberItemDto>> getProductsByMemberAndElasticsearch(
             @Parameter(description = "회원 ID", required = true) @PathVariable Long memberId,
             @Parameter(description = "페이지 번호 (1부터 시작)") @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
