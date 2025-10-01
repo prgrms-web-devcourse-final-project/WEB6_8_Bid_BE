@@ -74,6 +74,11 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean bootJar -x test --no-daemon
         
+      - name: Verify SecurityConfig in JAR
+        run: |
+          echo "Checking if SecurityConfig is in the built JAR..."
+          jar tf build/libs/backend-0.0.1-SNAPSHOT.jar | grep SecurityConfig || echo "ERROR: SecurityConfig not found in JAR!"
+          
       - name: Set environment
         id: env
         run: |
