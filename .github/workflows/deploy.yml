@@ -145,21 +145,21 @@ jobs:
             echo "Deployment completed"
           EOF
           
-      # - name: Health Check
-      #   run: |
-      #     echo "Running health check on https://api.bid-market.shop"
-      #     sleep 30
-      #     
-      #     for i in {1..20}; do
-      #       if curl -f https://api.bid-market.shop/actuator/health; then
-      #         echo "Health check passed!"
-      #         exit 0
-      #       fi
-      #       echo "Waiting for application... ($i/20)"
-      #       sleep 10
-      #     done
-      #     echo "Health check failed!"
-      #     exit 1
+      - name: Health Check
+        run: |
+          echo "Running health check on https://api.bid-market.shop"
+          sleep 30
+          
+          for i in {1..20}; do
+            if curl -f https://api.bid-market.shop/actuator/health; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            echo "Waiting for application... ($i/20)"
+            sleep 10
+          done
+          echo "Health check failed!"
+          exit 1
   
   deploy-prod:
     name: Deploy to Production
