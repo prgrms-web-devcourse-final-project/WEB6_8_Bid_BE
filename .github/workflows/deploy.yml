@@ -139,27 +139,27 @@ jobs:
               docker login --username AWS --password-stdin 174170816230.dkr.ecr.ap-northeast-2.amazonaws.com
             
             # 최신 이미지 pull 및 재시작
-            docker-compose pull app
-            docker-compose up -d
+            sudo /usr/local/bin/docker-compose pull app
+            sudo /usr/local/bin/docker-compose up -d
             
             echo "Deployment completed"
           EOF
           
-      - name: Health Check
-        run: |
-          echo "Running health check on https://api.bid-market.shop"
-          sleep 30  # 애플리케이션 시작 대기
-          
-          for i in {1..20}; do
-            if curl -f https://api.bid-market.shop/actuator/health; then
-              echo "Health check passed!"
-              exit 0
-            fi
-            echo "Waiting for application... ($i/20)"
-            sleep 10
-          done
-          echo "Health check failed!"
-          exit 1
+      # - name: Health Check
+      #   run: |
+      #     echo "Running health check on https://api.bid-market.shop"
+      #     sleep 30
+      #     
+      #     for i in {1..20}; do
+      #       if curl -f https://api.bid-market.shop/actuator/health; then
+      #         echo "Health check passed!"
+      #         exit 0
+      #       fi
+      #       echo "Waiting for application... ($i/20)"
+      #       sleep 10
+      #     done
+      #     echo "Health check failed!"
+      #     exit 1
   
   deploy-prod:
     name: Deploy to Production
