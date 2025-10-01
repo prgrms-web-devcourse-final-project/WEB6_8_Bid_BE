@@ -17,9 +17,9 @@ services:
       dockerfile: elasticsearch.Dockerfile
     container_name: my-elasticsearch
     environment:
-      - discovery.type=single-node   # 싱글 노드 설정 (운영 모드에서는 multi-node로 변경)
+      - discovery.type=single-node
       - xpack.security.enabled=false  # 보안 설정 (운영 모드에서는 true로 변경)
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # 운영 모드에서는 메모리 사용량 조정
     ports:
       - "9200:9200"
       - "9300:9300"
