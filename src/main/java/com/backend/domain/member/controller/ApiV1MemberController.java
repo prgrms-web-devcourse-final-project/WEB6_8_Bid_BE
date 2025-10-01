@@ -91,13 +91,11 @@ public class ApiV1MemberController {
         return ResponseEntity.status(myInfoModifyResponse.statusCode()).body(myInfoModifyResponse);
     }
 
-    @Operation(summary = "판매자 정보 Mock API", description = "판매자 정보 확인")
+    @Operation(summary = "멤버 정보 조회", description = "특정 멤버의 정보를 조회합니다.")
     @GetMapping("/members/{id}")
     public ResponseEntity<RsData<MemberInfoResponseDto>> memberInfo(@PathVariable Long id) {
-        return ResponseEntity.ok(new RsData<>("200-1", "판매자 정보가 조회되었습니다.",
-                new MemberInfoResponseDto(2L, "test@test.com", "test", "010-1111-1111",
-                        "https://example.com/profile.jpg", 50, LocalDateTime.now())
-        ));
+        MemberInfoResponseDto memberInfo = memberService.getMemberInfo(id);
+        return ResponseEntity.ok(new RsData<>("200", "조회 성공", memberInfo));
     }
 
     @Operation(summary = "회원탈퇴 Mock API", description = "회원탈퇴 확인")
