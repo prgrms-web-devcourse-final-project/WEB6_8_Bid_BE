@@ -42,7 +42,7 @@ public class SecurityConfig {
                                 "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/*/products", "/api/*/products/{productId:\\d+}",
-                                "/api/*/products/members/{memberId:\\d+}").permitAll()
+                                "/api/*/products/members/{memberId:\\d+}", "/api/v1/members/{memberId:\\d+}").permitAll()
                         .requestMatchers("/api/*/test-data/**").permitAll()
 
                         .anyRequest().authenticated()
