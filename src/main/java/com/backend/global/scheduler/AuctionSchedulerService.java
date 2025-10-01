@@ -4,6 +4,7 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.notification.service.AuctionNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
+import com.backend.domain.product.service.ProductSyncService;
 import com.backend.global.websocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class AuctionSchedulerService {
     private final BidRepository bidRepository;
     private final WebSocketService webSocketService;
     private final AuctionNotificationService auctionNotificationService;
+    private final ProductSyncService productSyncService;
 
     //  매분마다 실행되어 종료된 경매들을 확인하고 낙찰 처리
     @Scheduled(fixedRate = 60000) // 1분마다 실행
@@ -113,6 +115,8 @@ public class AuctionSchedulerService {
                 // 입찰이 있었던 경우 - 낙찰 처리
                 product.setStatus(AuctionStatus.SUCCESSFUL.getDisplayName());
                 product.setCurrentPrice(highestBidPrice);
+                productSyncService.syncProductStatusUpdate(product.getId(), AuctionStatus.SUCCESSFUL.getDisplayName());
+                productSyncService.syncProductPriceUpdate(product.getId(), highestBidPrice);
                 log.info("상품 ID: {}, 낙찰가: {}원으로 낙찰 처리되었습니다.", 
                     product.getId(), highestBidPrice);
                 
@@ -122,6 +126,7 @@ public class AuctionSchedulerService {
             } else {
                 // 입찰이 없었던 경우 - 유찰 처리
                 product.setStatus(AuctionStatus.FAILED.getDisplayName());
+                productSyncService.syncProductStatusUpdate(product.getId(), AuctionStatus.FAILED.getDisplayName());
                 log.info("상품 ID: {}, 입찰이 없어 유찰 처리되었습니다.", product.getId());
                 
                 // 구독자들에게 유찰 알림 전송
@@ -141,6 +146,7 @@ public class AuctionSchedulerService {
         try {
             // 상태 업데이트
             product.setStatus(AuctionStatus.BIDDING.getDisplayName());
+            productSyncService.syncProductStatusUpdate(product.getId(), AuctionStatus.BIDDING.getDisplayName());
             log.info("상품 ID: {} ({}) 경매가 시작되었습니다.", product.getId(), product.getProductName());
 
             // 판매자에게 경매 시작 알림 전송

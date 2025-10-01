@@ -3,14 +3,13 @@ package com.backend.domain.bid.service;
 import com.backend.domain.bid.dto.*;
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
-import com.backend.domain.cash.constant.RelatedType;
-import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.service.CashService;
 import com.backend.domain.member.entity.Member;
+import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
+import com.backend.domain.product.service.ProductSyncService;
 import com.backend.global.exception.ServiceException;
-import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.global.response.RsData;
 import com.backend.global.websocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
@@ -38,6 +37,7 @@ public class BidService {
     private final WebSocketService webSocketService;
     private final BidNotificationService bidNotificationService;
     private final CashService cashService;
+    private final ProductSyncService productSyncService;
 
     // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
@@ -70,6 +70,7 @@ public class BidService {
         product.addBid(savedBid);
         // 4. 입찰가 업데이트
         product.setCurrentPrice(request.price());
+        productSyncService.syncProductPriceUpdate(productId, request.price());
         // 5. 응답 데이터 생성
         BidResponseDto bidResponse = new BidResponseDto(
                 savedBid.getId(),

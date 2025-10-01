@@ -184,10 +184,15 @@ public class Product extends BaseEntity {
     public void addBid(Bid bid) {
         bids.add(bid);
 
-        bidderCount = (int) bids.stream()
+        int _bidderCount = (int) bids.stream()
                 .map(b -> b.getMember().getId())
                 .distinct()
                 .count();
+
+        if (_bidderCount != bidderCount) {
+            bidderCount = _bidderCount;
+//            productSyncService.syncProductBidderCountUpdate(super.getId(), bidderCount);
+        }
     }
 
     // 테스트 전용 (프로덕션에서는 사용 금지)

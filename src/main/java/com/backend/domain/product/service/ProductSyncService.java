@@ -46,6 +46,33 @@ public class ProductSyncService {
             log.error("Failed to sync product deletion to Elasticsearch: {}", productId, e);
         }
     }
+
+    // 가격만 변경 시 - 부분 업데이트
+    public void syncProductPriceUpdate(Long productId, Long newPrice) {
+        try {
+            productSearchService.updateProductPrice(productId, newPrice);
+        } catch (Exception e) {
+            log.error("Failed to sync product price update to Elasticsearch: {}", productId, e);
+        }
+    }
+
+    // 상태만 변경 시 - 부분 업데이트
+    public void syncProductStatusUpdate(Long productId, String newStatus) {
+        try {
+            productSearchService.updateProductStatus(productId, newStatus);
+        } catch (Exception e) {
+            log.error("Failed to sync product status update to Elasticsearch: {}", productId, e);
+        }
+    }
+
+    // 입찰자 수만 변경 시 - 부분 업데이트
+    public void syncProductBidderCountUpdate(Long productId, int newBidderCount) {
+        try {
+            productSearchService.updateProductBidderCount(productId, newBidderCount);
+        } catch (Exception e) {
+            log.error("Failed to sync product bidder count update to Elasticsearch: {}", productId, e);
+        }
+    }
     
     // 전체 상품 재인덱싱 (초기 설정 또는 복구용)
     @Transactional(readOnly = true)
