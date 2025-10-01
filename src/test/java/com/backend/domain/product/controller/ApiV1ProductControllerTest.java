@@ -95,7 +95,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
-//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.bidderCount").value(product.getBidderCount()))
                 .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
                 .andExpect(jsonPath("$.data.location").value(product.getLocation()))
                 .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
@@ -226,7 +226,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
-//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].bidderCount".formatted(i)).value(product.getBidderCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
                     .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
@@ -470,7 +470,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
-//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.bidderCount").value(product.getBidderCount()))
                 .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
                 .andExpect(jsonPath("$.data.location").value(product.getLocation()))
                 .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
@@ -534,7 +534,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
-//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.bidderCount").value(product.getBidderCount()))
                 .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
                 .andExpect(jsonPath("$.data.location").value(product.getLocation()))
                 .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
@@ -584,7 +584,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
-//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.bidderCount").value(product.getBidderCount()))
                 .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
                 .andExpect(jsonPath("$.data.location").value(product.getLocation()))
                 .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
@@ -667,7 +667,7 @@ class ApiV1ProductControllerTest {
                 .andExpect(jsonPath("$.data.auctionEndTime").value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                 .andExpect(jsonPath("$.data.auctionDuration").value(product.getDuration()))
                 .andExpect(jsonPath("$.data.status").value(product.getStatus()))
-//                .andExpect(jsonPath("$.data.biddersCount").value(product.getBiddersCount()))
+                .andExpect(jsonPath("$.data.bidderCount").value(product.getBidderCount()))
                 .andExpect(jsonPath("$.data.deliveryMethod").value(product.getDeliveryMethod().name()))
                 .andExpect(jsonPath("$.data.location").value(product.getLocation()))
                 .andExpect(jsonPath("$.data.images.length()").value(product.getProductImages().size()))
@@ -806,7 +806,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
-//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].bidderCount".formatted(i)).value(product.getBidderCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
         }
@@ -854,7 +854,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
-//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].bidderCount".formatted(i)).value(product.getBidderCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
                     .andExpect(jsonPath("$.data.content[%d].bidder.id".formatted(i)).value(product.getBidder().getId()));
@@ -928,7 +928,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
-//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].bidderCount".formatted(i)).value(product.getBidderCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
         }
@@ -977,7 +977,7 @@ class ApiV1ProductControllerTest {
                     .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
-//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].bidderCount".formatted(i)).value(product.getBidderCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
                     .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()));
         }

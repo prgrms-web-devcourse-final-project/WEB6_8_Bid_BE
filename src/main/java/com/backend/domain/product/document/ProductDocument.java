@@ -67,7 +67,7 @@ public class ProductDocument {
     private String sellerNickname;
     
     @Field(type = FieldType.Long)
-    private Long bidderCount;
+    private Integer bidderCount;
     
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
     private LocalDateTime createDate;
@@ -91,7 +91,7 @@ public class ProductDocument {
                 .thumbnailUrl(product.getThumbnail())
                 .sellerId(product.getSeller().getId())
                 .sellerNickname(product.getSeller().getNickname())
-                .bidderCount(0L) // 초기값, 입찰 시 업데이트
+                .bidderCount(product.getBidderCount())
                 .createDate(product.getCreateDate())
                 .build();
     }

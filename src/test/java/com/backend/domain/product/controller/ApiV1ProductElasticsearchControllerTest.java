@@ -1,10 +1,12 @@
 package com.backend.domain.product.controller;
 
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
-import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
+import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.service.ProductSearchService;
 import com.backend.domain.product.service.ProductService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +42,9 @@ class ApiV1ProductElasticsearchControllerTest {
     private ProductService productService;
 
     @Autowired
+    private ProductSearchService productSearchService;
+
+    @Autowired
     private MemberRepository memberRepository;
 
     @Test
@@ -51,7 +56,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         get("/api/v1/products/es")
                 ).andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.LATEST,
                 new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
 
         // then
@@ -68,25 +73,25 @@ class ApiV1ProductElasticsearchControllerTest {
                 .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
                 .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
 
-        List<Product> products = productPage.getContent();
+        List<ProductDocument> products = productPage.getContent();
         resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
 
         for (int i = 0; i < products.size(); i++) {
-            Product product = products.get(i);
+            ProductDocument product = products.get(i);
             resultActions
                     .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getId()))
                     .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(product.getCategory().getDisplayName()))
+                    .andExpect(jsonPath("$.data.content[%d].category".formatted(i)).value(ProductCategory.fromName(product.getCategory())))
                     .andExpect(jsonPath("$.data.content[%d].initialPrice".formatted(i)).value(product.getInitialPrice()))
                     .andExpect(jsonPath("$.data.content[%d].currentPrice".formatted(i)).value(product.getCurrentPrice()))
                     .andExpect(jsonPath("$.data.content[%d].auctionStartTime".formatted(i)).value(Matchers.startsWith(product.getStartTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionEndTime".formatted(i)).value(Matchers.startsWith(product.getEndTime().toString().substring(0, 15))))
                     .andExpect(jsonPath("$.data.content[%d].auctionDuration".formatted(i)).value(product.getDuration()))
                     .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()))
-//                    .andExpect(jsonPath("$.data.content[%d].biddersCount".formatted(i)).value(product.getBiddersCount()))
+                    .andExpect(jsonPath("$.data.content[%d].bidderCount".formatted(i)).value(product.getBidderCount()))
                     .andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(product.getLocation()))
-                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnail()))
-                    .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSeller().getId()));
+                    .andExpect(jsonPath("$.data.content[%d].thumbnailUrl".formatted(i)).value(product.getThumbnailUrl()))
+                    .andExpect(jsonPath("$.data.content[%d].seller.id".formatted(i)).value(product.getSellerId()));
         }
     }
 
@@ -99,7 +104,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("keyword", "아이폰"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.LATEST,
                 new ProductSearchDto("아이폰", null, null, null, AuctionStatus.BIDDING));
 
         // then
@@ -110,7 +115,7 @@ class ApiV1ProductElasticsearchControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
 
         // 검색된 상품이 키워드를 포함하는지 확인
-        List<Product> products = productPage.getContent();
+        List<ProductDocument> products = productPage.getContent();
         for (int i = 0; i < products.size(); i++) {
             resultActions.andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(Matchers.containsString("아이폰")));
         }
@@ -125,7 +130,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("category", "1")) // 전자기기
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.LATEST,
                 new ProductSearchDto(null, new Integer[]{1}, null, null, AuctionStatus.BIDDING));
 
         // then
@@ -145,7 +150,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("location", "서울"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.LATEST,
                 new ProductSearchDto(null, null, new String[]{"서울"}, null, AuctionStatus.BIDDING));
 
         // then
@@ -156,7 +161,7 @@ class ApiV1ProductElasticsearchControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
 
         // 검색된 상품이 서울 지역을 포함하는지 확인
-        List<Product> products = productPage.getContent();
+        List<ProductDocument> products = productPage.getContent();
         for (int i = 0; i < products.size(); i++) {
             resultActions.andExpect(jsonPath("$.data.content[%d].location".formatted(i)).value(Matchers.containsString("서울")));
         }
@@ -171,7 +176,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("isDelivery", "true"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.LATEST,
                 new ProductSearchDto(null, null, null, true, AuctionStatus.BIDDING));
 
         // then
@@ -193,7 +198,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("isDelivery", "true"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.LATEST,
                 new ProductSearchDto("갤럭시", new Integer[]{1}, null, true, AuctionStatus.BIDDING));
 
         // then
@@ -214,7 +219,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("size", "2"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 2, ProductSearchSortType.LATEST,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 2, ProductSearchSortType.LATEST,
                 new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
 
         // then
@@ -239,7 +244,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("sort", "PRICE_LOW"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.PRICE_LOW,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.PRICE_LOW,
                 new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
 
         // then
@@ -249,7 +254,7 @@ class ApiV1ProductElasticsearchControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
 
         // 가격 순서 확인
-        List<Product> products = productPage.getContent();
+        List<ProductDocument> products = productPage.getContent();
         for (int i = 0; i < products.size() - 1; i++) {
             Long currentPrice = products.get(i).getCurrentPrice();
             Long nextPrice = products.get(i + 1).getCurrentPrice();
@@ -267,7 +272,7 @@ class ApiV1ProductElasticsearchControllerTest {
                         .param("sort", "POPULAR"))
                 .andDo(print());
 
-        Page<Product> productPage = productService.findBySearchPaged(1, 20, ProductSearchSortType.POPULAR,
+        Page<ProductDocument> productPage = productSearchService.searchProducts(1, 20, ProductSearchSortType.POPULAR,
                 new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING));
 
         // then

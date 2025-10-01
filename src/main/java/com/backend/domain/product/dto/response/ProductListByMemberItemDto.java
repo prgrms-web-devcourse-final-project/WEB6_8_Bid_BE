@@ -16,7 +16,7 @@ public record ProductListByMemberItemDto(
         @NotNull LocalDateTime auctionEndTime,
         @NotNull Integer auctionDuration,
         @NotNull String status,
-//        @NotNull Long biddersCount,
+        @NotNull Integer bidderCount,
         String location,
         @NotNull String thumbnailUrl,
         ReviewDto review
@@ -32,7 +32,7 @@ public record ProductListByMemberItemDto(
                 entity.getEndTime(),
                 entity.getDuration(),
                 entity.getStatus(),
-//                entity.getBiddersCount(),
+                entity.getBidderCount(),
                 entity.getLocation(),
                 entity.getThumbnail(),
                 ReviewDto.fromEntity(entity.getReview())

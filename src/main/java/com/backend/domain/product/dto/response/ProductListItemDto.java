@@ -18,7 +18,7 @@ public record ProductListItemDto(
         @NotNull LocalDateTime auctionEndTime,
         @NotNull Integer auctionDuration,
         @NotNull String status,
-//        @NotNull Long biddersCount,
+        @NotNull Integer bidderCount,
         String location,
         @NotNull String thumbnailUrl,
         @NotNull SellerDto seller
@@ -34,7 +34,7 @@ public record ProductListItemDto(
                 entity.getEndTime(),
                 entity.getDuration(),
                 entity.getStatus(),
-//                entity.getBiddersCount(),
+                entity.getBidderCount(),
                 entity.getLocation(),
                 entity.getThumbnail(),
                 SellerDto.fromEntity(entity.getSeller())
@@ -52,7 +52,7 @@ public record ProductListItemDto(
                 document.getEndTime(),
                 document.getDuration(),
                 document.getStatus(),
-//                document.getBidderCount(),
+                document.getBidderCount(),
                 document.getLocation(),
                 document.getThumbnailUrl(),
                 sellerDto
