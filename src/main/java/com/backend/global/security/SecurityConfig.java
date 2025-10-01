@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
 
                         // 공개 API (기존)..
-                        .requestMatchers("/favicon.ico", "/h2-console/**").permitAll()
+                        .requestMatchers("/favicon.ico", "/h2-console/**", "/actuator/health").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/swagger-ui.html", "/webjars/**", "/notifications/**", "/ws/**",
                                 "/api/test/**", "/bid-test.html", "/websocket-test.html").permitAll()
