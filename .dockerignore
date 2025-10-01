@@ -3,10 +3,10 @@
 .gitignore
 .gitattributes
 
-# Gradle
+# Gradle (빌드된 파일만 제외, 소스는 포함)
 .gradle
 **/build/
-!gradle/wrapper/gradle-wrapper.jar
+!**/build/libs/
 
 # IDE
 .idea
@@ -30,8 +30,8 @@ terraform/
 # GitHub
 .github/
 
-# Test
-**/test/
+# Test files (소스 코드는 포함, 빌드된 테스트만 제외)
+**/src/test/
 
 # Logs
 *.log
