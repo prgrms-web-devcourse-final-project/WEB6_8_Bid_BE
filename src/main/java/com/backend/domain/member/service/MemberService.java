@@ -109,7 +109,7 @@ public class MemberService {
     public RsData<MemberMyInfoResponseDto> modify(String email, MemberModifyRequestDto memberModifyRequestDto, MultipartFile profileImage) {
         Member member = findMemberByEmail(email);
 
-        String profileImageUrl = "";
+        String profileImageUrl = Optional.ofNullable(member.getProfileImageUrl()).orElse("");
         if (profileImage != null && !profileImage.isEmpty()) {
             profileImageUrl = fileService.uploadFile(profileImage, "member");
         }
@@ -172,5 +172,11 @@ public class MemberService {
         Member member = findById(memberId)
                 .orElseThrow(() -> new ServiceException("404", "존재하지 않는 유저입니다."));
         return new MemberInfoResponseDto(member);
+    }
+
+    public RsData<Void> withdraw(String email) {
+        Member member = findMemberByEmail(email);
+        memberRepository.delete(member);
+        return new RsData<>("200-5", "회원 탈퇴가 완료되었습니다.", null);
     }
 }

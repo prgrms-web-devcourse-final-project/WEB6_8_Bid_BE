@@ -4,8 +4,13 @@ import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.MemberModifyRequestDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.product.service.FileService;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -55,6 +61,9 @@ class ApiV1MemberControllerTest {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @MockBean
+    private FileService fileService;
 
     @BeforeEach
     void setUp() {
@@ -373,7 +382,9 @@ class ApiV1MemberControllerTest {
     @Test
     @DisplayName("내 정보 수정 성공")
     void t11() throws Exception {
-        // Given
+        // given
+        given(fileService.uploadFile(any(), any())).willReturn("https://test.com/modified.jpg");
+
         // 회원가입
         MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
                 "modify@example.com", "password123", "beforeModify", "01011112222", "Before Address");
@@ -423,7 +434,7 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.nickname").value("afterModify"))
                 .andExpect(jsonPath("$.data.phoneNumber").value("01099998888"))
                 .andExpect(jsonPath("$.data.address").value("After Address"))
-                .andExpect(jsonPath("$.data.profileImageUrl").exists());
+                .andExpect(jsonPath("$.data.profileImageUrl").value("https://test.com/modified.jpg"));
     }
 
     @Test
@@ -448,5 +459,96 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("조회 성공"))
                 .andExpect(jsonPath("$.data.id").value(memberId))
                 .andExpect(jsonPath("$.data.nickname").value("testUser12"));
+    }
+
+    @Test
+    @DisplayName("회원탈퇴 성공")
+    void t13() throws Exception {
+        // given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "withdraw@example.com", "password123", "withdrawUser", "01033334444", "Withdraw Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        // 로그인하여 토큰 발급
+        LoginRequestDto loginDto = new LoginRequestDto("withdraw@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+        String responseBody = loginResult.andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(responseBody).get("data").get("accessToken").asText();
+
+        // when
+        // 회원탈퇴
+        ResultActions withdrawResult = mockMvc.perform(delete("/api/v1/members/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andDo(print());
+
+        // then
+        withdrawResult
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-5"))
+                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
+
+        // given
+        // 탈퇴한 계정으로 다시 로그인 시도
+        LoginRequestDto reloginDto = new LoginRequestDto("withdraw@example.com", "password123");
+
+        // when
+        ResultActions reloginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reloginDto)))
+                .andDo(print());
+
+        // then
+        // 존재하지 않는 이메일이므로 404 Not Found 응답을 기대
+        reloginResult.andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("내 정보 수정 성공 - 프로필 이미지 제외")
+    void t14() throws Exception {
+        // given: FileService가 항상 짧은 URL을 반환하도록 Mocking
+        given(fileService.uploadFile(any(), any())).willReturn("https://test.com/initial.jpg");
+
+        // 1. 초기 이미지와 함께 회원가입 및 정보 수정
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "image-test@example.com", "password123", "imageUser", "01055556666", "Image Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        LoginRequestDto loginDto = new LoginRequestDto("image-test@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+        String accessToken = JsonPath.read(loginResult.andReturn().getResponse().getContentAsString(), "$.data.accessToken");
+
+        MockMultipartFile initialImage = new MockMultipartFile("profileImage", "initial.jpg", MediaType.IMAGE_JPEG_VALUE, "initial image".getBytes());
+        MemberModifyRequestDto initialModifyDto = new MemberModifyRequestDto("imageUser", "01055556666", "Image Address");
+        MockMultipartFile initialModifyDtoPart = new MockMultipartFile("memberModifyRequestDto", "", "application/json", objectMapper.writeValueAsString(initialModifyDto).getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart(HttpMethod.PUT, "/api/v1/members/me")
+                .file(initialImage)
+                .file(initialModifyDtoPart)
+                .header("Authorization", "Bearer " + accessToken));
+
+        // 2. 이미지를 제외하고 다른 정보만 수정
+        MemberModifyRequestDto secondModifyDto = new MemberModifyRequestDto("newNickname", "01077778888", "New Address");
+        MockMultipartFile secondModifyDtoPart = new MockMultipartFile("memberModifyRequestDto", "", "application/json", objectMapper.writeValueAsString(secondModifyDto).getBytes(StandardCharsets.UTF_8));
+
+        ResultActions secondModifyResult = mockMvc.perform(multipart(HttpMethod.PUT, "/api/v1/members/me")
+                        .file(secondModifyDtoPart) // 이미지를 보내지 않음
+                        .header("Authorization", "Bearer " + accessToken))
+                .andDo(print());
+
+        // 3. 닉네임은 변경되고, 이미지 URL은 1차 수정 때의 값("https://test.com/initial.jpg")이 그대로 유지되는지 확인
+        secondModifyResult
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-4"))
+                .andExpect(jsonPath("$.data.nickname").value("newNickname"))
+                .andExpect(jsonPath("$.data.profileImageUrl").value("https://test.com/initial.jpg"));
     }
 }
