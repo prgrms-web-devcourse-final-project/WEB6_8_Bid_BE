@@ -9,7 +9,6 @@ import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.service.ProductSearchService;
-import com.backend.domain.product.service.ProductService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,9 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ApiV1ProductElasticsearchControllerTest {
     @Autowired
     private MockMvc mvc;
-
-    @Autowired
-    private ProductService productService;
 
     @Autowired
     private ProductSearchService productSearchService;

@@ -85,6 +85,7 @@ public class TestInitData {
         Member member5 = memberService.findByNickname("명품러버").get();
         Member member6 = memberService.findByNickname("나이키키").get();
 
+        // 경매 중
         ProductCreateRequest requestDto1 = new ProductCreateRequest("iPhone 15 Pro", "최신 iPhone 15 Pro 새상품입니다.", 1, 1000000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.BOTH, "서울 서초구");
         Product product1 = productService.saveProduct(member3, requestDto1);
         productImageService.createProductImage(product1, "/image1_1.jpg");
@@ -113,15 +114,6 @@ public class TestInitData {
         Product product7 = productService.saveProduct(member6, requestDto7);
         productImageService.createProductImage(product7, "/image7_1.jpg");
 
-
-//        bidService.createBid(product1.getId(), member1.getId(), new BidRequestDto(1200000L));
-//        bidService.createBid(product1.getId(), member2.getId(), new BidRequestDto(1100000L));
-//        bidService.createBid(product2.getId(), member2.getId(), new BidRequestDto(2100000L));
-//        bidService.createBid(product3.getId(), member1.getId(), new BidRequestDto(2200000L));
-
-        bidService.createBid(product4.getId(), member1.getId(), new BidRequestDto(1200000L));
-        bidService.createBid(product4.getId(), member2.getId(), new BidRequestDto(1300000L));
-
         // 경매 시작 전
         ProductCreateRequest requestDto8 = new ProductCreateRequest("뉴발란스 스니커즈", null, 2, 700000L, LocalDateTime.now().plusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
         Product product8 = productService.saveProduct(member6, requestDto8);
@@ -131,6 +123,10 @@ public class TestInitData {
         ProductCreateRequest requestDto9 = new ProductCreateRequest("닌텐도 Switch", null, 2, 700000L, LocalDateTime.now().minusHours(1), "24시간", DeliveryMethod.DELIVERY, null);
         Product product9 = productService.saveProduct(member4, requestDto9);
         productImageService.createProductImage(product9, "/image9_1.jpg");
+
+        // 경매 진행
+        bidService.createBid(product4.getId(), member1.getId(), new BidRequestDto(1200000L));
+        bidService.createBid(product4.getId(), member2.getId(), new BidRequestDto(1300000L));
 
         bidService.createBid(product9.getId(), member1.getId(), new BidRequestDto(900000L));
         product9.setStatus("낙찰");

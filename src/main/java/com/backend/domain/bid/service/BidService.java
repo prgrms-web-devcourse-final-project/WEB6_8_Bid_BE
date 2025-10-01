@@ -8,12 +8,13 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
-import com.backend.domain.product.service.ProductSyncService;
+import com.backend.domain.product.event.helper.ProductChangeTracker;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;
 import com.backend.global.websocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +38,7 @@ public class BidService {
     private final WebSocketService webSocketService;
     private final BidNotificationService bidNotificationService;
     private final CashService cashService;
-    private final ProductSyncService productSyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
@@ -67,10 +68,8 @@ public class BidService {
                 // paidAt / paidAmount 는 결제 전이므로 비워둠(null)
                 .build();
         Bid savedBid = bidRepository.save(bid);
-        product.addBid(savedBid);
-        // 4. 입찰가 업데이트
-        product.setCurrentPrice(request.price());
-        productSyncService.syncProductPriceUpdate(productId, request.price());
+        // 4. 상품 업데이트 (입찰 추가, 현재가 업데이트)
+        updateProduct(product, savedBid, request.price());
         // 5. 응답 데이터 생성
         BidResponseDto bidResponse = new BidResponseDto(
                 savedBid.getId(),
@@ -236,6 +235,15 @@ public class BidService {
         if(bidPrice < currentHighestPrice + 100){
             throw new ServiceException("400","최소 100원이상 높게 입찰해주세요.");
         }
+    }
+
+    private void updateProduct(Product product, Bid savedBid, Long newPrice) {
+        ProductChangeTracker tracker = ProductChangeTracker.of(product);
+
+        product.addBid(savedBid);
+        product.setCurrentPrice(newPrice);
+
+        tracker.publishChanges(eventPublisher, product);
     }
 
     public RsData<BidPayResponseDto> payForBid(Long memberId, Long bidId) {

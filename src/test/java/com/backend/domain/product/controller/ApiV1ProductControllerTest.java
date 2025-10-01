@@ -10,8 +10,8 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
-import com.backend.domain.product.repository.ProductElasticRepository;
 import com.backend.domain.product.service.ProductService;
+import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -19,13 +19,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser("user1@example.com")
+@Import(TestElasticsearchConfiguration.class)
 class ApiV1ProductControllerTest {
     @Autowired
     private MockMvc mvc;
@@ -53,9 +54,6 @@ class ApiV1ProductControllerTest {
 
     @Autowired
     private MemberRepository memberRepository;
-
-    @MockitoBean
-    private ProductElasticRepository productElasticRepository;
 
     @Test
     @DisplayName("상품 생성")

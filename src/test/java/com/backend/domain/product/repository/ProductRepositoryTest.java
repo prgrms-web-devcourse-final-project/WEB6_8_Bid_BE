@@ -5,16 +5,17 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 
@@ -22,12 +23,10 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
+@Import(TestElasticsearchConfiguration.class)
 class ProductRepositoryTest {
     @Autowired
     private ProductRepository productRepository;
-
-    @MockitoBean
-    private ProductElasticRepository productElasticRepository;
 
     @Test
     @DisplayName("키워드로 상품을 검색할 수 있다 - 아이폰")

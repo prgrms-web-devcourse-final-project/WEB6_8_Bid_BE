@@ -4,11 +4,12 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.notification.service.AuctionNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
-import com.backend.domain.product.service.ProductSyncService;
+import com.backend.domain.product.event.helper.ProductChangeTracker;
 import com.backend.global.websocket.service.WebSocketService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ public class AuctionSchedulerService {
     private final BidRepository bidRepository;
     private final WebSocketService webSocketService;
     private final AuctionNotificationService auctionNotificationService;
-    private final ProductSyncService productSyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     //  매분마다 실행되어 종료된 경매들을 확인하고 낙찰 처리
     @Scheduled(fixedRate = 60000) // 1분마다 실행
@@ -113,10 +114,7 @@ public class AuctionSchedulerService {
             
             if (highestBidPrice > 0) {
                 // 입찰이 있었던 경우 - 낙찰 처리
-                product.setStatus(AuctionStatus.SUCCESSFUL.getDisplayName());
-                product.setCurrentPrice(highestBidPrice);
-                productSyncService.syncProductStatusUpdate(product.getId(), AuctionStatus.SUCCESSFUL.getDisplayName());
-                productSyncService.syncProductPriceUpdate(product.getId(), highestBidPrice);
+                updateProduct(product, AuctionStatus.SUCCESSFUL, highestBidPrice);
                 log.info("상품 ID: {}, 낙찰가: {}원으로 낙찰 처리되었습니다.", 
                     product.getId(), highestBidPrice);
                 
@@ -125,8 +123,7 @@ public class AuctionSchedulerService {
                 
             } else {
                 // 입찰이 없었던 경우 - 유찰 처리
-                product.setStatus(AuctionStatus.FAILED.getDisplayName());
-                productSyncService.syncProductStatusUpdate(product.getId(), AuctionStatus.FAILED.getDisplayName());
+                updateProduct(product, AuctionStatus.FAILED, null);
                 log.info("상품 ID: {}, 입찰이 없어 유찰 처리되었습니다.", product.getId());
                 
                 // 구독자들에게 유찰 알림 전송
@@ -145,8 +142,7 @@ public class AuctionSchedulerService {
     private void processAuctionStart(Product product) {
         try {
             // 상태 업데이트
-            product.setStatus(AuctionStatus.BIDDING.getDisplayName());
-            productSyncService.syncProductStatusUpdate(product.getId(), AuctionStatus.BIDDING.getDisplayName());
+            updateProduct(product, AuctionStatus.BIDDING, null);
             log.info("상품 ID: {} ({}) 경매가 시작되었습니다.", product.getId(), product.getProductName());
 
             // 판매자에게 경매 시작 알림 전송
@@ -158,5 +154,14 @@ public class AuctionSchedulerService {
             log.error("경매 시작 처리 중 오류 발생. 상품 ID: {}, 오류: {}",
                     product.getId(), e.getMessage(), e);
         }
+    }
+
+    private void updateProduct(Product product, AuctionStatus status, Long highestBidPrice) {
+        ProductChangeTracker tracker = ProductChangeTracker.of(product);
+
+        product.setStatus(status.getDisplayName());
+        if(highestBidPrice != null) product.setCurrentPrice(highestBidPrice);
+
+        tracker.publishChanges(eventPublisher, product);
     }
 }

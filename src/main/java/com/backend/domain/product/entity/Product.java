@@ -191,7 +191,6 @@ public class Product extends BaseEntity {
 
         if (_bidderCount != bidderCount) {
             bidderCount = _bidderCount;
-//            productSyncService.syncProductBidderCountUpdate(super.getId(), bidderCount);
         }
     }
 

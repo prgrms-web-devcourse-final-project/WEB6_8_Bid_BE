@@ -9,12 +9,14 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
+import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
+@Import(TestElasticsearchConfiguration.class)
 class BidServiceTest {
 
     @Autowired
