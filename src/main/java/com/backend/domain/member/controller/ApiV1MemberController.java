@@ -98,9 +98,11 @@ public class ApiV1MemberController {
         return ResponseEntity.ok(new RsData<>("200", "조회 성공", memberInfo));
     }
 
-    @Operation(summary = "회원탈퇴 Mock API", description = "회원탈퇴 확인")
+    @Operation(summary = "회원탈퇴 API", description = "현재 로그인된 회원을 탈퇴 처리합니다.")
     @DeleteMapping("/members/me")
-    public ResponseEntity<RsData<String>> memberWithdraw(Authentication authentication) {
-        return ResponseEntity.ok(new RsData<>("200-1", "회원 탈퇴가 완료되었습니다.", null));
+    public ResponseEntity<RsData<Void>> memberWithdraw(Authentication authentication) {
+        System.out.println("인증이름" + authentication.getName());
+        RsData<Void> withdrawResult = memberService.withdraw(authentication.getName());
+        return ResponseEntity.status(withdrawResult.statusCode()).body(withdrawResult);
     }
 }

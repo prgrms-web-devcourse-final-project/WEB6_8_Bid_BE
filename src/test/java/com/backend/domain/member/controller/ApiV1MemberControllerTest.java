@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -448,5 +449,51 @@ class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("조회 성공"))
                 .andExpect(jsonPath("$.data.id").value(memberId))
                 .andExpect(jsonPath("$.data.nickname").value("testUser12"));
+    }
+
+    @Test
+    @DisplayName("회원탈퇴 성공")
+    void t13() throws Exception {
+        // given
+        // 회원가입
+        MemberSignUpRequestDto signUpDto = new MemberSignUpRequestDto(
+                "withdraw@example.com", "password123", "withdrawUser", "01033334444", "Withdraw Address");
+        mockMvc.perform(post("/api/v1/auth/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(signUpDto)));
+
+        // 로그인하여 토큰 발급
+        LoginRequestDto loginDto = new LoginRequestDto("withdraw@example.com", "password123");
+        ResultActions loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginDto)));
+        String responseBody = loginResult.andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(responseBody).get("data").get("accessToken").asText();
+
+        // when
+        // 회원탈퇴
+        ResultActions withdrawResult = mockMvc.perform(delete("/api/v1/members/me")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andDo(print());
+
+        // then
+        withdrawResult
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-5"))
+                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
+
+        // given
+        // 탈퇴한 계정으로 다시 로그인 시도
+        LoginRequestDto reloginDto = new LoginRequestDto("withdraw@example.com", "password123");
+
+        // when
+        ResultActions reloginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reloginDto)))
+                .andDo(print());
+
+        // then
+        // 존재하지 않는 이메일이므로 404 Not Found 응답을 기대
+        reloginResult.andExpect(status().isNotFound());
     }
 }
