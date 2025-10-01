@@ -138,9 +138,18 @@ jobs:
             aws ecr get-login-password --region ap-northeast-2 | \
               docker login --username AWS --password-stdin 174170816230.dkr.ecr.ap-northeast-2.amazonaws.com
             
+            # 기존 컨테이너 완전히 제거
+            sudo /usr/local/bin/docker-compose down
+            
+            # 로컬 이미지 캐시 삭제 (latest 태그만)
+            docker rmi 174170816230.dkr.ecr.ap-northeast-2.amazonaws.com/team12-ecr-1:latest || true
+            
             # 최신 이미지 pull 및 재시작
             sudo /usr/local/bin/docker-compose pull app
-            sudo /usr/local/bin/docker-compose up -d
+            sudo /usr/local/bin/docker-compose up -d --force-recreate
+            
+            # 새 이미지 digest 확인
+            docker images --digests | grep team12-ecr-1
             
             echo "Deployment completed"
           EOF
