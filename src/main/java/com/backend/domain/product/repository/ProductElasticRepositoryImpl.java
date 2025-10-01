@@ -1,6 +1,8 @@
 package com.backend.domain.product.repository;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
@@ -10,12 +12,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,9 +49,13 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         // 필터 적용
         applyFilters(boolQuery, search);
 
+        // 정렬 적용
+        List<SortOptions> sortOptions = applySorting(pageable.getSort());
+
         return NativeQuery.builder()
                 .withQuery(q -> q.bool(boolQuery.build()))
                 .withPageable(pageable)
+                .withSort(sortOptions)
                 .build();
     }
 
@@ -96,6 +104,32 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         if (search.status() != null) {
             boolQuery.filter(f -> f.term(t -> t.field("status").value(search.status().getDisplayName())));
         }
+    }
+
+    private List<SortOptions> applySorting(Sort sort) {
+        List<SortOptions> sortOptions = new ArrayList<>();
+
+        for (Sort.Order order : sort) {
+            SortOptions sortOption = SortOptions.of(s -> s
+                    .field(f -> f
+                            .field(order.getProperty())
+                            .order(order.isAscending() ? SortOrder.Asc : SortOrder.Desc)
+                    )
+            );
+            sortOptions.add(sortOption);
+        }
+
+        // 정렬이 있을 때만 productId 타이브레이커 추가
+        if (!sortOptions.isEmpty()) {
+            sortOptions.add(SortOptions.of(s -> s
+                    .field(f -> f
+                            .field("productId")
+                            .order(SortOrder.Desc)
+                    )
+            ));
+        }
+
+        return sortOptions;
     }
 
     private List<ProductDocument> convertToProductDocumentList(SearchHits<ProductDocument> searchHits) {

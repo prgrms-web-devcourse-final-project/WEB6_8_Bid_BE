@@ -5,6 +5,7 @@ import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
+import com.backend.domain.product.enums.ProductSearchSortType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ class ProductElasticRepositoryTest {
     void searchByKeyword() {
         // given
         ProductSearchDto search = new ProductSearchDto("아이폰", null, null, null, AuctionStatus.BIDDING);
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
 
         // when
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
@@ -48,7 +49,7 @@ class ProductElasticRepositoryTest {
     void searchByCategory() {
         // given
         ProductSearchDto search = new ProductSearchDto(null, new Integer[]{ProductCategory.DIGITAL_ELECTRONICS.getId()}, null, null, AuctionStatus.BIDDING);
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
 
         // when
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
@@ -64,7 +65,7 @@ class ProductElasticRepositoryTest {
     void searchByLocation() {
         // given
         ProductSearchDto search = new ProductSearchDto(null, null, new String[]{"서울"}, null, AuctionStatus.BIDDING);
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
 
         // when
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
@@ -80,7 +81,7 @@ class ProductElasticRepositoryTest {
     void searchByDelivery() {
         // given
         ProductSearchDto search = new ProductSearchDto(null, null, null, true, AuctionStatus.BIDDING);
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
 
         // when
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
@@ -97,7 +98,7 @@ class ProductElasticRepositoryTest {
     void searchWithMultipleConditions() {
         // given
         ProductSearchDto search = new ProductSearchDto(null, new Integer[]{ProductCategory.DIGITAL_ELECTRONICS.getId()}, new String[]{"서울"}, null, AuctionStatus.BIDDING);
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
 
         // when
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
@@ -114,7 +115,7 @@ class ProductElasticRepositoryTest {
     void searchWithPaging() {
         // given
         ProductSearchDto search = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
-        Pageable pageable = PageRequest.of(0, 2);
+        Pageable pageable = PageRequest.of(0, 2, ProductSearchSortType.LATEST.toSort());
 
         // when
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
@@ -124,5 +125,125 @@ class ProductElasticRepositoryTest {
         assertThat(result.getTotalElements()).isEqualTo(7);
         assertThat(result.getTotalPages()).isEqualTo(4);
         assertThat(result.hasNext()).isTrue();
+    }
+
+    @Test
+    @DisplayName("정렬 - 최신순")
+    void searchWithLatestSort() {
+        // given
+        ProductSearchDto search = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
+
+        // when
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+
+        // createDate 내림차순 확인
+        for (int i = 0; i < result.getContent().size() - 1; i++) {
+            assertThat(result.getContent().get(i).getCreateDate())
+                    .isAfterOrEqualTo(result.getContent().get(i + 1).getCreateDate());
+            if (result.getContent().get(i).getCreateDate().equals(result.getContent().get(i + 1).getCreateDate())) {
+                assertThat(result.getContent().get(i).getProductId())
+                        .isGreaterThan(result.getContent().get(i + 1).getProductId());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("정렬 - 가격 낮은순")
+    void searchWithPriceLowSort() {
+        // given
+        ProductSearchDto search = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.PRICE_LOW.toSort());
+
+        // when
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+
+        // currentPrice 오름차순 확인
+        for (int i = 0; i < result.getContent().size() - 1; i++) {
+            assertThat(result.getContent().get(i).getCurrentPrice())
+                    .isLessThanOrEqualTo(result.getContent().get(i + 1).getCurrentPrice());
+            if (result.getContent().get(i).getCurrentPrice().equals(result.getContent().get(i + 1).getCurrentPrice())) {
+                assertThat(result.getContent().get(i).getProductId())
+                        .isGreaterThan(result.getContent().get(i + 1).getProductId());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("정렬 - 가격 높은순")
+    void searchWithPriceHighSort() {
+        // given
+        ProductSearchDto search = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.PRICE_HIGH.toSort());
+
+        // when
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+
+        // currentPrice 내림차순 확인
+        for (int i = 0; i < result.getContent().size() - 1; i++) {
+            assertThat(result.getContent().get(i).getCurrentPrice())
+                    .isGreaterThanOrEqualTo(result.getContent().get(i + 1).getCurrentPrice());
+            if (result.getContent().get(i).getCurrentPrice().equals(result.getContent().get(i + 1).getCurrentPrice())) {
+                assertThat(result.getContent().get(i).getProductId())
+                        .isGreaterThan(result.getContent().get(i + 1).getProductId());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("정렬 - 마감 임박순")
+    void searchWithEndingSoonSort() {
+        // given
+        ProductSearchDto search = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.ENDING_SOON.toSort());
+
+        // when
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+
+        // endTime 오름차순 확인
+        for (int i = 0; i < result.getContent().size() - 1; i++) {
+            assertThat(result.getContent().get(i).getEndTime())
+                    .isBeforeOrEqualTo(result.getContent().get(i + 1).getEndTime());
+            if (result.getContent().get(i).getEndTime().equals(result.getContent().get(i + 1).getEndTime())) {
+                assertThat(result.getContent().get(i).getProductId())
+                        .isGreaterThan(result.getContent().get(i + 1).getProductId());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("정렬 - 인기순")
+    void searchWithPopularSort() {
+        // given
+        ProductSearchDto search = new ProductSearchDto(null, null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.POPULAR.toSort());
+
+        // when
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+
+        // bidderCount 내림차순 확인
+        for (int i = 0; i < result.getContent().size() - 1; i++) {
+            assertThat(result.getContent().get(i).getBidderCount())
+                    .isGreaterThanOrEqualTo(result.getContent().get(i + 1).getBidderCount());
+            if (result.getContent().get(i).getBidderCount().equals(result.getContent().get(i + 1).getBidderCount())) {
+                assertThat(result.getContent().get(i).getProductId())
+                        .isGreaterThan(result.getContent().get(i + 1).getProductId());
+            }
+        }
     }
 }
