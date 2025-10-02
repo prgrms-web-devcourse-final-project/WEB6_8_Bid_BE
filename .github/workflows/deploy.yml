@@ -235,6 +235,7 @@ jobs:
               --restart unless-stopped \
               --network "${NET}" \
               -e TZ=Asia/Seoul \
+              -d /bid_data:/data \
               "${IMAGE}"
 
             # ---------------------------------------------------------

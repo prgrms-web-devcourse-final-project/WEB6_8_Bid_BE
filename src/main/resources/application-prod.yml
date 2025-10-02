@@ -24,7 +24,7 @@ jwt:
 
 file:
   upload:
-    path: ${user.home}/uploads
+    path: /data
     base-url: https://api.bid-market.shop/uploads
 testdata:
   generation:
