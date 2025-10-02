@@ -23,6 +23,11 @@ public class ProductException extends ServiceException {
         return notFound(2, "존재하지 않는 이미지입니다");
     }
 
+    // 일단 ProductException 에서 정의 (MemberException 생성되면 제거)
+    public static ProductException memberNotFound() {
+        return new ProductException(RsStatus.NOT_FOUND.getResultCode(), "존재하지 않는 회원입니다");
+    }
+
     // ======================================= forbidden ======================================= //
     private static ProductException forbidden(int detailCode, String msg) {
         return new ProductException(RsStatus.FORBIDDEN.getResultCode() + "-" + detailCode, msg);
