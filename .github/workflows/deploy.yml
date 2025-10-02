@@ -1,229 +1,289 @@
-name: CI/CD Pipeline
+name: deploy
+
+# =========================
+# 전역 환경변수
+# =========================
+env:
+  IMAGE_REPOSITORY: bid-1 # GHCR 이미지 리포지토리명(소유자 포함 X)
+  CONTAINER_1_NAME: bid-1_1 # 슬롯1(고정 이름)
+  CONTAINER_2_NAME: bid-1_2 # 슬롯2(고정 이름)
+  CONTAINER_PORT: 8080 # 컨테이너 내부 포트(스프링부트)
+  EC2_INSTANCE_TAG_NAME: team12-ec2-1 # 배포 대상 EC2 Name 태그
+  DOCKER_NETWORK: common # 도커 네트워크
+  BACKEND_DIR: . # Dockerfile 위치
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }} # 커밋이 짧은 시간안에 몰려도 최신 커밋에 대해서만 액션이 수행되도록
+  cancel-in-progress: false # 기존에 시작된 작업은 새 커밋이 들어왔다고 해서 바로 끄지 않고 끝날때까지 대기
 
 on:
   push:
+    paths:
+      - ".github/workflows/**"
+      - "backend/.env"
+      - "backend/src/**"
+      - "backend/build.gradle.kts"
+      - "backend/settings.gradle.kts"
+      - "backend/Dockerfile"
     branches:
       - main
       - develop
-  pull_request:
-    branches:
-      - main
 
-env:
-  AWS_REGION: ap-northeast-2
-  JAVA_VERSION: 21
+# 권한 최소화/명시화
+permissions:
+  contents: write # 태그/릴리즈
+  packages: write # GHCR 푸시
+
+# 기본 셸
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  test:
-    name: Run Tests
+  # ---------------------------------------------------------
+  # 1) 태그/릴리즈 생성
+  # ---------------------------------------------------------
+  makeTagAndRelease:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-        
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        
-      - name: Build application
-        run: ./gradlew build -x test --no-daemon
-        
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: build/test-results/
-          if-no-files-found: ignore
-  
-  build:
-    name: Build and Push Image
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
-    
     outputs:
-      image: ${{ steps.image.outputs.image }}
-      tag: ${{ steps.image.outputs.tag }}
-      
+      tag_name: ${{ steps.create_tag.outputs.new_tag }} # 이후 잡에서 사용할 태그명
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-          
-      - name: Set environment
-        id: env
-        run: |
-          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
-            echo "environment=prod" >> $GITHUB_OUTPUT
-          else
-            echo "environment=dev" >> $GITHUB_OUTPUT
-          fi
-          
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - uses: actions/checkout@v4
+
+      # 버전 태그 자동 생성 (vX.Y.Z)
+      - name: Create Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-          
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        
-      - name: Build, tag, and push image to Amazon ECR
-        id: image
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 릴리즈 생성
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ENVIRONMENT: ${{ steps.env.outputs.environment }}
-          PG_TOSS_CLIENT_KEY: ${{ secrets.PG_TOSS_CLIENT_KEY }}
-          PG_TOSS_SECRET_KEY: ${{ secrets.PG_TOSS_SECRET_KEY }}
-        run: |
-          IMAGE_TAG=$GITHUB_SHA
-          IMAGE_URI=$ECR_REGISTRY/team12-ecr-1:$IMAGE_TAG
-          
-          docker build --no-cache \
-            --build-arg PG_TOSS_SECRET_KEY=${{ env.PG_TOSS_SECRET_KEY }} \
-            --build-arg PG_TOSS_CLIENT_KEY=${{ env.PG_TOSS_CLIENT_KEY }} \
-            -t $IMAGE_URI .
-          docker push $IMAGE_URI
-          
-          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
-          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          
-          # Also tag as latest
-          docker tag $IMAGE_URI $ECR_REGISTRY/team12-ecr-1:latest
-          docker push $ECR_REGISTRY/team12-ecr-1:latest
-  
-  deploy-dev:
-    name: Deploy to Development
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/develop'
-    environment: development
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+  # ---------------------------------------------------------
+  # 2) 도커 이미지 빌드/푸시 (캐시 최대 활용)
+  # ---------------------------------------------------------
+  buildImageAndPush:
+    name: 도커 이미지 빌드와 푸시
+    needs: makeTagAndRelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 빌드 컨텍스트에 .env 생성 (비어있어도 실패하지 않게)
+      - name: .env 파일 생성
+        env:
+          DOT_ENV: ${{ secrets.DOT_ENV }}
+        run: |
+          # .env가 없으면 빌드 캐시가 매번 깨질 수 있으므로 항상 생성
+          mkdir -p "${{ env.BACKEND_DIR }}"
+          printf "%s" "${DOT_ENV}" > "${{ env.BACKEND_DIR }}/.env"
+
+      - name: Docker Buildx 설치
+        uses: docker/setup-buildx-action@v3
+
+      # GHCR 로그인
+      - name: 레지스트리 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 저장소 소유자명을 소문자로 (GHCR 경로 표준화)
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> "${GITHUB_ENV}"
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      # 캐시를 최대한 활용하여 빌드 → 버전태그 및 latest 동시 푸시
+      - name: 빌드 앤 푸시
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.BACKEND_DIR }}
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
+            ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_REPOSITORY }}:latest
+
+  # ---------------------------------------------------------
+  # 3) Blue/Green 무중단 배포 (EC2 + NPM 스위치)
+  # ---------------------------------------------------------
+  deploy:
+    name: Blue/Green 무중단 배포
+    runs-on: ubuntu-latest
+    needs: [makeTagAndRelease, buildImageAndPush]
+    steps:
+      # AWS 자격 구성
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      
-      - name: Setup SSH key
+
+      # Name 태그로 EC2 인스턴스 조회 (없으면 실패)
+      - name: 인스턴스 ID 가져오기
+        id: get_instance_id
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/ssh_key
-          chmod 600 /tmp/ssh_key
-          
-      - name: Deploy Application
-        run: |
-          echo "Deploying new Docker image to EC2..."
-          
-          # EC2에 SSH로 접속하여 Docker 이미지 업데이트
-          ssh -i /tmp/ssh_key -o StrictHostKeyChecking=no ec2-user@15.165.154.40 << 'EOF'
-            cd /app
-            
-            # ECR 로그인
-            aws ecr get-login-password --region ap-northeast-2 | \
-              docker login --username AWS --password-stdin 174170816230.dkr.ecr.ap-northeast-2.amazonaws.com
-            
-            # 기존 컨테이너 완전히 제거
-            sudo /usr/local/bin/docker-compose down
-            
-            # 로컬 이미지 캐시 삭제 (latest 태그만)
-            docker rmi 174170816230.dkr.ecr.ap-northeast-2.amazonaws.com/team12-ecr-1:latest || true
-            
-            # 최신 이미지 pull 및 재시작
-            sudo /usr/local/bin/docker-compose pull app
-            sudo /usr/local/bin/docker-compose up -d --force-recreate
-            
-            # 새 이미지 digest 확인
-            docker images --digests | grep team12-ecr-1
-            
-            echo "Deployment completed"
-          EOF
-          
-      # - name: Health Check
-      #   run: |
-      #     echo "Running health check on https://api.bid-market.shop"
-      #     sleep 30
-      #     
-      #     for i in {1..20}; do
-      #       if curl -f https://api.bid-market.shop/actuator/health; then
-      #         echo "Health check passed!"
-      #         exit 0
-      #       fi
-      #       echo "Waiting for application... ($i/20)"
-      #       sleep 10
-      #     done
-      #     echo "Health check failed!"
-      #     exit 1
-  
-  deploy-prod:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${{ env.EC2_INSTANCE_TAG_NAME }}" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          [[ -n "${INSTANCE_ID}" && "${INSTANCE_ID}" != "None" ]] || { echo "No running instance found"; exit 1; }
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> "${GITHUB_ENV}"
+
+      # 원격(SSM)으로 Blue/Green 스위치 수행
+      - name: AWS SSM Send-Command
+        uses: peterkimzz/aws-ssm-send-command@master
         with:
+          aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-          
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.0
-          
-      - name: Terraform Init
-        run: |
-          cd terraform/environments/prod
-          terraform init
-          
-      - name: Terraform Apply
-        run: |
-          cd terraform/environments/prod
-          terraform apply -auto-approve
-          
-      - name: Deploy Application
-        run: |
-          # Trigger instance refresh to deploy new version (Production)
-          aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name team12-asg-1 \
-            --preferences '{"MinHealthyPercentage": 90, "InstanceWarmup": 300}'
-          
-          echo "Production deployment initiated for team12-asg-1"
-          echo "Instance refresh started. Waiting 8 minutes for deployment..."
-          sleep 480
-          
-      - name: Health Check
-        run: |
-          echo "Running health check on https://api.bid-market.shop"
-          for i in {1..30}; do
-            if curl -f https://api.bid-market.shop/actuator/health; then
-              echo "Production deployment successful!"
-              exit 0
+          instance-ids: ${{ env.INSTANCE_ID }}
+          working-directory: /
+          comment: Deploy
+          command: |
+            set -Eeuo pipefail
+
+            # ---------------------------------------------------------
+            # 0) 실행 로그(라인 타임스탬프 부착)
+            # ---------------------------------------------------------
+            LOG="/tmp/ssm-$(date +%Y%m%d_%H%M%S).log"
+            exec > >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG")
+            exec 2> >(awk '{ fflush(); print strftime("[%Y-%m-%d %H:%M:%S]"), $0 }' | tee -a "$LOG" >&2)
+
+            # ---------------------------------------------------------
+            # 1) 변수 정의
+            #    - 슬롯 이름은 고정(두 개의 컨테이너 이름)
+            #    - blue/green은 "역할"이며 매 배포마다 바뀜
+            # ---------------------------------------------------------
+            source /etc/environment || true   # 시스템 전역 변수(+ 비밀) 주입 시도
+            OWNER_LC="${{ github.repository_owner }}"
+            OWNER_LC="${OWNER_LC,,}"                                # 소문자 표준화
+            IMAGE_TAG="${{ needs.makeTagAndRelease.outputs.tag_name }}"
+            IMAGE_REPOSITORY="${{ env.IMAGE_REPOSITORY }}"
+            IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+            SLOT1="${{ env.CONTAINER_1_NAME }}"
+            SLOT2="${{ env.CONTAINER_2_NAME }}"
+            PORT_IN="${{ env.CONTAINER_PORT }}"
+            NET="${{ env.DOCKER_NETWORK }}"
+
+            echo "🔹 Use image: ${IMAGE}"
+            docker pull "${IMAGE}"
+
+            # ---------------------------------------------------------
+            # 2) Nginx Proxy Manager(NPM) API 토큰 발급
+            #     - /etc/environment 등에 설정된 PASSWORD_1, APP_1_DOMAIN 사용 가정
+            # ---------------------------------------------------------
+            TOKEN=$(curl -s -X POST http://127.0.0.1:81/api/tokens \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\": \"admin@npm.com\", \"secret\": \"${PASSWORD_1:-}\"}" | jq -r '.token')
+
+            # 토큰/도메인 검증(없으면 실패)
+            [[ -n "${TOKEN}" && "${TOKEN}" != "null" ]] || { echo "NPM token issue failed"; exit 1; }
+            [[ -n "${APP_1_DOMAIN:-}" ]] || { echo "APP_1_DOMAIN is empty"; exit 1; }
+
+            # 대상 프록시 호스트 ID 조회(도메인 매칭)
+            PROXY_ID=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              | jq ".[] | select(.domain_names[]==\"${APP_1_DOMAIN}\") | .id")
+
+            [[ -n "${PROXY_ID}" && "${PROXY_ID}" != "null" ]] || { echo "Proxy host not found for ${APP_1_DOMAIN}"; exit 1; }
+
+            # 현재 프록시가 바라보는 업스트림(컨테이너명) 조회
+            CURRENT_HOST=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts/${PROXY_ID}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              | jq -r '.forward_host')
+
+            echo "🔎 CURRENT_HOST: ${CURRENT_HOST:-none}"
+
+            # ---------------------------------------------------------
+            # 3) 역할(blue/green) 판정
+            #    - blue : 현재 운영 중(CURRENT_HOST)
+            #    - green: 다음 운영(교체 대상)
+            # ---------------------------------------------------------
+            if [[ "${CURRENT_HOST:-}" == "${SLOT1}" ]]; then
+              BLUE="${SLOT1}"
+              GREEN="${SLOT2}"
+            elif [[ "${CURRENT_HOST:-}" == "${SLOT2}" ]]; then
+              BLUE="${SLOT2}"
+              GREEN="${SLOT1}"
+            else
+              BLUE="none"   # 초기 배포
+              GREEN="${SLOT1}"
             fi
-            echo "Waiting for application... ($i/30)"
-            sleep 10
-          done
-          echo "Health check failed!"
-          exit 1
+            echo "🎨 role -> blue(now): ${BLUE}, green(next): ${GREEN}"
+
+            # ---------------------------------------------------------
+            # 4) green 역할 컨테이너 재기동
+            #    - 같은 네트워크 상에서 NPM이 컨테이너명:PORT로 프록시하므로 -p 불필요
+            # ---------------------------------------------------------
+            docker rm -f "${GREEN}" >/dev/null 2>&1 || true
+            echo "🚀 run new container → ${GREEN}"
+            docker run -d --name "${GREEN}" \
+              --restart unless-stopped \
+              --network "${NET}" \
+              -e TZ=Asia/Seoul \
+              "${IMAGE}"
+
+            # ---------------------------------------------------------
+            # 5) 헬스체크 (/actuator/health 200 OK까지 대기)
+            # ---------------------------------------------------------
+            echo "⏱ health-check: ${GREEN}"
+            TIMEOUT=120
+            INTERVAL=3
+            ELAPSED=0
+            sleep 8  # 초기 부팅 여유
+
+            while (( ELAPSED < TIMEOUT )); do
+              CODE=$(docker exec "${GREEN}" curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${PORT_IN}/actuator/health" || echo 000)
+              [[ "${CODE}" == "200" ]] && { echo "✅ ${GREEN} healthy"; break; }
+              sleep "${INTERVAL}"
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+            [[ "${CODE:-000}" == "200" ]] || { echo "❌ ${GREEN} health failed"; docker logs --tail=200 "${GREEN}" || true; docker rm -f "${GREEN}" || true; exit 1; }
+
+            # ---------------------------------------------------------
+            # 6) 업스트림 전환 (forward_host/forward_port만 업데이트)
+            # ---------------------------------------------------------
+            NEW_CFG=$(jq -n --arg host "${GREEN}" --argjson port ${PORT_IN} '{forward_host:$host, forward_port:$port}')
+            curl -s -X PUT "http://127.0.0.1:81/api/nginx/proxy-hosts/${PROXY_ID}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "${NEW_CFG}" >/dev/null
+            echo "🔁 switch upstream → ${GREEN}:${PORT_IN}"
+
+            # ---------------------------------------------------------
+            # 7) 이전 blue 종료(최초 배포면 생략)
+            # ---------------------------------------------------------
+            if [[ "${BLUE}" != "none" ]]; then
+              docker stop "${BLUE}" >/dev/null 2>&1 || true
+              docker rm "${BLUE}" >/dev/null 2>&1 || true
+              echo "🧹 removed old blue: ${BLUE}"
+            fi
+
+            # ---------------------------------------------------------
+            # 8) 이미지 정리(현재 태그/ latest 제외) - 결과 없음도 오류 아님
+            #     - pipefail과 grep의 종료코드(1)를 고려해 블록 전체에 || true 적용
+            # ---------------------------------------------------------
+            {
+              docker images --format '{{.Repository}}:{{.Tag}}' \
+                | grep -F "ghcr.io/${OWNER_LC}/${IMAGE_REPOSITORY}:" \
+                | grep -v -F ":${IMAGE_TAG}" \
+                | grep -v -F ":latest" \
+                | xargs -r docker rmi
+            } || true
+
+            echo "🏁 Blue/Green switch complete. now blue = ${GREEN}"

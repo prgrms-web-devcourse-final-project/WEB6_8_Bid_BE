@@ -1,57 +1,32 @@
-# STEP 1: Build Stage (빌드 환경)
-#
-FROM eclipse-temurin:21-jdk-alpine AS build
+# 첫 번째 스테이지: 빌드 스테이지
+FROM gradle:jdk-21-and-23-graal-jammy AS builder
 
-# Gradle 사용 시 필요한 도구 설치
-RUN apk add --no-cache bash
-
+# 작업 디렉토리 설정
 WORKDIR /app
 
-# 소스 코드 전체를 빌드 환경에 복사
-COPY . .
+# 소스 코드와 Gradle 래퍼 복사
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
 
-# gradlew에 실행 권한 부여
-RUN chmod +x ./gradlew
+# 종속성 설치
+RUN gradle dependencies --no-daemon
 
-# Clean Build 실행 (SecurityConfig 변경 사항 포함)
-RUN ./gradlew clean bootJar
+# 소스 코드 복사
+COPY .env .
+COPY src src
 
-#
-# STEP 2: Runtime Stage (실행 환경)
-#
-FROM eclipse-temurin:21-jre-alpine
+# 애플리케이션 빌드
+RUN gradle build --no-daemon
 
+# 두 번째 스테이지: 실행 스테이지
+FROM container-registry.oracle.com/graalvm/jdk:21
+
+# 작업 디렉토리 설정
 WORKDIR /app
 
-# 환경 변수는 그대로 유지
-ARG PG_TOSS_CLIENT_KEY
-ARG PG_TOSS_SECRET_KEY
-ENV PG_TOSS_CLIENT_KEY=${PG_TOSS_CLIENT_KEY}
-ENV PG_TOSS_SECRET_KEY=${PG_TOSS_SECRET_KEY}
+# 첫 번째 스테이지에서 빌드된 JAR 파일 복사
+COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /app/.env .env
 
-# Build Stage에서 생성된 JAR 파일만 복사
-COPY --from=build /app/build/libs/backend-0.0.1-SNAPSHOT.jar app.jar
-
-# Verify JAR contents (디버깅용 검증 단계)
-RUN jar tf app.jar | grep SecurityConfig || echo "WARNING: SecurityConfig not found in JAR"
-
-# Add non-root user and change ownership
-RUN addgroup -S spring && adduser -S spring -G spring && \
-    chown spring:spring /app/app.jar
-
-USER spring:spring
-
-# Expose port
-EXPOSE 8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
-
-# Run application
-ENTRYPOINT ["java", \
-  "-XX:+UseContainerSupport", \
-  "-XX:MaxRAMPercentage=75.0", \
-  "-Djava.security.egd=file:/dev/./urandom", \
-  "-jar", \
-  "app.jar"]
+# 실행할 JAR 파일 지정
+ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]

@@ -4,6 +4,7 @@ import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class BaseInitData  {
     @Lazy
     private BaseInitData self;
     private final BidRepository bidRepository;
+    private final PasswordEncoder passwordEncoder;
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
 
@@ -49,20 +52,19 @@ public class BaseInitData  {
         // 테스트용 데이터 생성
         Member bidder1 = memberRepository.save(Member.builder()
                 .email("bidder1@example.com")
-                .password("password123")
+                .password(passwordEncoder.encode("password123"))
                 .nickname("입찰자1")
                 .build());
 
         Member bidder2 = memberRepository.save(Member.builder()
                 .email("bidder2@example.com")
-                .password("password123")
+                .password(passwordEncoder.encode("password123"))
                 .nickname("입찰자2")
                 .build());
 
         Member seller = memberRepository.save(Member.builder()
                 .email("seller@example.com")
-                .password("password123")
-                .nickname("판매자")
+                .password(passwordEncoder.encode("password123"))                .nickname("판매자")
                 .build());
 
         Product product1 = productRepository.save(new Product(
