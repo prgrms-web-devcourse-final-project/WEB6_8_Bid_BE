@@ -175,7 +175,7 @@ public class CashService {
         // 잔액 부족이면 실패..
         if (current < amount) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잔액이 부족합니다.");
-        }
+         }
 
         // 잔액 차감..
         long newBalance = current - amount;

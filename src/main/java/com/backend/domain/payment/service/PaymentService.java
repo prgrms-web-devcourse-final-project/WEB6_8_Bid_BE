@@ -37,7 +37,8 @@ public class PaymentService {
     private static final long MIN_AMOUNT = 100L;                            // 최소 100원
     private static final long MAX_AMOUNT_PER_TX = 1_000_000L;               // 1회 한도(예시)..
 
-    @Transactional                                                    // 원자성 보장..
+    // 지갑 충전..
+    @Transactional
     public PaymentResponse charge(Member actor, PaymentRequest req) {
 
         // 입력 검증..
@@ -146,6 +147,7 @@ public class PaymentService {
         return toResponse(payment, newBalance, tx.getId());
     }
 
+    // 내 결제 내역 목록..
     @Transactional(readOnly = true)
     public MyPaymentsResponse getMyPayments(Member member, int page1Base, int size) {
         int page0 = Math.max(0, page1Base - 1);
@@ -165,6 +167,7 @@ public class PaymentService {
                 .build();
     }
 
+    // 내 결제 단건 상세..
     private MyPaymentListItemResponse toListItem(Payment p) {
         String provider   = p.getProvider();
         String methodType = p.getMethodType();
