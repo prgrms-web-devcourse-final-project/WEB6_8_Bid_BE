@@ -16,6 +16,6 @@ public class ReviewService {
     public RsData<ReviewWriteResponseDto> create(String name, ReviewWriteRequestDto reviewWriteRequestDto) {
 
 
-        return new RsData<>("200-1", "리뷰 작성이 완료되었습니다", responseDto);
+        return new RsData<>("200-1", "리뷰 작성이 완료되었습니다");
     }
 }
