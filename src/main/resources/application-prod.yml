@@ -18,9 +18,9 @@ spring:
       password: ${SPRING__DATA__REDIS__PASSWORD}
 
   elasticsearch:
-    uris: ${ELASTICSEARCH_URI}
-    username: ${ELASTICSEARCH_USERNAME}
-    password: ${ELASTICSEARCH_PASSWORD}
+    uris: http://elasticsearch_1:9200
+    username: elastic
+    password: ${SPRING__DATA__REDIS__PASSWORD}
 
 jwt:
   secret: ${JWT_SECRET}
