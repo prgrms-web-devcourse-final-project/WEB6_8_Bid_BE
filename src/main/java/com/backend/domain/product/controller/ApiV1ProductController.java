@@ -13,9 +13,9 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
+import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.mapper.ProductMapper;
 import com.backend.domain.product.service.ProductService;
-import com.backend.global.exception.ServiceException;
 import com.backend.global.page.dto.PageDto;
 import com.backend.global.response.RsData;
 import jakarta.validation.Valid;
@@ -140,7 +140,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        Member actor = memberService.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다"));
+        Member actor = memberService.findById(memberId).orElseThrow(ProductException::memberNotFound);
 
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
