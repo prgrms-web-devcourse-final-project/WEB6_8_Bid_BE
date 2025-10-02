@@ -1,9 +1,6 @@
 package com.backend.domain.bid.controller;
 
-import com.backend.domain.bid.dto.BidCurrentResponseDto;
-import com.backend.domain.bid.dto.BidRequestDto;
-import com.backend.domain.bid.dto.BidResponseDto;
-import com.backend.domain.bid.dto.MyBidResponseDto;
+import com.backend.domain.bid.dto.*;
 import com.backend.domain.bid.service.BidService;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.response.RsData;
@@ -16,9 +13,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "Bid", description = "입찰 관련 API")
 @RestController
@@ -86,4 +85,23 @@ public class ApiV1BidController {
         return bidService.getMyBids(memberId,page,size);
     }
 
+    @Operation(summary = "낙찰 결제", description = "내가 낙찰한 입찰 건에 대해 지갑에서 출금하고 결제 완료로 표시합니다.")
+    @PostMapping("/{bidId}/pay")
+    public RsData<BidPayResponseDto> payBid(
+            @PathVariable Long bidId,
+            @AuthenticationPrincipal User user
+    ) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        Long memberId;
+        try {
+            memberId = Long.parseLong(user.getUsername());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 정보입니다.");
+        }
+
+        return bidService.payForBid(memberId, bidId);
+    }
 }

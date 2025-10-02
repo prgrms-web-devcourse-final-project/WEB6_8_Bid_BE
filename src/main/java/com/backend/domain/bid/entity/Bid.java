@@ -6,6 +6,8 @@ import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "bids")
 @Getter @Setter
@@ -27,4 +29,10 @@ public class Bid extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bidder_id")
     private Member member;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
+    @Column(name = "paid_amount")
+    private Long paidAmount;
 }

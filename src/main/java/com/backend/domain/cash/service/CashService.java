@@ -1,6 +1,7 @@
 package com.backend.domain.cash.service;
 
 import com.backend.domain.bid.repository.BidRepository;
+import com.backend.domain.cash.constant.CashTxType;
 import com.backend.domain.cash.constant.RelatedType;
 import com.backend.domain.cash.dto.CashResponse;
 import com.backend.domain.cash.dto.CashTransactionItemResponse;
@@ -151,5 +152,45 @@ public class CashService {
             }
             default -> null; // REFUND/ADJUSTMENT/PROMOTION 등은 링크 없을 수 있음..
         };
+    }
+
+    /**
+     * 지갑에서 돈을 빼고, 원장(WITHDRAW) 한 줄을 남깁니다.
+     * 예) 낙찰 결제면: withdraw(me, finalPrice, RelatedType.BID, bidId)
+     */
+    @Transactional
+    public CashTransaction withdraw(Member member, long amount,
+                                    RelatedType relatedType, Long relatedId) {
+
+        if (amount <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "출금 금액은 0보다 커야 합니다.");
+        }
+
+        // 내 지갑을 '잠그고' 가져오기 (동시에 두 번 빼는 문제 방지)..
+        var cash = cashRepository.findWithLockByMember(member)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "지갑이 아직 생성되지 않았습니다."));
+
+        long current = cash.getBalance() == null ? 0L : cash.getBalance();
+
+        // 잔액 부족이면 실패..
+        if (current < amount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잔액이 부족합니다.");
+        }
+
+        // 잔액 차감..
+        long newBalance = current - amount;
+        cash.setBalance(newBalance);
+
+        // 원장(WITHDRAW) 한 줄 추가..
+        var tx = CashTransaction.builder()
+                .cash(cash)
+                .type(CashTxType.WITHDRAW)  // 출금..
+                .amount(amount)             // 항상 양수로 저장..
+                .balanceAfter(newBalance)   // 이 줄 반영 후 잔액..
+                .relatedType(relatedType)   // 돈이 왜 빠졌는지..
+                .relatedId(relatedId)       // 관련 ID (예: bidId)..
+                .build();
+
+        return cashTransactionRepository.save(tx);
     }
 }

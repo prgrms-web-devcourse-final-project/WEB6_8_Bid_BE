@@ -1,11 +1,11 @@
 package com.backend.domain.bid.service;
 
-import com.backend.domain.bid.dto.BidCurrentResponseDto;
-import com.backend.domain.bid.dto.BidRequestDto;
-import com.backend.domain.bid.dto.BidResponseDto;
-import com.backend.domain.bid.dto.MyBidResponseDto;
+import com.backend.domain.bid.dto.*;
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
+import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.entity.CashTransaction;
+import com.backend.domain.cash.service.CashService;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
@@ -37,6 +37,7 @@ public class BidService {
     private final EntityManager entityManager; 
     private final WebSocketService webSocketService;
     private final BidNotificationService bidNotificationService;
+    private final CashService cashService;
 
     // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
@@ -58,7 +59,13 @@ public class BidService {
         // 2. 조회된 엔티티로 유효성 검증
         validateBid(product,member,request.price());
         // 3. 입찰 생성
-        Bid bid = new Bid(request.price(), "bidding", product, member);
+        Bid bid = Bid.builder()
+                .bidPrice(request.price())
+                .status("bidding")   // 기존과 동일하게 문자열 유지
+                .product(product)
+                .member(member)
+                // paidAt / paidAmount 는 결제 전이므로 비워둠(null)
+                .build();
         Bid savedBid = bidRepository.save(bid);
         product.addBid(savedBid);
         // 4. 입찰가 업데이트
@@ -228,5 +235,65 @@ public class BidService {
         if(bidPrice < currentHighestPrice + 100){
             throw new ServiceException("400","최소 100원이상 높게 입찰해주세요.");
         }
+    }
+
+    public RsData<BidPayResponseDto> payForBid(Long memberId, Long bidId) {
+        // 1) 입찰 조회
+        Bid bid = bidRepository.findById(bidId)
+                .orElseThrow(() -> new ServiceException("404", "입찰을 찾을 수 없습니다."));
+
+        Product product = bid.getProduct();
+        Member bidder = bid.getMember();
+
+        // 2) 내가 한 입찰인지 확인
+        if (bidder == null || !bidder.getId().equals(memberId)) {
+            throw new ServiceException("403", "내 입찰만 결제할 수 있습니다.");
+        }
+
+        // 3) 상품이 '낙찰' 상태인지 확인 (문자열 그대로 사용)
+        String SUCCESSFUL = com.backend.domain.product.enums.AuctionStatus.SUCCESSFUL.getDisplayName(); // "낙찰"
+        if (product == null || product.getStatus() == null || !SUCCESSFUL.equals(product.getStatus())) {
+            throw new ServiceException("400", "아직 낙찰이 확정되지 않았습니다.");
+        }
+
+        // 4) 이미 결제했는지 확인 (멱등 처리)
+        if (bid.getPaidAt() != null) {
+            BidPayResponseDto resp = new BidPayResponseDto(
+                    bid.getId(),
+                    product.getId(),
+                    bid.getPaidAmount(),
+                    bid.getPaidAt(),
+                    null,
+                    null
+            );
+            return new RsData<>("200","이미 결제된 입찰입니다.", resp);
+        }
+
+        // 5) 내 입찰가가 현재 최고가인지 재검증
+        Long highest = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
+        if (!bid.getBidPrice().equals(highest)) {
+            throw new ServiceException("400", "현재 낙찰가와 일치하지 않습니다. 다시 확인해주세요.");
+        }
+
+        Long finalPrice = bid.getBidPrice();
+
+        // 6) 출금
+        var tx = cashService.withdraw(bidder, finalPrice, com.backend.domain.cash.constant.RelatedType.BID, bid.getId());
+
+        // 7) 결제 기록
+        bid.setPaidAt(java.time.LocalDateTime.now());
+        bid.setPaidAmount(finalPrice);
+
+        // 8) 응답
+        BidPayResponseDto response = new BidPayResponseDto(
+                bid.getId(),
+                product.getId(),
+                finalPrice,
+                bid.getPaidAt(),
+                tx.getId(),
+                tx.getBalanceAfter()
+        );
+
+        return new RsData<>("200", "낙찰 결제가 완료되었습니다.", response);
     }
 }
