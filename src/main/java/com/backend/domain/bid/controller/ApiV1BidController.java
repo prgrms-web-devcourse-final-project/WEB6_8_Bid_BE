@@ -96,10 +96,13 @@ public class ApiV1BidController {
         }
 
         Long memberId;
+        String username = user.getUsername();
         try {
-            memberId = Long.parseLong(user.getUsername());
+            memberId = Long.parseLong(username);
         } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 정보입니다.");
+            var me = memberRepository.findByEmail(username)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 정보입니다."));
+            memberId = me.getId();
         }
 
         return bidService.payForBid(memberId, bidId);
