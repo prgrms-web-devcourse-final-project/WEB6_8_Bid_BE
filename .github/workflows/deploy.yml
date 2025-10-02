@@ -86,8 +86,7 @@ jobs:
           DOT_ENV: ${{ secrets.DOT_ENV }}
         run: |
           # .env가 없으면 빌드 캐시가 매번 깨질 수 있으므로 항상 생성
-          mkdir -p "${{ env.BACKEND_DIR }}"
-          printf "%s" "${DOT_ENV}" > "${{ env.BACKEND_DIR }}/.env"
+          printf "%s" "${DOT_ENV}" > .env
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v3
