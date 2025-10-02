@@ -49,6 +49,7 @@ public class SecurityConfig {
                                 "/api/*/products", "/api/*/products/{productId:\\d+}", "/api/*/products/es",
                                 "/api/*/products/members/{memberId:\\d+}", "/api/*/products/es/members/{memberId:\\d+}",
                                 "/api/v1/members/{memberId:\\d+}").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/*/test-data/**").permitAll()
 
                         .anyRequest().authenticated()
