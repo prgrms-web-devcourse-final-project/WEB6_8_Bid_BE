@@ -47,8 +47,6 @@ terraform/
 *.trace.db
 
 # Environment
-.env
-.env.local
 
 # Docker
 docker-compose.yml
