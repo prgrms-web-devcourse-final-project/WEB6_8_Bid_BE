@@ -28,6 +28,7 @@ spring:
         highlight_sql: true
         use_sql_comments: true
         default_batch_fetch_size: 100 # N+1 문제 해결
+    open-in-view: false
 
   data:
     redis:
