@@ -195,7 +195,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        Member actor = memberService.findById(memberId).orElseThrow(() -> new ServiceException("404", "존재하지 않는 회원입니다"));
+        Member actor = memberService.findById(memberId).orElseThrow(ProductException::memberNotFound);
 
         Page<ProductDocument> products = productSearchService.searchProductsByMember(page, size, sort, actor, status);
 
