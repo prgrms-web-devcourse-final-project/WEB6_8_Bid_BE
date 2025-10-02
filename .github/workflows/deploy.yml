@@ -10,7 +10,7 @@ env:
   CONTAINER_PORT: 8080 # 컨테이너 내부 포트(스프링부트)
   EC2_INSTANCE_TAG_NAME: team12-ec2-1 # 배포 대상 EC2 Name 태그
   DOCKER_NETWORK: common # 도커 네트워크
-  BACKEND_DIR: . # Dockerfile 위치
+  BACKEND_DIR: .
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }} # 커밋이 짧은 시간안에 몰려도 최신 커밋에 대해서만 액션이 수행되도록
@@ -110,7 +110,7 @@ jobs:
       - name: 빌드 앤 푸시
         uses: docker/build-push-action@v6
         with:
-          context: ${{ env.BACKEND_DIR }}
+          context: .
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
