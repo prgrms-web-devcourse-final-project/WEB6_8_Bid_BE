@@ -250,7 +250,7 @@ class ApiV1MemberControllerTest {
                 .andDo(print());
 
         // Then (접근 거부 확인)
-        accessResult.andExpect(status().isForbidden());
+        accessResult.andExpect(status().isUnauthorized());
     }
 
     @Test

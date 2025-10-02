@@ -4,7 +4,6 @@ import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.domain.product.service.ProductSyncService;

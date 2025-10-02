@@ -1007,6 +1007,25 @@ class ApiV1ProductControllerTest {
         }
     }
 
+    @Test
+    @DisplayName("특정 회원 상품 목록 조회 - 실패")
+    @Transactional
+    void getProductsByMemberFailed() throws Exception {
+        // when
+        long memberId = 9999L;
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/products/members/" + memberId))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(handler().handlerType(ApiV1ProductController.class))
+                .andExpect(handler().methodName("getProductsByMember"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.resultCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 회원입니다"));
+    }
+
     // ======================================= Helper methods ======================================= //
     private ProductCreateRequest createValidRequest() {
         return new ProductCreateRequest(
