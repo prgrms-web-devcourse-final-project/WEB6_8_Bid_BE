@@ -38,6 +38,7 @@ dependencies {
 
     // 스프링부트 추가 기능
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // 롬복
     compileOnly("org.projectlombok:lombok")
