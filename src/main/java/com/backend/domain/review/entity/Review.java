@@ -11,6 +11,7 @@ import lombok.*;
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Review extends BaseEntity {
 
     @Column(nullable = false, length = 255)
