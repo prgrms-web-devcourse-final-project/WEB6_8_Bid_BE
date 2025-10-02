@@ -93,7 +93,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             builder.and(locationBuilder);
         }
         if (search.isDelivery() != null && search.isDelivery()) {
-            builder.and(product.deliveryMethod.eq(DeliveryMethod.DELIVERY));
+            builder.and(product.deliveryMethod.in(DeliveryMethod.DELIVERY, DeliveryMethod.BOTH));
         }
         if (search.status() != null) {
             builder.and(product.status.eq(search.status().getDisplayName()));

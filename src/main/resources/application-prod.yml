@@ -17,6 +17,11 @@ spring:
       host: redis_1
       password: ${SPRING__DATA__REDIS__PASSWORD}
 
+  elasticsearch:
+    uris: http://elasticsearch_1:9200
+    username: elastic
+    password: ${SPRING__DATA__REDIS__PASSWORD}
+
 jwt:
   secret: ${JWT_SECRET}
   access_token_expiration_minutes: ${JWT_ACCESS_TOKEN_EXPIRATION:30}

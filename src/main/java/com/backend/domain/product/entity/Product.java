@@ -7,10 +7,11 @@ import com.backend.domain.product.enums.AuctionDuration;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.review.entity.Review;
 import com.backend.domain.product.exception.ProductException;
+import com.backend.domain.review.entity.Review;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -77,6 +78,9 @@ public class Product extends BaseEntity {
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;
 
+    @Column(name = "bidder_count", nullable = false)
+    private Integer bidderCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private Member seller;
@@ -111,15 +115,6 @@ public class Product extends BaseEntity {
         }
     }
 
-
-//    public Long getBiddersCount() {
-//        if (bids == null) return 0L;
-//
-//        return bids.stream()
-//                .map(bid -> bid.getMember().getId())
-//                .distinct()
-//                .count();
-//    }
 
     public void addProductImage(ProductImage productImage) {
         productImages.add(productImage);
@@ -188,5 +183,37 @@ public class Product extends BaseEntity {
 
     public void addBid(Bid bid) {
         bids.add(bid);
+
+        int _bidderCount = (int) bids.stream()
+                .map(b -> b.getMember().getId())
+                .distinct()
+                .count();
+
+        if (_bidderCount != bidderCount) {
+            bidderCount = _bidderCount;
+        }
+    }
+
+    // 테스트 전용 (프로덕션에서는 사용 금지)
+    @Builder(builderMethodName = "testBuilder", buildMethodName = "testBuild")
+    private Product(
+            Long id, String productName, String description, ProductCategory category,
+            Long initialPrice, Long currentPrice, LocalDateTime startTime,
+            LocalDateTime endTime, Integer duration, String status,
+            DeliveryMethod deliveryMethod, String location, Member seller
+    ) {
+        setId(id);
+        this.productName = productName;
+        this.description = description;
+        this.category = category;
+        this.initialPrice = initialPrice;
+        this.currentPrice = currentPrice;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.duration = duration;
+        this.status = status;
+        this.deliveryMethod = deliveryMethod;
+        this.location = location;
+        this.seller = seller;
     }
 }

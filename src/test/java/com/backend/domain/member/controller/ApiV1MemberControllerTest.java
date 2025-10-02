@@ -5,6 +5,7 @@ import com.backend.domain.member.dto.MemberModifyRequestDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.service.FileService;
+import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -15,13 +16,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@Import(TestRedisConfiguration.class)
+@Import({TestRedisConfiguration.class, TestElasticsearchConfiguration.class})
 class ApiV1MemberControllerTest {
 
     @Autowired
@@ -58,7 +59,7 @@ class ApiV1MemberControllerTest {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    @MockBean
+    @MockitoBean
     private FileService fileService;
 
     @BeforeEach

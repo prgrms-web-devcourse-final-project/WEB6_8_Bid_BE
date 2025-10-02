@@ -37,10 +37,17 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 5s
+    socket-timeout: 60s
+
 pg:
   toss:
     clientKey: ${PG_TOSS_CLIENT_KEY}
     secretKey: ${PG_TOSS_SECRET_KEY}
+
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 management:

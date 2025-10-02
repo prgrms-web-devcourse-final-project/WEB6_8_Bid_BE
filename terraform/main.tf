@@ -274,6 +274,46 @@ FLUSH PRIVILEGES;
 
 echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_access_token_1_owner} --password-stdin
 
+# Elasticsearch 볼륨 디렉토리 생성
+mkdir -p /bid_es_data
+
+# Elasticsearch 설치 (공식 이미지 + Nori 플러그인 자동 설치)
+docker run -d \
+  --name elasticsearch_1 \
+  --restart unless-stopped \
+  --network common \
+  -e "discovery.type=single-node" \
+  -e "xpack.security.enabled=true" \
+  -e "ELASTIC_PASSWORD=${var.password_1}" \
+  -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+  -e TZ=Asia/Seoul \
+  -v /bid_es_data:/usr/share/elasticsearch/data \
+  docker.elastic.co/elasticsearch/elasticsearch:9.1.3
+
+# Elasticsearch가 완전히 시작될 때까지 대기
+echo "Elasticsearch가 시작될 때까지 대기 중..."
+until docker exec elasticsearch_1 curl -s -u elastic:${var.password_1} http://localhost:9200/_cluster/health | grep -q '"status":"'; do
+  echo "Elasticsearch 아직 준비 안됨. 10초 후 재시도..."
+  sleep 10
+done
+echo "Elasticsearch 준비됨!"
+
+# Nori 플러그인 설치
+echo "Nori 플러그인 설치 중..."
+docker exec elasticsearch_1 bin/elasticsearch-plugin install --batch analysis-nori
+
+# Elasticsearch 재시작하여 플러그인 적용
+echo "Elasticsearch 재시작 중..."
+docker restart elasticsearch_1
+
+# 재시작 후 다시 대기
+sleep 15
+until docker exec elasticsearch_1 curl -s -u elastic:${var.password_1} http://localhost:9200/_cluster/health | grep -q '"status":"'; do
+  echo "Elasticsearch 재시작 대기 중..."
+  sleep 5
+done
+echo "Nori 플러그인 설치 완료!"
+
 END_OF_FILE
 }
 

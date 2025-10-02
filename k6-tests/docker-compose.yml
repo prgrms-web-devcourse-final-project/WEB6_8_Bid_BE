@@ -9,4 +9,4 @@ services:
       - ./results:/results
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: run getProducts-test.js
+    command: run getProductsByElasticsearch-test.js

@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "productId": {
+      "type": "long"
+    },
+    "productName": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "description": {
+      "type": "text",
+      "index": false
+    },
+    "category": {
+      "type": "keyword"
+    },
+    "initialPrice": {
+      "type": "long"
+    },
+    "currentPrice": {
+      "type": "long"
+    },
+    "startTime": {
+      "type": "date",
+      "format": "yyyy-MM-dd'T'HH:mm:ss"
+    },
+    "endTime": {
+      "type": "date",
+      "format": "yyyy-MM-dd'T'HH:mm:ss"
+    },
+    "duration": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "keyword"
+    },
+    "deliveryMethod": {
+      "type": "keyword"
+    },
+    "location": {
+      "type": "text",
+      "analyzer": "nori_analyzer",
+      "fields": {
+        "keyword": {
+          "type": "keyword"
+        }
+      }
+    },
+    "thumbnailUrl": {
+      "type": "keyword",
+      "index": false
+    },
+    "sellerId": {
+      "type": "long"
+    },
+    "sellerNickname": {
+      "type": "text",
+      "analyzer": "nori_analyzer"
+    },
+    "bidderCount": {
+      "type": "long"
+    },
+    "createDate": {
+      "type": "date",
+      "format": "yyyy-MM-dd'T'HH:mm:ss"
+    }
+  }
+}

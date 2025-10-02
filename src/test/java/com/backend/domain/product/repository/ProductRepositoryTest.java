@@ -5,10 +5,12 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest
+@Import(TestElasticsearchConfiguration.class)
 class ProductRepositoryTest {
     @Autowired
     private ProductRepository productRepository;
@@ -114,12 +117,12 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).hasSize(4);
         assertThat(result.getContent())
                 .extracting(Product::getProductName)
-                .containsExactlyInAnyOrder("갤럭시 S24 Ultra 512GB", "나이키 Air Max");
+                .containsExactlyInAnyOrder("나이키 Air Max", "갤럭시 S24 Ultra 512GB", "MacBook Pro M3", "iPhone 15 Pro");
         assertThat(result.getContent())
-                .allMatch(product -> product.getDeliveryMethod() == DeliveryMethod.DELIVERY);
+                .allMatch(product -> product.getDeliveryMethod() == DeliveryMethod.DELIVERY || product.getDeliveryMethod() == DeliveryMethod.BOTH);
     }
 
     @Test
@@ -133,7 +136,7 @@ class ProductRepositoryTest {
         Page<Product> result = productRepository.findBySearchPaged(pageable, searchDto);
 
         // then
-        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent()).hasSize(3);
         assertThat(result.getContent().get(0).getProductName()).isEqualTo("갤럭시 S24 Ultra 512GB");
     }
 
