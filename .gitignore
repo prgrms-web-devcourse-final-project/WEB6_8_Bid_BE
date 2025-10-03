@@ -43,6 +43,7 @@ src/main/generated/
 k6-tests/results
 *.pem
 *.key
+uploads/
 
 ### env ###
 .env

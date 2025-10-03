@@ -1,4 +1,4 @@
-package com.backend.domain.product.service;
+package com.backend.global.file.service;
 
 import com.backend.global.exception.ServiceException;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,10 +23,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
-class FileServiceTest {
+class LocalFileServiceTest {
 
     @InjectMocks
-    private FileService fileService;
+    private LocalFileService fileService;
 
     @TempDir
     Path tempDir;

@@ -34,6 +34,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
 
+    // AWS S3
+    implementation(platform("software.amazon.awssdk:bom:2.33.6"))
+    implementation("software.amazon.awssdk:s3")
+//    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.1") // S3Template 사용 시
 
     // 스프링부트 추가 기능
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")

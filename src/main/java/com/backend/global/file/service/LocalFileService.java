@@ -1,8 +1,9 @@
-package com.backend.domain.product.service;
+package com.backend.global.file.service;
 
 import com.backend.domain.product.exception.ProductException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,7 +15,8 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-public class FileService {
+@Profile("!prod")
+public class LocalFileService implements FileService {
     @Value("${file.upload.path}")
     private String uploadPath;
 
@@ -47,13 +49,6 @@ public class FileService {
             log.error("로컬 파일 업로드 실패: {}", file.getOriginalFilename(), e);
             throw ProductException.fileUploadFailed();
         }
-    }
-
-    private String getFileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf("."));
     }
 
     public void deleteFile(String fileUrl) {
