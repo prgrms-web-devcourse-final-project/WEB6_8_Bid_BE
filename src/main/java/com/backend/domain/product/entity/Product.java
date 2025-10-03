@@ -115,28 +115,13 @@ public class Product extends BaseEntity {
         }
     }
 
-
-    public void addProductImage(ProductImage productImage) {
-        productImages.add(productImage);
-
-        if (thumbnailUrl == null) {
-            this.thumbnailUrl = productImage.getImageUrl();
-        }
-    }
-
-    public String getThumbnail() {
-        if (thumbnailUrl != null) {
-            return thumbnailUrl;
-        }
-
-        thumbnailUrl = productImages.stream()
-                .findFirst()
-                .map(ProductImage::getImageUrl)
-                .orElse(null);
-
-        return thumbnailUrl;
-    }
-
+    /**
+     * 상품 정보 수정
+     * - null이 아닌 필드만 업데이트
+     * - 경매 시작 전에만 수정 가능 (호출 전에 검증 필요)
+     *
+     * @param validatedRequest 검증된 수정 요청 (변경할 필드만 non-null)
+     */
     public void modify(ProductModifyRequest validatedRequest) {
         if (validatedRequest.name() != null) this.productName = validatedRequest.name();
         if (validatedRequest.description() != null) this.description = validatedRequest.description();
@@ -148,31 +133,52 @@ public class Product extends BaseEntity {
         if (validatedRequest.location() != null) this.location = validatedRequest.location();
     }
 
+    // ======================================= image methods ======================================= //
+    public void addProductImage(ProductImage productImage) {
+        productImages.add(productImage);
+
+        // 첫 번째 이미지는 썸네일로 자동 설정
+        if (thumbnailUrl == null) {
+            this.thumbnailUrl = productImage.getImageUrl();
+        }
+    }
+
     public void deleteProductImage(ProductImage productImage) {
         productImages.remove(productImage);
 
+        // 삭제된 이미지가 썸네일이면 null로 설정
         if (thumbnailUrl.equals(productImage.getImageUrl())) {
             thumbnailUrl = null;
         }
     }
 
-    public void checkActorCanModify(Member actor) {
-        if (!actor.equals(seller)) {
-            throw ProductException.accessModifyForbidden();
+    public String getThumbnail() {
+        if (thumbnailUrl != null) {
+            return thumbnailUrl;
         }
+
+        // 썸네일이 없으면 첫 번째 이미지 찾아서 설정
+        thumbnailUrl = productImages.stream()
+                .findFirst()
+                .map(ProductImage::getImageUrl)
+                .orElse(null);
+
+        return thumbnailUrl;
     }
 
-    public void checkActorCanDelete(Member actor) {
-        if (!actor.equals(seller)) {
-            throw ProductException.accessDeleteForbidden();
-        }
-    }
-
+    // ======================================= bid methods ======================================= //
+    /**
+     * 낙찰자 조회
+     * - 경매가 종료되고 낙찰 상태일 때만 반환
+     * - 현재 최고가와 동일한 입찰가를 가진 입찰자
+     */
     public Member getBidder() {
+        // 낙찰 상태가 아니거나 아직 종료되지 않았으면 null 반환
         if (!status.equals(AuctionStatus.SUCCESSFUL.getDisplayName()) || endTime.isAfter(LocalDateTime.now())) {
             return null;
         }
 
+        // 현재 최고가와 동일한 입찰을 찾아서 입찰자 반환
         return bids.stream()
 //                    .max(Comparator.comparing(Bid::getBidPrice))
                 .filter(bid -> bid.getBidPrice().equals(currentPrice))
@@ -181,20 +187,48 @@ public class Product extends BaseEntity {
                 .orElse(null);
     }
 
+    /**
+     * 입찰 추가 및 입찰자 수 업데이트
+     * - 양방향 관계 설정
+     * - 고유 입찰자 수 자동 계산 (동일 회원의 중복 입찰 제거)
+     */
     public void addBid(Bid bid) {
         bids.add(bid);
 
+        // 중복 제거한 입찰자 수 계산
         int _bidderCount = (int) bids.stream()
                 .map(b -> b.getMember().getId())
                 .distinct()
                 .count();
 
+        // 입찰자 수가 변경된 경우에만 업데이트
         if (_bidderCount != bidderCount) {
             bidderCount = _bidderCount;
         }
     }
 
-    // 테스트 전용 (프로덕션에서는 사용 금지)
+    // ======================================= auth methods ======================================= //
+    // 상품 수정 권한 검증 (판매자 본인만 수정 가능)
+    public void checkActorCanModify(Member actor) {
+        if (!actor.equals(seller)) {
+            throw ProductException.accessModifyForbidden();
+        }
+    }
+
+    // 상품 삭제 권한 검증 (판매자 본인만 삭제 가능)
+    public void checkActorCanDelete(Member actor) {
+        if (!actor.equals(seller)) {
+            throw ProductException.accessDeleteForbidden();
+        }
+    }
+
+    // ======================================= other methods ======================================= //
+    /**
+     * 테스트 전용 빌더
+     * - 프로덕션 코드에서는 사용 금지
+     * - ID를 포함한 모든 필드를 직접 설정 가능
+     * - 단위 테스트에서 목 데이터 생성용
+     */
     @Builder(builderMethodName = "testBuilder", buildMethodName = "testBuild")
     private Product(
             Long id, String productName, String description, ProductCategory category,
