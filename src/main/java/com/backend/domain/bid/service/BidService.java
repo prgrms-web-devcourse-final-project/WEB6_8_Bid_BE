@@ -2,17 +2,18 @@ package com.backend.domain.bid.service;
 
 import com.backend.domain.bid.dto.*;
 import com.backend.domain.bid.entity.Bid;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
-import com.backend.domain.cash.service.CashService;
 import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.event.helper.ProductChangeTracker;
+import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;
 import com.backend.global.websocket.service.WebSocketService;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -34,84 +35,81 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BidService {
     private final BidRepository bidRepository;
-    private final EntityManager entityManager; 
+    private final ProductRepository productRepository;
+    private final MemberRepository memberRepository;
     private final WebSocketService webSocketService;
     private final BidNotificationService bidNotificationService;
-    private final CashService cashService;
     private final ApplicationEventPublisher eventPublisher;
-
-    // 상품별 락
     private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
-    
-    public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request){
+
+    // ======================================= create methods ======================================= //
+    public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request) {
         // 상품별 락 객체 가져오기 (없으면 생성)
         Object lock = productLocks.computeIfAbsent(productId, k -> new Object());
-        
+
         // 동시성 제어: 같은 상품에 대한 입찰은 순차적으로 처리
         synchronized (lock) {
             return createBidInternal(productId, bidderId, request);
         }
     }
-    
-    private RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
-        // 1. Product/Member 조회
-        Product product = entityManager.find(Product.class, productId);
-        Member member = entityManager.find(Member.class, bidderId);
-        // 2. 조회된 엔티티로 유효성 검증
-        validateBid(product,member,request.price());
-        // 3. 입찰 생성
-        Bid bid = Bid.builder()
-                .bidPrice(request.price())
-                .status("bidding")   // 기존과 동일하게 문자열 유지
-                .product(product)
-                .member(member)
-                // paidAt / paidAmount 는 결제 전이므로 비워둠(null)
-                .build();
-        Bid savedBid = bidRepository.save(bid);
-        // 4. 상품 업데이트 (입찰 추가, 현재가 업데이트)
-        updateProduct(product, savedBid, request.price());
-        // 5. 응답 데이터 생성
-        BidResponseDto bidResponse = new BidResponseDto(
-                savedBid.getId(),
-                productId,
-                bidderId,
-                savedBid.getBidPrice(),
-                savedBid.getStatus(),
-                savedBid.getCreateDate()
-        );
-        
-        // 6. 실시간 브로드캐스트 추가
-        webSocketService.broadcastBidUpdate(productId, bidResponse);
-        
-        // 7. 입찰 성공 개인 알림
-        bidNotificationService.notifyBidSuccess(bidderId, product, request.price());
-        
-        return new RsData<>("201","입찰이 완료되었습니다.",bidResponse);
 
+    private RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
+        // Product/Member 조회
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+        Member member = memberRepository.findById(bidderId)
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 사용자입니다."));
+
+        // 유효성 검증
+        validateBid(product, member, request.price());
+
+        // 입찰 생성 및 저장
+        Bid savedBid = saveBid(product, member, request.price());
+
+        // 상품 업데이트
+        updateProduct(product, savedBid, request.price());
+
+        // 응답 생성
+        BidResponseDto bidResponse = createBidResponse(savedBid);
+
+        // 실시간 브로드캐스트
+        webSocketService.broadcastBidUpdate(productId, bidResponse);
+
+        // 입찰 성공 알림
+        bidNotificationService.notifyBidSuccess(bidderId, product, request.price());
+
+        return RsData.created("입찰이 완료되었습니다.", bidResponse);
     }
 
+    private Bid saveBid(Product product, Member member, Long bidPrice) {
+        Bid bid = Bid.builder()
+                .bidPrice(bidPrice)
+                .status(BidStatus.BIDDING)
+                .product(product)
+                .member(member)
+                .build();
+        return bidRepository.save(bid);
+    }
+
+    // ======================================= find/get methods ======================================= //
     @Transactional(readOnly = true)
-    public RsData<BidCurrentResponseDto> getBidStatus(long productId){
-        // 1. 상품 존재 확인
-        Product product = entityManager.find(Product.class, productId);
-        if(product == null){
-            throw new ServiceException("404", "존재하지 않는 상품입니다.");
-        }
-        // 2. 현재 최고 입찰가
+    public RsData<BidCurrentResponseDto> getBidStatus(long productId) {
+        // 상품 존재 확인
+        Product product = getProductById(productId);
+
+        // 현재 최고 입찰가
         Long currentPrice = bidRepository.findHighestBidPrice(productId).orElse(0L);
-        // 3. 입찰 개수
+
+        // 입찰 개수
         Integer bidCount = bidRepository.countProductBid(productId);
-        // 4. 최근 입찰 내역 (상위 5개)
-        List<Bid> recentBids = bidRepository.findNBids(productId,5);
-        // 5. 익명화
-        AtomicInteger counter = new AtomicInteger(1);
-        List<BidCurrentResponseDto.RecentBid> recentBidList = recentBids.stream()
-                .map(bid -> new BidCurrentResponseDto.RecentBid(
-                        bid.getBidPrice(),
-                        bid.getCreateDate(),
-                        "익명"+counter.getAndIncrement()
-                )).toList();
-        // 6. response 생성
+
+        // 최근 입찰 내역 (상위 5개)
+        List<Bid> recentBids = bidRepository.findNBids(productId, 5);
+
+        // 익명화된 최근 입찰 목록
+        List<BidCurrentResponseDto.RecentBid> recentBidList = createAnonymizedRecentBids(recentBids);
+
+        // 응답 생성
         BidCurrentResponseDto response = new BidCurrentResponseDto(
                 productId,
                 product.getProductName(),
@@ -122,44 +120,91 @@ public class BidService {
                 product.getEndTime(),
                 recentBidList
         );
-        return new RsData<>("200","입찰 현황이 조회되었습니다.",response);
+
+        return RsData.ok("입찰 현황이 조회되었습니다.", response);
     }
 
     @Transactional(readOnly = true)
-    public RsData<MyBidResponseDto> getMyBids(Long memberId, int page, int size){
-        // 1. page 설정
+    public RsData<MyBidResponseDto> getMyBids(Long memberId, int page, int size) {
+        // 페이지 설정
         Pageable pageable = PageRequest.of(page, size);
-        // 2. 내 입찰내역 조회
+
+        // 내 입찰내역 조회
         Page<Bid> bidPage = bidRepository.findMyBids(memberId, pageable);
-        if(bidPage.isEmpty()){
-            MyBidResponseDto emptyBids = new MyBidResponseDto(
-                    List.of(),0,0,page,size,false
-            );
-            return new RsData<>("200","내 빈 입찰내역 조회 성공.",emptyBids);
+
+        // 빈 결과 처리
+        if (bidPage.isEmpty()) {
+            return createEmptyMyBidsResponse(page, size);
         }
 
-        // BidPage에서 상품 ID만 추출
-        Set<Long> productIds = bidPage.getContent().stream().map(bid -> bid.getProduct().getId()).collect(Collectors.toSet());
-        // 각 상품의 현재 최고 입찰가 조회
-        Map<Long, Long> currentPricesMap = bidRepository.findCurrentPricesForProducts(productIds).stream()
-                .collect(Collectors.toMap(
-                        arr -> (Long) arr[0],
-                        arr -> (Long) arr[1]
-                ));
+        // 상품별 현재 최고가 조회
+        Map<Long, Long> currentPricesMap = getCurrentPricesMap(bidPage);
 
-        // 3. response 데이터 생성
-        List<MyBidResponseDto.MyBidItem> myBidItems = bidPage.getContent().stream()
+        // 응답 데이터 생성
+        List<MyBidResponseDto.MyBidItem> myBidItems = createMyBidItems(bidPage, currentPricesMap);
+
+        MyBidResponseDto response = new MyBidResponseDto(
+                myBidItems,
+                (int) bidPage.getTotalElements(),
+                bidPage.getTotalPages(),
+                bidPage.getNumber(),
+                bidPage.getSize(),
+                bidPage.hasNext()
+        );
+
+        return RsData.ok("내 입찰 내역이 조회되었습니다.", response);
+    }
+
+    private Product getProductById(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+    }
+
+    private List<BidCurrentResponseDto.RecentBid> createAnonymizedRecentBids(List<Bid> recentBids) {
+        AtomicInteger counter = new AtomicInteger(1);
+        return recentBids.stream()
+                .map(bid -> new BidCurrentResponseDto.RecentBid(
+                        bid.getBidPrice(),
+                        bid.getCreateDate(),
+                        "익명" + counter.getAndIncrement()
+                ))
+                .toList();
+    }
+
+    private RsData<MyBidResponseDto> createEmptyMyBidsResponse(int page, int size) {
+        MyBidResponseDto emptyBids = new MyBidResponseDto(
+                List.of(), 0, 0, page, size, false
+        );
+        return RsData.ok("내 빈 입찰내역 조회 성공.", emptyBids);
+    }
+
+    private Map<Long, Long> getCurrentPricesMap(Page<Bid> bidPage) {
+        Set<Long> productIds = bidPage.getContent().stream()
+                .map(bid -> bid.getProduct().getId())
+                .collect(Collectors.toSet());
+
+        return bidRepository.findCurrentPricesForProducts(productIds).stream()
+                .collect(Collectors.toMap(
+                        ProductCurrentPriceDto::getProductId,
+                        ProductCurrentPriceDto::getCurrentPrice
+                ));
+    }
+
+    private List<MyBidResponseDto.MyBidItem> createMyBidItems(Page<Bid> bidPage, Map<Long, Long> currentPricesMap) {
+        return bidPage.getContent().stream()
                 .map(bid -> {
                     Product product = bid.getProduct();
-
-                    // 각 입찰이 현재 최고가인지 확인
                     Long currentHighestPrice = currentPricesMap.getOrDefault(product.getId(), 0L);
                     boolean isWinning = bid.getBidPrice().equals(currentHighestPrice);
 
                     MyBidResponseDto.SellerInfo sellerInfo = null;
-                    if(product.getSeller() != null){
-                        sellerInfo = new MyBidResponseDto.SellerInfo(product.getSeller().getId(),product.getSeller().getNickname());
+                    if (product.getSeller() != null) {
+                        sellerInfo = new MyBidResponseDto.SellerInfo(
+                                product.getSeller().getId(),
+                                product.getSeller().getNickname()
+                        );
                     }
+
                     return new MyBidResponseDto.MyBidItem(
                             bid.getId(),
                             product.getId(),
@@ -174,69 +219,72 @@ public class BidService {
                             product.getStatus(),
                             sellerInfo
                     );
-                }).toList();
-
-        MyBidResponseDto response = new MyBidResponseDto(
-                myBidItems,
-                (int) bidPage.getTotalElements(),
-                bidPage.getTotalPages(),
-                bidPage.getNumber(),
-                bidPage.getSize(),
-                bidPage.hasNext()
-        );
-        return new RsData<>("200","내 입찰 내역이 조회되었습니다.",response);
+                })
+                .toList();
     }
 
-    private void validateBid(Product product,Member member, Long bidPrice){
-        // 1. 상품 존재 확인
-        if(product == null){
-            throw new ServiceException("404", "존재하지 않는 상품입니다.");
-        }
-        if(member == null){
-            throw new ServiceException("404", "존재하지 않는 사용자입니다.");
-        }
+    // ======================================= validation methods ======================================= //
+    private void validateBid(Product product, Member member, Long bidPrice) {
+        // 경매 상태 확인
+        validateAuctionStatus(product);
 
-        // 2. 경매 진행 상태 확인
-        if(!AuctionStatus.BIDDING.getDisplayName().equals(product.getStatus())){
+        // 경매 시간 확인
+        validateAuctionTime(product);
+
+        // 본인 상품 입찰 방지
+        validateNotSelfBid(product, member);
+
+        // 입찰 금액 유효성 검증
+        validateBidPrice(bidPrice, product);
+    }
+
+    private void validateAuctionStatus(Product product) {
+        if (!AuctionStatus.BIDDING.getDisplayName().equals(product.getStatus())) {
             throw new ServiceException("400", "현재 입찰할 수 없는 상품입니다.");
         }
+    }
 
-        // 3. 경매시간 확인
+    private void validateAuctionTime(Product product) {
         LocalDateTime now = LocalDateTime.now();
-        if(product.getStartTime()!=null && now.isBefore(product.getStartTime())){
+        if (product.getStartTime() != null && now.isBefore(product.getStartTime())) {
             throw new ServiceException("400", "경매가 아직 시작되지 않았습니다.");
         }
-        if(product.getEndTime()!=null && now.isAfter(product.getEndTime())){
+        if (product.getEndTime() != null && now.isAfter(product.getEndTime())) {
             throw new ServiceException("400", "경매가 이미 종료되었습니다.");
         }
+    }
 
-        // 4. 본인이 본인상품 입찰X
+    private void validateNotSelfBid(Product product, Member member) {
         Member seller = product.getSeller();
-        if(seller !=null && seller.getId() == member.getId()){
-            throw new ServiceException("400","본인이 등록한 상품에는 입찰할 수 없습니다.");
+        if (seller != null && seller.getId().equals(member.getId())) {
+            throw new ServiceException("400", "본인이 등록한 상품에는 입찰할 수 없습니다.");
         }
+    }
 
-        // 5. 입찰 금액 유효성 검사 및 현재 최고가보다 높은지 확인
+    private void validateBidPrice(Long bidPrice, Product product) {
+        // 입찰 금액 기본 검증
         if (bidPrice == null || bidPrice <= 0) {
             throw new ServiceException("400", "입찰 금액은 0보다 커야 합니다.");
         }
 
+        // 현재 최고가보다 높은지 확인
         Long currentHighestPrice = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
-        if(bidPrice <= currentHighestPrice){
-            throw new ServiceException("400", "입찰 금액이 현재 최고가인 "+currentHighestPrice+"원 보다 높아야 합니다.");
+        if (bidPrice <= currentHighestPrice) {
+            throw new ServiceException("400", "입찰 금액이 현재 최고가인 " + currentHighestPrice + "원 보다 높아야 합니다.");
         }
 
-        // 6. 최소 입찰단위 100원
-        if(bidPrice % 100!=0){
+        // 최소 입찰단위 100원
+        if (bidPrice % 100 != 0) {
             throw new ServiceException("400", "입찰 금액은 100원 단위로 입력해주세요.");
         }
 
-        // 7. 최소 입찰단위 지켰는지 확인
-        if(bidPrice < currentHighestPrice + 100){
-            throw new ServiceException("400","최소 100원이상 높게 입찰해주세요.");
+        // 최소 입찰단위 지켰는지 확인
+        if (bidPrice < currentHighestPrice + 100) {
+            throw new ServiceException("400", "최소 100원이상 높게 입찰해주세요.");
         }
     }
 
+    // ======================================= update methods ======================================= //
     private void updateProduct(Product product, Bid savedBid, Long newPrice) {
         ProductChangeTracker tracker = ProductChangeTracker.of(product);
 
@@ -246,63 +294,15 @@ public class BidService {
         tracker.publishChanges(eventPublisher, product);
     }
 
-    public RsData<BidPayResponseDto> payForBid(Long memberId, Long bidId) {
-        // 1) 입찰 조회
-        Bid bid = bidRepository.findById(bidId)
-                .orElseThrow(() -> new ServiceException("404", "입찰을 찾을 수 없습니다."));
-
-        Product product = bid.getProduct();
-        Member bidder = bid.getMember();
-
-        // 2) 내가 한 입찰인지 확인
-        if (bidder == null || !bidder.getId().equals(memberId)) {
-            throw new ServiceException("403", "내 입찰만 결제할 수 있습니다.");
-        }
-
-        // 3) 상품이 '낙찰' 상태인지 확인 (문자열 그대로 사용)
-        String SUCCESSFUL = com.backend.domain.product.enums.AuctionStatus.SUCCESSFUL.getDisplayName(); // "낙찰"
-        if (product == null || product.getStatus() == null || !SUCCESSFUL.equals(product.getStatus())) {
-            throw new ServiceException("400", "아직 낙찰이 확정되지 않았습니다.");
-        }
-
-        // 4) 이미 결제했는지 확인 (멱등 처리)
-        if (bid.getPaidAt() != null) {
-            BidPayResponseDto resp = new BidPayResponseDto(
-                    bid.getId(),
-                    product.getId(),
-                    bid.getPaidAmount(),
-                    bid.getPaidAt(),
-                    null,
-                    null
-            );
-            return new RsData<>("200","이미 결제된 입찰입니다.", resp);
-        }
-
-        // 5) 내 입찰가가 현재 최고가인지 재검증
-        Long highest = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
-        if (!bid.getBidPrice().equals(highest)) {
-            throw new ServiceException("400", "현재 낙찰가와 일치하지 않습니다. 다시 확인해주세요.");
-        }
-
-        Long finalPrice = bid.getBidPrice();
-
-        // 6) 출금
-        var tx = cashService.withdraw(bidder, finalPrice, com.backend.domain.cash.constant.RelatedType.BID, bid.getId());
-
-        // 7) 결제 기록
-        bid.setPaidAt(java.time.LocalDateTime.now());
-        bid.setPaidAmount(finalPrice);
-
-        // 8) 응답
-        BidPayResponseDto response = new BidPayResponseDto(
+    // ======================================= helper methods ======================================= //
+    private BidResponseDto createBidResponse(Bid bid) {
+        return new BidResponseDto(
                 bid.getId(),
-                product.getId(),
-                finalPrice,
-                bid.getPaidAt(),
-                tx.getId(),
-                tx.getBalanceAfter()
+                bid.getProduct().getId(),
+                bid.getMember().getId(),
+                bid.getBidPrice(),
+                bid.getStatus(),
+                bid.getCreateDate()
         );
-
-        return new RsData<>("200", "낙찰 결제가 완료되었습니다.", response);
     }
 }

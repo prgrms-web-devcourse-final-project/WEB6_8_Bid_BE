@@ -1,6 +1,7 @@
 package com.backend.global.initdata;
 
 import com.backend.domain.bid.entity.Bid;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("dev")
 @Component
 @RequiredArgsConstructor
-public class BaseInitData  {
+public class BaseInitData {
 
     @Autowired
     @Lazy
@@ -32,7 +33,7 @@ public class BaseInitData  {
     private final ProductSyncService productSyncService;
 
     @Bean
-    ApplicationRunner baseInitDataApplicationRunner(){
+    ApplicationRunner baseInitDataApplicationRunner() {
         return args -> {
             self.work1();
             productSyncService.reindexAllProducts();
@@ -48,7 +49,7 @@ public class BaseInitData  {
 
         // 모든 테스트 데이터 삭제
         bidRepository.deleteAll();
-        productRepository.deleteAll(); 
+        productRepository.deleteAll();
         memberRepository.deleteAll();
 
         // 테스트용 데이터 생성
@@ -66,14 +67,15 @@ public class BaseInitData  {
 
         Member seller = memberRepository.save(Member.builder()
                 .email("seller@example.com")
-                .password(passwordEncoder.encode("password123"))                .nickname("판매자")
+                .password(passwordEncoder.encode("password123"))
+                .nickname("판매자")
                 .build());
 
         Product product1 = productRepository.save(new Product(
-                "iPhone 15 Pro", 
+                "iPhone 15 Pro",
                 "최신 iPhone 15 Pro 새상품입니다.",
                 com.backend.domain.product.enums.ProductCategory.DIGITAL_ELECTRONICS,
-                1000000L, 
+                1000000L,
                 java.time.LocalDateTime.now().minusHours(1), // 1시간 전 시작
                 24, // 24시간 경매
                 com.backend.domain.product.enums.DeliveryMethod.DELIVERY,
@@ -89,7 +91,7 @@ public class BaseInitData  {
                 java.time.LocalDateTime.now().minusMinutes(30), // 30분 전 시작
                 48, // 48시간 경매
                 com.backend.domain.product.enums.DeliveryMethod.DELIVERY,
-                "서울시 서초구", 
+                "서울시 서초구",
                 seller
         ));
 
@@ -106,7 +108,7 @@ public class BaseInitData  {
         ));
 
         product1.setCurrentPrice(1200000L);
-        product2.setCurrentPrice(2100000L); 
+        product2.setCurrentPrice(2100000L);
         product3.setCurrentPrice(220000L);
         productRepository.save(product1);
         productRepository.save(product2);
@@ -116,28 +118,28 @@ public class BaseInitData  {
                 .bidPrice(1200000L)
                 .product(product1)
                 .member(bidder1)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .build());
 
         bidRepository.save(Bid.builder()
                 .bidPrice(1100000L)
                 .product(product1)
                 .member(bidder2)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .build());
 
         bidRepository.save(Bid.builder()
                 .bidPrice(2100000L)
                 .product(product2)
                 .member(bidder2)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .build());
 
         bidRepository.save(Bid.builder()
                 .bidPrice(220000L)
                 .product(product3)
                 .member(bidder1)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .build());
     }
 }

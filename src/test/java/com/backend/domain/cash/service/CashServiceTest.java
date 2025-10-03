@@ -1,6 +1,7 @@
 package com.backend.domain.cash.service;
 
 import com.backend.domain.bid.entity.Bid;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.cash.constant.CashTxType;
 import com.backend.domain.cash.constant.RelatedType;
@@ -25,7 +26,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -225,7 +227,7 @@ class CashServiceTest {
                 .product(product)
                 .member(me)
                 .bidPrice(5_000L)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .build());
 
         // BID 타입 원장 생성

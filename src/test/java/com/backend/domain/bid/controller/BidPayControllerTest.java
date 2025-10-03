@@ -1,6 +1,7 @@
 package com.backend.domain.bid.controller;
 
 import com.backend.domain.bid.entity.Bid;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.repository.CashRepository;
@@ -32,12 +33,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class BidPayControllerTest {
 
-    @Autowired MockMvc mvc;
-    @Autowired EntityManager em;
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    EntityManager em;
 
-    @Autowired MemberRepository memberRepository;
-    @Autowired CashRepository cashRepository;
-    @Autowired BidRepository bidRepository;
+    @Autowired
+    MemberRepository memberRepository;
+    @Autowired
+    CashRepository cashRepository;
+    @Autowired
+    BidRepository bidRepository;
 
     Member seller;
     Member buyer;
@@ -77,12 +83,13 @@ class BidPayControllerTest {
 
         // 4) 내 최고 입찰(7,000)
         bid = bidRepository.save(
-                Bid.builder().product(product).member(buyer).bidPrice(7_000L).status("bidding").build()
+                Bid.builder().product(product).member(buyer).bidPrice(7_000L).status(BidStatus.BIDDING).build()
         );
     }
 
     @Test
-    @WithMockUser(username = "buyer@test.com") // 컨트롤러가 이메일/숫자 둘 다 지원
+    @WithMockUser(username = "buyer@test.com")
+        // 컨트롤러가 이메일/숫자 둘 다 지원
     void 낙찰_결제_API_성공_200_RsData형식() throws Exception {
         mvc.perform(post("/api/v1/bids/{bidId}/pay", bid.getId()))
                 .andDo(print())
