@@ -31,6 +31,9 @@ file:
   upload:
     path: /data
     base-url: https://api.bid-market.shop/uploads
+    s3:
+      bucket: team12-bid-market-bucket
+      base-url: https://team12-bid-market-bucket.s3.ap-northeast-2.amazonaws.com
 testdata:
   generation:
     enabled: false

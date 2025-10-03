@@ -3,6 +3,7 @@ package com.backend.global.file.service;
 import com.backend.domain.product.exception.ProductException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+@Profile("dev")
 public class LocalFileService implements FileService {
     @Value("${file.upload.path}")
     private String uploadPath;
