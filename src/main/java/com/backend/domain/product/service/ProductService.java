@@ -82,12 +82,12 @@ public class ProductService {
     /**
      * 검색 조건에 따른 상품 목록 조회 (페이징)
      * - QueryDSL을 사용한 동적 쿼리 생성
-     * - 키워드, 카테고리, 지역, 배송방법, 경매 상태로 필터링
+     * - 키워드(상품명), 카테고리, 지역, 배송 가능 여부, 경매 상태로 필터링
      *
      * @param page 페이지 번호 (1부터 시작)
      * @param size 페이지 크기
-     * @param sort 정렬 기준
-     * @param search 검색 조건
+     * @param sort 정렬 기준 (LATEST, PRICE_HIGH, PRICE_LOW, ENDING_SOON, POPULAR)
+     * @param search 검색 조건 (keyword, category, location, isDelivery, status)
      * @return 페이징된 상품 목록
      */
     @Transactional(readOnly = true)
@@ -102,6 +102,7 @@ public class ProductService {
      * 특정 회원의 상품 목록 조회 (페이징)
      * - QueryDSL을 사용한 동적 쿼리 생성
      * - 회원이 등록한 상품을 판매 상태별로 조회
+     * - 내 상품 보기 또는 특정 판매자의 상품 목록에 사용
      *
      * @param actor 조회할 회원
      * @param status 판매 상태 (SELLING, SOLD, FAILED)
@@ -115,10 +116,10 @@ public class ProductService {
     }
 
     /**
-     * Pageable 객체 생성
-     * - page, size 유효성 검증 및 기본값 설정
+     * Pageable 객체 생성 및 검증
      * - page: 1 이상 (기본값: 1)
      * - size: 1~100 (기본값: 20)
+     * - sort: ProductSearchSortType을 Spring Data Sort로 변환
      */
     private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
         page = (page > 0) ? page : 1;
