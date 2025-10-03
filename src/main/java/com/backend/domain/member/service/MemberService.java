@@ -9,7 +9,7 @@ import com.backend.domain.member.dto.MemberSignUpResponseDto;
 import com.backend.domain.member.dto.MemberInfoResponseDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.product.service.FileService;
+import com.backend.global.file.service.LocalFileService;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;
 import com.backend.global.security.JwtUtil;
@@ -31,7 +31,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
-    private final FileService fileService;
+    private final LocalFileService fileService;
 
     public RsData<MemberSignUpResponseDto> signup(MemberSignUpRequestDto memberSignUpRequestDto) {
         checkEmailDuplication(memberSignUpRequestDto.email());

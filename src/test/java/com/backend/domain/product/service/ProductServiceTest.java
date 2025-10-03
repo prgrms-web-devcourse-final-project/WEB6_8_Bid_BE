@@ -10,6 +10,7 @@ import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.repository.ProductImageRepository;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.global.exception.ServiceException;
+import com.backend.global.file.service.LocalFileService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,7 @@ class ProductServiceTest {
     private ProductImageRepository productImageRepository;
 
     @Mock
-    private FileService fileService;
+    private LocalFileService fileService;
 
     @Mock
     private ProductSyncService productSyncService;

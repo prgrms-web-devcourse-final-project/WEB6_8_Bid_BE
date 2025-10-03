@@ -1,4 +1,4 @@
-package com.backend.domain.product.service;
+package com.backend.global.file.service;
 
 import com.backend.domain.product.exception.ProductException;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-public class FileService {
+public class LocalFileService implements FileService {
     @Value("${file.upload.path}")
     private String uploadPath;
 

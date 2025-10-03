@@ -4,7 +4,7 @@ import com.backend.domain.member.dto.LoginRequestDto;
 import com.backend.domain.member.dto.MemberModifyRequestDto;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.product.service.FileService;
+import com.backend.global.file.service.LocalFileService;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,7 +60,7 @@ class ApiV1MemberControllerTest {
     private RedisTemplate<String, Object> redisTemplate;
 
     @MockitoBean
-    private FileService fileService;
+    private LocalFileService fileService;
 
     @BeforeEach
     void setUp() {
