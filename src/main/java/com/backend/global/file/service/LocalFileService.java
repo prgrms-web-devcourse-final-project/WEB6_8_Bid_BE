@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@Profile("dev")
+@Profile("!prod")
 public class LocalFileService implements FileService {
     @Value("${file.upload.path}")
     private String uploadPath;
