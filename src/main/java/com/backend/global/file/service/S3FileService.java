@@ -10,7 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.util.HashMap;
@@ -47,7 +46,7 @@ public class S3FileService implements FileService {
                     .contentType(file.getContentType())
                     .contentLength(file.getSize())
                     .metadata(metadata)
-                    .acl(ObjectCannedACL.PUBLIC_READ) // 공개 읽기 권한
+//                    .acl(ObjectCannedACL.PUBLIC_READ) // 공개 읽기 권한 -> 버킷 정책으로 처리 (Terraform)
                     .build();
 
             s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
@@ -60,13 +59,6 @@ public class S3FileService implements FileService {
             log.error("S3 파일 업로드 실패: {}", file.getOriginalFilename(), e);
             throw ProductException.fileUploadFailed();
         }
-    }
-
-    private String getFileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf("."));
     }
 
     @Override

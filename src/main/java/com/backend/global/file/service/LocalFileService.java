@@ -51,13 +51,6 @@ public class LocalFileService implements FileService {
         }
     }
 
-    private String getFileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return "";
-        }
-        return filename.substring(filename.lastIndexOf("."));
-    }
-
     public void deleteFile(String fileUrl) {
         try {
             if (!fileUrl.startsWith(baseUrl)) {

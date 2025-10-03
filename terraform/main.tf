@@ -184,6 +184,69 @@ resource "aws_iam_instance_profile" "instance_profile_1" {
   }
 }
 
+# S3 버킷 설정
+# 1. 버킷 생성
+resource "aws_s3_bucket" "bucket_1" {
+  bucket = "${var.prefix}-bid-market-bucket"
+
+  tags = {
+    Name = "${var.prefix}-bid-market-bucket"
+  }
+}
+
+# 2. 공개 접근 허용
+resource "aws_s3_bucket_public_access_block" "bucket_1_public_access" {
+  bucket = aws_s3_bucket.bucket_1.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# 3. 공개 읽기 정책
+resource "aws_s3_bucket_policy" "bucket_1_policy" {
+  bucket = aws_s3_bucket.bucket_1.id
+  depends_on = [aws_s3_bucket_public_access_block.bucket_1_public_access]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.bucket_1.arn}/*"
+      }
+    ]
+  })
+}
+
+# 4. CORS 설정
+resource "aws_s3_bucket_cors_configuration" "bucket_1_cors" {
+  bucket = aws_s3_bucket.bucket_1.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
+# 5. 암호화
+resource "aws_s3_bucket_server_side_encryption_configuration" "bucket_1_encryption" {
+  bucket = aws_s3_bucket.bucket_1.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 locals {
   ec2_user_data_base = <<-END_OF_FILE
 #!/bin/bash
