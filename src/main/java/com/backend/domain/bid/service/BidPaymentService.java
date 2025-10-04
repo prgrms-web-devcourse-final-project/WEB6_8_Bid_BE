@@ -46,7 +46,7 @@ public class BidPaymentService {
     // ======================================= find/get methods ======================================= //
     private Bid getBidById(Long bidId) {
         return bidRepository.findById(bidId)
-                .orElseThrow(() -> new ServiceException("404", "입찰을 찾을 수 없습니다."));
+                .orElseThrow(() -> ServiceException.notFound("입찰을 찾을 수 없습니다."));
     }
 
     // ======================================= validation methods ======================================= //
@@ -54,20 +54,20 @@ public class BidPaymentService {
         // 내가 한 입찰인지 확인
         Member bidder = bid.getMember();
         if (bidder == null || !bidder.getId().equals(memberId)) {
-            throw new ServiceException("403", "내 입찰만 결제할 수 있습니다.");
+            throw ServiceException.forbidden("내 입찰만 결제할 수 있습니다.");
         }
 
         // 상품이 '낙찰' 상태인지 확인
         String successfulStatus = AuctionStatus.SUCCESSFUL.getDisplayName();
         if (product == null || product.getStatus() == null || !successfulStatus.equals(product.getStatus())) {
-            throw new ServiceException("400", "아직 낙찰이 확정되지 않았습니다.");
+            throw ServiceException.badRequest("아직 낙찰이 확정되지 않았습니다.");
         }
     }
 
     private void validateHighestBid(Bid bid, Product product) {
         Long highest = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
         if (!bid.getBidPrice().equals(highest)) {
-            throw new ServiceException("400", "현재 낙찰가와 일치하지 않습니다. 다시 확인해주세요.");
+            throw ServiceException.badRequest("현재 낙찰가와 일치하지 않습니다. 다시 확인해주세요.");
         }
     }
 

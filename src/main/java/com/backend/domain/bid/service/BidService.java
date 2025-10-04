@@ -56,9 +56,9 @@ public class BidService {
     private RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
         // Product/Member 조회
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+                .orElseThrow(() -> ServiceException.notFound("존재하지 않는 상품입니다."));
         Member member = memberRepository.findById(bidderId)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> ServiceException.notFound("존재하지 않는 사용자입니다."));
 
         // 유효성 검증
         validateBid(product, member, request.price());
@@ -157,7 +157,7 @@ public class BidService {
 
     private Product getProductById(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new ServiceException("404", "존재하지 않는 상품입니다."));
+                .orElseThrow(() -> ServiceException.notFound("존재하지 않는 상품입니다."));
     }
 
     private List<BidCurrentResponseDto.RecentBid> createAnonymizedRecentBids(List<Bid> recentBids) {
@@ -240,47 +240,47 @@ public class BidService {
 
     private void validateAuctionStatus(Product product) {
         if (!AuctionStatus.BIDDING.getDisplayName().equals(product.getStatus())) {
-            throw new ServiceException("400", "현재 입찰할 수 없는 상품입니다.");
+            throw ServiceException.badRequest("현재 입찰할 수 없는 상품입니다.");
         }
     }
 
     private void validateAuctionTime(Product product) {
         LocalDateTime now = LocalDateTime.now();
         if (product.getStartTime() != null && now.isBefore(product.getStartTime())) {
-            throw new ServiceException("400", "경매가 아직 시작되지 않았습니다.");
+            throw ServiceException.badRequest("경매가 아직 시작되지 않았습니다.");
         }
         if (product.getEndTime() != null && now.isAfter(product.getEndTime())) {
-            throw new ServiceException("400", "경매가 이미 종료되었습니다.");
+            throw ServiceException.badRequest("경매가 이미 종료되었습니다.");
         }
     }
 
     private void validateNotSelfBid(Product product, Member member) {
         Member seller = product.getSeller();
         if (seller != null && seller.getId().equals(member.getId())) {
-            throw new ServiceException("400", "본인이 등록한 상품에는 입찰할 수 없습니다.");
+            throw ServiceException.badRequest("본인이 등록한 상품에는 입찰할 수 없습니다.");
         }
     }
 
     private void validateBidPrice(Long bidPrice, Product product) {
         // 입찰 금액 기본 검증
         if (bidPrice == null || bidPrice <= 0) {
-            throw new ServiceException("400", "입찰 금액은 0보다 커야 합니다.");
+            throw ServiceException.badRequest("입찰 금액은 0보다 커야 합니다.");
         }
 
         // 현재 최고가보다 높은지 확인
         Long currentHighestPrice = bidRepository.findHighestBidPrice(product.getId()).orElse(0L);
         if (bidPrice <= currentHighestPrice) {
-            throw new ServiceException("400", "입찰 금액이 현재 최고가인 " + currentHighestPrice + "원 보다 높아야 합니다.");
+            throw ServiceException.badRequest("입찰 금액이 현재 최고가인 " + currentHighestPrice + "원 보다 높아야 합니다.");
         }
 
         // 최소 입찰단위 100원
         if (bidPrice % 100 != 0) {
-            throw new ServiceException("400", "입찰 금액은 100원 단위로 입력해주세요.");
+            throw ServiceException.badRequest("입찰 금액은 100원 단위로 입력해주세요.");
         }
 
         // 최소 입찰단위 지켰는지 확인
         if (bidPrice < currentHighestPrice + 100) {
-            throw new ServiceException("400", "최소 100원이상 높게 입찰해주세요.");
+            throw ServiceException.badRequest("최소 100원이상 높게 입찰해주세요.");
         }
     }
 
