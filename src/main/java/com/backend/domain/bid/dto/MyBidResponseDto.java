@@ -1,32 +1,37 @@
 package com.backend.domain.bid.dto;
 
+import com.backend.domain.bid.enums.BidStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record MyBidResponseDto (
+public record MyBidResponseDto(
         List<MyBidItem> content,
         Integer totalElements,
         Integer totalPages,
         Integer currentPage,
         Integer pageSize,
         Boolean hasNext
-){
-    public record MyBidItem (
+) {
+    public record MyBidItem(
             Long bidId,
             Long productId,
             String productName,
             String thumbnailUrl,
             Long myBidPrice,
             Long currentPrice,
-            String status,
+            BidStatus status,
             Boolean isWinning,
             LocalDateTime bidTime,
             LocalDateTime endTime,
             String productStatus,
             SellerInfo Seller
-    ) {}
-    public record SellerInfo (
+    ) {
+    }
+
+    public record SellerInfo(
             Long id,
             String nickname
-    ) {}
+    ) {
+    }
 }

@@ -73,9 +73,6 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-    filter {
-        includeTestsMatching("com.backend.domain.member.controller.ApiV1MemberControllerTest")
-    }
 }
 
 // QueryDSL 설정 - 생성된 Q클래스들이 저장될 디렉토리 설정

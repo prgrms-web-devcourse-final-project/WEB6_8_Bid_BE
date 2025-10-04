@@ -4,6 +4,7 @@ import com.backend.domain.bid.dto.BidCurrentResponseDto;
 import com.backend.domain.bid.dto.BidRequestDto;
 import com.backend.domain.bid.dto.BidResponseDto;
 import com.backend.domain.bid.dto.MyBidResponseDto;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
@@ -91,7 +92,7 @@ class BidServiceTest {
         assertThat(rsData.data().productId()).isEqualTo(product.getId());
         assertThat(rsData.data().bidderId()).isEqualTo(bidder.getId());
         assertThat(rsData.data().price()).isEqualTo(1100000L);
-        assertThat(rsData.data().status()).isEqualTo("bidding");
+        assertThat(rsData.data().status()).isEqualTo(BidStatus.BIDDING);
 
         // 실제 저장되었는지
         assertThat(bidRepository.count()).isGreaterThan(0);
@@ -139,7 +140,7 @@ class BidServiceTest {
         // Given: TestInitData에서 이미 입찰이 있는 상품 사용
         Product product = getProductWithBids();
         Member bidder = getBidder1();
-        
+
         // 현재 최고가보다 낮은 금액으로 입찰 시도
         BidRequestDto lowBidRequest = new BidRequestDto(1000000L);
 
@@ -177,11 +178,11 @@ class BidServiceTest {
         // Given: TestInitData의 입찰자와 상품
         Member bidder = getBidder1();
         Product product = getActiveProduct();
-        
+
         // 먼저 입찰
         BidRequestDto firstBid = new BidRequestDto(1100000L);
         bidService.createBid(product.getId(), bidder.getId(), firstBid);
-        
+
         // 100원 미만으로 높게 입찰 시도
         BidRequestDto lowIncreaseBid = new BidRequestDto(1100050L);
 
@@ -299,11 +300,11 @@ class BidServiceTest {
         Member bidder1 = getBidder1();
         Member bidder2 = getBidder2();
         Product product = getActiveProduct();
-        
+
         // 입찰자1이 먼저 입찰
         BidRequestDto firstBid = new BidRequestDto(1100000L);
         bidService.createBid(product.getId(), bidder1.getId(), firstBid);
-        
+
         // 입찰자2가 더 높게 입찰
         BidRequestDto higherBid = new BidRequestDto(1200000L);
         bidService.createBid(product.getId(), bidder2.getId(), higherBid);

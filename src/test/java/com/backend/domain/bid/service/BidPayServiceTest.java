@@ -2,6 +2,7 @@ package com.backend.domain.bid.service;
 
 import com.backend.domain.bid.dto.BidPayResponseDto;
 import com.backend.domain.bid.entity.Bid;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.repository.CashRepository;
@@ -28,11 +29,16 @@ import static org.assertj.core.api.Assertions.*;
 @Transactional
 class BidPayServiceTest {
 
-    @Autowired BidService bidService;
-    @Autowired BidRepository bidRepository;
-    @Autowired MemberRepository memberRepository;
-    @Autowired CashRepository cashRepository;
-    @Autowired EntityManager em;
+    @Autowired
+    BidPaymentService bidPaymentService;
+    @Autowired
+    BidRepository bidRepository;
+    @Autowired
+    MemberRepository memberRepository;
+    @Autowired
+    CashRepository cashRepository;
+    @Autowired
+    EntityManager em;
 
     Member me;         // 입찰자(구매자)
     Member seller;     // 판매자(상품의 seller)
@@ -87,14 +93,14 @@ class BidPayServiceTest {
         // 내 입찰(최고가 7_000)
         Bid myBid = Bid.builder()
                 .bidPrice(7_000L)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .product(product)
                 .member(me)
                 .build();
         bidRepository.save(myBid);
 
         // 실행
-        RsData<BidPayResponseDto> rs = bidService.payForBid(me.getId(), myBid.getId());
+        RsData<BidPayResponseDto> rs = bidPaymentService.payForBid(me.getId(), myBid.getId());
 
         // 검증: record 접근자(resultCode()/msg()/data())
         assertThat(rs.resultCode()).isEqualTo("200");
@@ -109,7 +115,7 @@ class BidPayServiceTest {
         // 이미 결제된 입찰 만들기
         Bid bid = Bid.builder()
                 .bidPrice(7_000L)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .product(product)
                 .member(me)
                 .paidAt(LocalDateTime.now())
@@ -117,7 +123,7 @@ class BidPayServiceTest {
                 .build();
         bidRepository.save(bid);
 
-        RsData<BidPayResponseDto> rs = bidService.payForBid(me.getId(), bid.getId());
+        RsData<BidPayResponseDto> rs = bidPaymentService.payForBid(me.getId(), bid.getId());
 
         assertThat(rs.resultCode()).isEqualTo("200");
         assertThat(rs.msg()).contains("이미 결제");
@@ -147,13 +153,13 @@ class BidPayServiceTest {
 
         Bid myBid = Bid.builder()
                 .bidPrice(7_000L)
-                .status("bidding")
+                .status(BidStatus.BIDDING)
                 .product(biddingProduct)
                 .member(me)
                 .build();
         bidRepository.save(myBid);
 
-        assertThatThrownBy(() -> bidService.payForBid(me.getId(), myBid.getId()))
+        assertThatThrownBy(() -> bidPaymentService.payForBid(me.getId(), myBid.getId()))
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("낙찰이 확정되지");
     }
