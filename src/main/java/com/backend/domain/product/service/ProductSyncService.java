@@ -10,25 +10,43 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * RDB와 Elasticsearch 간 데이터 동기화 서비스
+ * - 상품 생성/수정/삭제 시 Elasticsearch 인덱스 자동 업데이트
+ * - 부분 업데이트를 통한 효율적인 동기화 (가격, 상태, 입찰자 수)
+ * - 전체 재인덱싱 기능 제공 (초기 설정 또는 복구용)
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductSyncService {
-    
     private final ProductRepository productRepository;
     private final ProductSearchService productSearchService;
-    
-    // 상품 생성 시 Elasticsearch 동기화
+
+    /**
+     * 상품 생성 시 Elasticsearch 동기화
+     * - Product 엔티티를 ProductDocument로 변환
+     * - Elasticsearch에 새 문서 인덱싱
+     *
+     * @param product 생성된 상품 엔티티
+     */
     public void syncProductCreation(Product product) {
         try {
             ProductDocument document = ProductDocument.fromEntity(product);
             productSearchService.indexProduct(document);
         } catch (Exception e) {
             log.error("Failed to sync product creation to Elasticsearch: {}", product.getId(), e);
+            // 동기화 실패 시에도 트랜잭션은 정상 진행 (Elasticsearch는 보조 저장소)
         }
     }
-    
-    // 상품 수정 시 Elasticsearch 동기화
+
+    /**
+     * 상품 수정 시 Elasticsearch 동기화 (전체 업데이트)
+     * - 모든 필드가 변경될 수 있으므로 전체 문서 업데이트
+     * - Product 엔티티를 ProductDocument로 변환 후 재인덱싱
+     *
+     * @param product 수정된 상품 엔티티
+     */
     public void syncProductUpdate(Product product) {
         try {
             ProductDocument document = ProductDocument.fromEntity(product);
@@ -37,8 +55,13 @@ public class ProductSyncService {
             log.error("Failed to sync product update to Elasticsearch: {}", product.getId(), e);
         }
     }
-    
-    // 상품 삭제 시 Elasticsearch 동기화
+
+    /**
+     * 상품 삭제 시 Elasticsearch 동기화
+     * - Elasticsearch 인덱스에서 해당 문서 삭제
+     *
+     * @param productId 삭제된 상품 ID
+     */
     public void syncProductDeletion(Long productId) {
         try {
             productSearchService.deleteProduct(String.valueOf(productId));
@@ -47,7 +70,15 @@ public class ProductSyncService {
         }
     }
 
-    // 가격만 변경 시 - 부분 업데이트
+    /**
+     * 가격 변경 시 부분 업데이트
+     * - 입찰로 인한 가격 변경 시 호출
+     * - 전체 문서를 재인덱싱하지 않고 currentPrice 필드만 업데이트
+     * - 이벤트 기반으로 비동기 처리됨 (ProductEventListener에서 호출)
+     *
+     * @param productId 상품 ID
+     * @param newPrice 변경된 가격
+     */
     public void syncProductPriceUpdate(Long productId, Long newPrice) {
         try {
             productSearchService.updateProductPrice(productId, newPrice);
@@ -56,7 +87,15 @@ public class ProductSyncService {
         }
     }
 
-    // 상태만 변경 시 - 부분 업데이트
+    /**
+     * 상태 변경 시 부분 업데이트
+     * - 경매 상태 변경 시 호출 (경매 시작 전 -> 경매 중 -> 낙찰/유찰)
+     * - 전체 문서를 재인덱싱하지 않고 status 필드만 업데이트
+     * - 이벤트 기반으로 비동기 처리됨 (ProductEventListener에서 호출)
+     *
+     * @param productId 상품 ID
+     * @param newStatus 변경된 상태
+     */
     public void syncProductStatusUpdate(Long productId, String newStatus) {
         try {
             productSearchService.updateProductStatus(productId, newStatus);
@@ -65,7 +104,15 @@ public class ProductSyncService {
         }
     }
 
-    // 입찰자 수만 변경 시 - 부분 업데이트
+    /**
+     * 입찰자 수 변경 시 부분 업데이트
+     * - 새로운 입찰자가 입찰 시 호출
+     * - 전체 문서를 재인덱싱하지 않고 bidderCount 필드만 업데이트
+     * - 이벤트 기반으로 비동기 처리됨 (ProductEventListener에서 호출)
+     *
+     * @param productId 상품 ID
+     * @param newBidderCount 변경된 입찰자 수
+     */
     public void syncProductBidderCountUpdate(Long productId, int newBidderCount) {
         try {
             productSearchService.updateProductBidderCount(productId, newBidderCount);
@@ -74,7 +121,12 @@ public class ProductSyncService {
         }
     }
     
-    // 전체 상품 재인덱싱 (초기 설정 또는 복구용)
+    /**
+     * 전체 상품 재인덱싱
+     * - RDB의 모든 상품을 Elasticsearch에 재인덱싱
+     * - 초기 설정, 데이터 불일치 복구, 인덱스 재생성, 마이그레이션 시 사용
+     * - 배치 단위(100개)로 처리하여 메모리 효율성 확보
+     */
     @Transactional(readOnly = true)
     public void reindexAllProducts() {
         log.info("========== 전체 상품 재인덱싱 시작 ==========");
@@ -95,6 +147,7 @@ public class ProductSyncService {
         for (int page = 0; page < totalPages; page++) {
             Page<Product> productPage = productRepository.findAll(PageRequest.of(page, batchSize));
 
+            // 각 상품을 Elasticsearch에 인덱싱
             for (Product product : productPage.getContent()) {
                 try {
                     ProductDocument document = ProductDocument.fromEntity(product);
@@ -106,6 +159,7 @@ public class ProductSyncService {
                 }
             }
 
+            // 진행률 로깅 (10% 단위 또는 마지막 페이지)
             if ((page + 1) % 10 == 0 || page == totalPages - 1) {
                 int progress = (page + 1) * 100 / totalPages;
                 log.info("진행: {}% ({}/{} 페이지, 성공: {}, 실패: {})",

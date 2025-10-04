@@ -24,6 +24,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Product Elasticsearch Custom Repository 구현체
+ * - Elasticsearch Java Client API 사용
+ * - Bool Query로 복잡한 검색 조건 조합
+ * - Nori Analyzer를 활용한 한글 검색 최적화
+ *
+ * 쿼리 구조:
+ * - must: 필수 조건 (키워드 match)
+ * - filter: 필터 조건 (category, location, status 등)
+ * - should: 선택적 조건 (향후 확장용)
+ */
 @RequiredArgsConstructor
 public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCustom {
     private final ElasticsearchOperations elasticsearchOperations;
@@ -50,6 +61,17 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
     }
 
 
+    /**
+     * 페이징 쿼리 생성 및 실행
+     * - Bool Query 완성
+     * - 정렬 옵션 추가
+     * - Elasticsearch 검색 실행
+     * - 결과를 Spring Data Page로 변환
+     *
+     * @param boolQuery 검색 조건
+     * @param pageable 페이징 정보
+     * @return 페이징된 검색 결과
+     */
     private Page<ProductDocument> createPagedQuery(BoolQuery.Builder boolQuery, Pageable pageable) {
         // 정렬 적용
         List<SortOptions> sortOptions = applySorting(pageable.getSort());
@@ -71,13 +93,21 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         return new PageImpl<>(content, pageable, totalHits);
     }
 
+    /**
+     * 상품 목록 조회용 검색 필터 적용
+     * - must: 키워드 match (형태소 분석)
+     * - filter: 정확한 일치 검색 (term, terms)
+     *
+     * @param boolQuery Bool Query 빌더
+     * @param search 검색 조건
+     */
     private void applyFilters(BoolQuery.Builder boolQuery, ProductSearchDto search) {
-        // 키워드 (상품명)
+        // 키워드(상품명) 검색 (must - 형태소 분석)
         if (search.keyword() != null && !search.keyword().isBlank()) {
             boolQuery.must(m -> m.match(ma -> ma.field("productName").query(search.keyword())));
         }
 
-        // 카테고리
+        // 카테고리 필터 (filter - 정확한 일치)
         if (search.category() != null && search.category().length > 0) {
             boolQuery.filter(f -> f.terms(t -> t
                     .field("category")
@@ -91,17 +121,19 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
             ));
         }
 
-        // 지역
+        // 지역 필터 (filter - match, OR 조건, 형태소 분석)
         if (search.location() != null && search.location().length > 0) {
             BoolQuery.Builder locationBuilder = new BoolQuery.Builder();
 
             for (String location : search.location()) {
+                // should: OR 조건으로 여러 지역 검색
+                // match: 형태소 분석으로 유연한 검색
                 locationBuilder.should(s -> s.match(m -> m.field("location").query(location)));
             }
             boolQuery.filter(f -> f.bool(locationBuilder.build()));
         }
 
-        // 배송 가능 여부
+        // 배송 가능 여부 필터
         if (search.isDelivery() != null && search.isDelivery()) {
             boolQuery.filter(f -> f.terms(t -> t
                     .field("deliveryMethod")
@@ -112,15 +144,24 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
             ));
         }
 
-        // 상태
+        // 경매 상태 필터
         if (search.status() != null) {
             boolQuery.filter(f -> f.term(t -> t.field("status").value(search.status().getDisplayName())));
         }
     }
 
+    /**
+     * 정렬 옵션 생성
+     * - Spring Data Sort → Elasticsearch SortOptions 변환
+     * - 타이브레이커: productId DESC (동일 값 처리)
+     *
+     * @param sort Spring Data Sort
+     * @return Elasticsearch SortOptions 리스트
+     */
     private List<SortOptions> applySorting(Sort sort) {
         List<SortOptions> sortOptions = new ArrayList<>();
 
+        // Sort의 각 Order를 SortOptions로 변환
         for (Sort.Order order : sort) {
             SortOptions sortOption = SortOptions.of(s -> s
                     .field(f -> f
@@ -144,6 +185,12 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         return sortOptions;
     }
 
+    /**
+     * SearchHits → ProductDocument List 변환
+     *
+     * @param searchHits Elasticsearch 검색 결과
+     * @return ProductDocument 리스트
+     */
     private List<ProductDocument> convertToProductDocumentList(SearchHits<ProductDocument> searchHits) {
         return searchHits.stream()
                 .map(SearchHit::getContent)

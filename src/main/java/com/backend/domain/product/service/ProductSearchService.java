@@ -18,6 +18,18 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Elasticsearch 기반 상품 검색 서비스
+ * - 전문 검색 기능 제공 (한글 형태소 분석)
+ * - 복잡한 필터링 및 정렬 지원
+ * - 부분 업데이트를 통한 효율적인 인덱스 관리
+ *
+ * 주요 기능:
+ * - 상품 검색 (키워드, 카테고리, 지역 등)
+ * - 회원별 상품 검색
+ * - 문서 CRUD (인덱싱, 업데이트, 삭제)
+ * - 부분 업데이트 (가격, 상태, 입찰자 수)
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,7 +37,18 @@ public class ProductSearchService {
     private final ProductElasticRepository productElasticRepository;
     private final ElasticsearchClient elasticsearchClient;
 
-    // Elasticsearch를 이용한 검색
+    // ======================================= search methods ======================================= //
+    /**
+     * 검색 조건에 따른 상품 검색
+     * - 키워드(상품명), 카테고리, 지역, 배송 가능 여부, 경매 상태로 필터링
+     * - 상품명, 지역에 대한 전문 검색 (nori analyzer 사용)
+     *
+     * @param page 페이지 번호 (1부터 시작)
+     * @param size 페이지 크기
+     * @param sort 정렬 기준 (LATEST, PRICE_HIGH, PRICE_LOW, ENDING_SOON, POPULAR)
+     * @param search 검색 조건 (keyword, category, location, isDelivery, status)
+     * @return 페이징된 ProductDocument 목록
+     */
     public Page<ProductDocument> searchProducts(
             int page, int size, ProductSearchSortType sort, ProductSearchDto search
     ) {
@@ -33,6 +56,14 @@ public class ProductSearchService {
         return productElasticRepository.searchProducts(pageable, search);
     }
 
+    /**
+     * 특정 회원의 상품 검색
+     * - 회원이 등록한 상품을 판매 상태별로 조회
+     * - 내 상품 보기 또는 특정 판매자의 상품 목록에 사용
+     *
+     * @param actor 조회할 회원
+     * @param status 판매 상태 (SELLING, SOLD, FAILED)
+     */
     public Page<ProductDocument> searchProductsByMember(
             int page, int size, ProductSearchSortType sort, Member actor, SaleStatus status
     ) {
@@ -40,19 +71,54 @@ public class ProductSearchService {
         return productElasticRepository.searchProductsByMember(pageable, actor.getId(), status);
     }
 
-    // 문서 저장/업데이트
+    /**
+     * Pageable 객체 생성 및 검증
+     * - page: 1 이상 (기본값: 1)
+     * - size: 1~100 (기본값: 20)
+     * - sort: ProductSearchSortType을 Spring Data Sort로 변환
+     */
+    private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
+        page = (page > 0) ? page : 1;
+        size = (size > 0 && size <= 100) ? size : 20;
+        return PageRequest.of(page - 1, size, sort.toSort());
+    }
+
+    // ======================================= document methods ======================================= //
+    /**
+     * 상품 문서 인덱싱 (생성/전체 업데이트)
+     * - 새 상품 등록 시 호출
+     * - 상품 정보 수정 시 호출 (여러 필드 변경)
+     * - 전체 재인덱싱 시 호출
+     *
+     * @param document 인덱싱할 ProductDocument
+     */
     public void indexProduct(ProductDocument document) {
         productElasticRepository.save(document);
         log.info("Indexed product: {}", document.getProductId());
     }
 
-    // 문서 삭제
+    /**
+     * 상품 문서 삭제
+     * - 상품 삭제 시 호출
+     * - Elasticsearch 인덱스에서 해당 문서 제거
+     *
+     * @param id Elasticsearch 문서 ID (Product ID의 문자열 형태)
+     */
     public void deleteProduct(String id) {
         productElasticRepository.deleteById(id);
         log.info("Deleted product from index: {}", id);
     }
 
-    // 가격만 부분 업데이트 (Script 사용)
+    /**
+     * 가격 부분 업데이트
+     * - 입찰로 인한 가격 변경 시 사용
+     * - currentPrice 필드만 업데이트 (전체 재인덱싱 불필요)
+     * - Elasticsearch Update API 사용
+     *
+     * @param productId 상품 ID
+     * @param newPrice 변경된 가격
+     * @throws RuntimeException Elasticsearch 업데이트 실패 시
+     */
     public void updateProductPrice(Long productId, Long newPrice) {
         String id = String.valueOf(productId);
 
@@ -73,7 +139,15 @@ public class ProductSearchService {
         }
     }
 
-    // 상태만 부분 업데이트
+    /**
+     * 상태 부분 업데이트
+     * - 경매 상태 변경 시 사용 (BEFORE_START -> BIDDING -> SUCCESSFUL/FAILED)
+     * - status 필드만 업데이트 (전체 재인덱싱 불필요)
+     * - 스케줄러에 의한 자동 상태 변경 시 호출
+     *
+     * @param productId 상품 ID
+     * @param newStatus 변경된 상태 (AuctionStatus의 displayName)
+     */
     public void updateProductStatus(Long productId, String newStatus) {
         String id = String.valueOf(productId);
 
@@ -94,7 +168,15 @@ public class ProductSearchService {
         }
     }
 
-    // 입찰자 수만 변경 시 - 부분 업데이트
+    /**
+     * 입찰자 수 부분 업데이트
+     * - 새로운 입찰자가 입찰 시 사용
+     * - bidderCount 필드만 업데이트 (전체 재인덱싱 불필요)
+     * - 인기순 정렬에 영향을 미치는 중요 필드
+     *
+     * @param productId 상품 ID
+     * @param newBidderCount 변경된 입찰자 수
+     */
     public void updateProductBidderCount(Long productId, int newBidderCount) {
         String id = String.valueOf(productId);
 
@@ -113,11 +195,5 @@ public class ProductSearchService {
             log.error("Failed to update product {} bidderCount", productId, e);
             throw new RuntimeException("Failed to update product bidderCount", e);
         }
-    }
-
-    private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
-        page = (page > 0) ? page : 1;
-        size = (size > 0 && size <= 100) ? size : 20;
-        return PageRequest.of(page - 1, size, sort.toSort());
     }
 }

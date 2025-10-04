@@ -18,6 +18,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.function.Function;
 
+/**
+ * Product Entity/Document → DTO 변환 매퍼
+ * - Entity와 DTO 간 변환 로직을 중앙 집중화
+ * - RDB 조회 결과와 Elasticsearch 조회 결과를 동일한 DTO로 변환
+ * - 페이징 처리 및 연관 엔티티 조회 포함
+ */
 @Component
 @RequiredArgsConstructor
 public class ProductMapper {
