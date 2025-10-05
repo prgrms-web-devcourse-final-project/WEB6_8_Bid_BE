@@ -66,7 +66,7 @@ public class ProductSearchService {
         size = (size > 0 && size <= 100) ? size : 20;
 
         if (sort == null) {
-            return PageRequest.of(page, size, Sort.unsorted());
+            return PageRequest.of(page - 1, size, Sort.unsorted());
         }
 
         return PageRequest.of(page - 1, size, sort.toSort());

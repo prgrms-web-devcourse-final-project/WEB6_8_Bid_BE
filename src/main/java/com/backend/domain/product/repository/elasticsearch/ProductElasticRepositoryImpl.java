@@ -160,28 +160,19 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
                         )
                 ));
             }
-
-            // 타이브레이커 추가
-            sortOptions.add(SortOptions.of(s -> s
-                    .field(f -> f
-                            .field("productId")
-                            .order(SortOrder.Desc)
-                    )
-            ));
         }
         // 2. 정렬 지정 안했지만 키워드 검색이 있는 경우 -> score 정렬
         else if (hasKeyword) {
             sortOptions.add(SortOptions.of(s -> s.score(sc -> sc.order(SortOrder.Desc))));
-
-            // score 동점일 때 타이브레이커
-            sortOptions.add(SortOptions.of(s -> s
-                    .field(f -> f
-                            .field("productId")
-                            .order(SortOrder.Desc)
-                    )
-            ));
         }
-        // 3. 정렬도 없고 키워드도 없으면 빈 리스트 반환 (Elasticsearch 기본 정렬)
+
+        // 타이브레이커 추가 (키워드도 업고, 정렬 기준도 없으면 최신순 정렬)
+        sortOptions.add(SortOptions.of(s -> s
+                .field(f -> f
+                        .field("productId")
+                        .order(SortOrder.Desc)
+                )
+        ));
 
         return sortOptions;
     }
