@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -63,6 +64,11 @@ public class ProductSearchService {
     private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
         page = (page > 0) ? page : 1;
         size = (size > 0 && size <= 100) ? size : 20;
+
+        if (sort == null) {
+            return PageRequest.of(page, size, Sort.unsorted());
+        }
+
         return PageRequest.of(page - 1, size, sort.toSort());
     }
 

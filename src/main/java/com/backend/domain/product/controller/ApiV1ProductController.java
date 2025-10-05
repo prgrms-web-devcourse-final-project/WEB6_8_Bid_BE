@@ -121,7 +121,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(required = false) String[] location,
             @RequestParam(required = false) Boolean isDelivery,
             @RequestParam(defaultValue = "BIDDING") AuctionStatus status,
-            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
+            @RequestParam(required = false) ProductSearchSortType sort
     ) {
         ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery, status);
         Page<ProductDocument> products = productSearchService.searchProducts(page, size, sort, search);

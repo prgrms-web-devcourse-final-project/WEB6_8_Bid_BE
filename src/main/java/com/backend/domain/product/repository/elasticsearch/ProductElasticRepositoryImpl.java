@@ -45,7 +45,8 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         // 필터 적용
         applyFilters(boolQuery, search);
 
-        return createPagedQuery(boolQuery, pageable);
+        boolean hasKeyword = search.keyword() != null && !search.keyword().isBlank();
+        return createPagedQuery(boolQuery, pageable, hasKeyword);
     }
 
 
@@ -60,9 +61,9 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
      * @param pageable 페이징 정보
      * @return 페이징된 검색 결과
      */
-    private Page<ProductDocument> createPagedQuery(BoolQuery.Builder boolQuery, Pageable pageable) {
+    private Page<ProductDocument> createPagedQuery(BoolQuery.Builder boolQuery, Pageable pageable, boolean hasKeyword) {
         // 정렬 적용
-        List<SortOptions> sortOptions = applySorting(pageable.getSort());
+        List<SortOptions> sortOptions = applySorting(pageable.getSort(), hasKeyword);
 
         // 검색 쿼리 생성
         Query query = NativeQuery.builder()
@@ -146,22 +147,21 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
      * @param sort Spring Data Sort
      * @return Elasticsearch SortOptions 리스트
      */
-    private List<SortOptions> applySorting(Sort sort) {
+    private List<SortOptions> applySorting(Sort sort, boolean hasKeyword) {
         List<SortOptions> sortOptions = new ArrayList<>();
 
-        // Sort의 각 Order를 SortOptions로 변환
-        for (Sort.Order order : sort) {
-            SortOptions sortOption = SortOptions.of(s -> s
-                    .field(f -> f
-                            .field(order.getProperty())
-                            .order(order.isAscending() ? SortOrder.Asc : SortOrder.Desc)
-                    )
-            );
-            sortOptions.add(sortOption);
-        }
+        // 1. 사용자가 명시적으로 정렬을 지정한 경우
+        if (sort.isSorted()) {
+            for (Sort.Order order : sort) {
+                sortOptions.add(SortOptions.of(s -> s
+                        .field(f -> f
+                                .field(order.getProperty())
+                                .order(order.isAscending() ? SortOrder.Asc : SortOrder.Desc)
+                        )
+                ));
+            }
 
-        // 정렬이 있을 때만 productId 타이브레이커 추가
-        if (!sortOptions.isEmpty()) {
+            // 타이브레이커 추가
             sortOptions.add(SortOptions.of(s -> s
                     .field(f -> f
                             .field("productId")
@@ -169,6 +169,19 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
                     )
             ));
         }
+        // 2. 정렬 지정 안했지만 키워드 검색이 있는 경우 -> score 정렬
+        else if (hasKeyword) {
+            sortOptions.add(SortOptions.of(s -> s.score(sc -> sc.order(SortOrder.Desc))));
+
+            // score 동점일 때 타이브레이커
+            sortOptions.add(SortOptions.of(s -> s
+                    .field(f -> f
+                            .field("productId")
+                            .order(SortOrder.Desc)
+                    )
+            ));
+        }
+        // 3. 정렬도 없고 키워드도 없으면 빈 리스트 반환 (Elasticsearch 기본 정렬)
 
         return sortOptions;
     }
