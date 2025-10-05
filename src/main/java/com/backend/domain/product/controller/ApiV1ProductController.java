@@ -230,27 +230,6 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     }
 
     /**
-     * 내 상품 목록 조회 (Elasticsearch 기반)
-     * - Elasticsearch를 활용한 빠른 조회
-     * - 낙찰자 및 리뷰 정보는 RDB에서 별도 조회
-     */
-    @GetMapping("/es/me")
-    @Transactional(readOnly = true)
-    public RsData<PageDto<MyProductListItemDto>> getMyProductsByElasticsearch(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "SELLING") SaleStatus status,
-            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
-            @AuthenticationPrincipal User user
-    ) {
-        Member actor = memberService.findMemberByEmail(user.getUsername());
-        Page<ProductDocument> products = productSearchService.searchProductsByMember(page, size, sort, actor, status);
-
-        PageDto<MyProductListItemDto> response = productMapper.toMyListResponseFromDocument(products);
-        return RsData.ok("내 상품 목록이 조회되었습니다", response);
-    }
-
-    /**
      * 특정 회원의 상품 목록 조회 (RDB 기반)
      * - 다른 회원이 등록한 상품 목록 조회
      * - 판매 상태별 필터링 가능
@@ -273,28 +252,6 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
         Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
 
         PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponse(products);
-        return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
-    }
-
-    /**
-     * 특정 회원의 상품 목록 조회 (Elasticsearch 기반)
-     * - Elasticsearch를 활용한 빠른 조회
-     * - 리뷰 정보는 RDB에서 별도 조회
-     */
-    @GetMapping("/es/members/{memberId}")
-    @Transactional(readOnly = true)
-    public RsData<PageDto<ProductListByMemberItemDto>> getProductsByMemberAndElasticsearch(
-            @PathVariable Long memberId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "SELLING") SaleStatus status,
-            @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
-    ) {
-        Member actor = memberService.findById(memberId).orElseThrow(ProductException::memberNotFound);
-
-        Page<ProductDocument> products = productSearchService.searchProductsByMember(page, size, sort, actor, status);
-
-        PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponseFromDocument(products);
         return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
     }
 }

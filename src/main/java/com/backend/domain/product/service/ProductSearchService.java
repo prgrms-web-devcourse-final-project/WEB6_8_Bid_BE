@@ -2,11 +2,9 @@ package com.backend.domain.product.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
-import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.ProductSearchSortType;
-import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,21 +52,6 @@ public class ProductSearchService {
     ) {
         Pageable pageable = getPageable(page, size, sort);
         return productElasticRepository.searchProducts(pageable, search);
-    }
-
-    /**
-     * 특정 회원의 상품 검색
-     * - 회원이 등록한 상품을 판매 상태별로 조회
-     * - 내 상품 보기 또는 특정 판매자의 상품 목록에 사용
-     *
-     * @param actor 조회할 회원
-     * @param status 판매 상태 (SELLING, SOLD, FAILED)
-     */
-    public Page<ProductDocument> searchProductsByMember(
-            int page, int size, ProductSearchSortType sort, Member actor, SaleStatus status
-    ) {
-        Pageable pageable = getPageable(page, size, sort);
-        return productElasticRepository.searchProductsByMember(pageable, actor.getId(), status);
     }
 
     /**

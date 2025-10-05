@@ -8,7 +8,6 @@ import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.enums.SaleStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,17 +44,6 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
 
         // 필터 적용
         applyFilters(boolQuery, search);
-
-        return createPagedQuery(boolQuery, pageable);
-    }
-
-    @Override
-    public Page<ProductDocument> searchProductsByMember(Pageable pageable, Long actorId, SaleStatus status) {
-        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
-
-        // 필터 적용
-        if (actorId != null) boolQuery.filter(f -> f.term(t -> t.field("sellerId").value(actorId)));
-        if (status != null) boolQuery.filter(f -> f.term(t -> t.field("status").value(status.getDisplayName())));
 
         return createPagedQuery(boolQuery, pageable);
     }
