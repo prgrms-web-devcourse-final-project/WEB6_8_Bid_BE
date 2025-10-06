@@ -16,6 +16,7 @@ import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.mapper.ProductMapper;
+import com.backend.domain.product.service.ProductReindexService;
 import com.backend.domain.product.service.ProductSearchService;
 import com.backend.domain.product.service.ProductService;
 import com.backend.global.page.dto.PageDto;
@@ -45,6 +46,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     private final MemberService memberService;
     private final ProductMapper productMapper;
     private final ProductSearchService productSearchService;
+    private final ProductReindexService reindexService;
 
     /**
      * 상품 등록
@@ -253,5 +255,32 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponse(products);
         return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
+    }
+
+
+    /**
+     * 무중단 재인덱싱 실행
+     * POST /api/admin/products/reindex
+     */
+    @PostMapping("/reindex")
+    @Transactional
+    public RsData<String> reindex() {
+        String result = reindexService.reindexWithZeroDowntime();
+        return RsData.ok("재인덱싱 완료", result);
+    }
+
+    /**
+     * 구 인덱스 삭제
+     * DELETE /api/admin/products/indices/{indexName}
+     */
+    @DeleteMapping("/indices/{indexName}")
+    @Transactional
+    public RsData<Void> deleteOldIndex(@PathVariable String indexName) {
+        try {
+            reindexService.deleteOldIndex(indexName);
+            return RsData.ok("인덱스 삭제 완료");
+        } catch (Exception e) {
+            return RsData.ok("인덱스 삭제 실패: " + e.getMessage());
+        }
     }
 }

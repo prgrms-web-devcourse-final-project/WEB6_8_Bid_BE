@@ -25,6 +25,7 @@ services:
       - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+      - ./src/main/resources/elasticsearch/synonyms.txt:/usr/share/elasticsearch/config/analysis/synonyms.txt:ro
     restart: unless-stopped
     networks:
       - elastic

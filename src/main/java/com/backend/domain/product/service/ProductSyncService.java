@@ -1,5 +1,6 @@
 package com.backend.domain.product.service;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.jpa.ProductRepository;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
 
 /**
  * RDB와 Elasticsearch 간 데이터 동기화 서비스
@@ -22,6 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductSyncService {
     private final ProductRepository productRepository;
     private final ProductSearchService productSearchService;
+    private final ElasticsearchClient elasticsearchClient;
+
+    private static final String ALIAS = "products";
+    private static final String INITIAL_INDEX = "products_v1";
 
     /**
      * 상품 생성 시 Elasticsearch 동기화
@@ -169,5 +176,40 @@ public class ProductSyncService {
 
         log.info("========== 재인덱싱 완료 ==========");
         log.info("성공: {}, 실패: {}, 총: {}", successCount, failCount, totalCount);
+
+        try {
+            createAlias();
+        } catch (IOException e) {
+            log.error("Alias 실패", e);
+        }
+    }
+
+    private void createAlias() throws IOException {
+        boolean aliasExists = elasticsearchClient.indices()
+                .existsAlias(a -> a.name(ALIAS))
+                .value();
+        if (aliasExists) {
+            log.info("Alias '{}' 이미 존재함", ALIAS);
+            return;
+        }
+
+        log.info("'{}' 인덱스를 '{}' 로 복사 중...", ALIAS, INITIAL_INDEX);
+        elasticsearchClient.reindex(r -> r
+                .source(s -> s.index(ALIAS))
+                .dest(d -> d.index(INITIAL_INDEX))
+                .waitForCompletion(true)
+        );
+
+        log.info("복사 완료. 구 인덱스 삭제 중...");
+        elasticsearchClient.indices().delete(d -> d.index(ALIAS));
+
+        log.info("Alias 생성: {} → {}", ALIAS, INITIAL_INDEX);
+        elasticsearchClient.indices().updateAliases(u -> u
+                .actions(a -> a
+                        .add(add -> add.index(INITIAL_INDEX).alias(ALIAS))
+                )
+        );
+
+        log.info("Alias 설정 완료!");
     }
 }

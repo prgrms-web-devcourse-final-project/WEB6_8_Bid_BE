@@ -165,4 +165,24 @@ public interface ApiV1ProductControllerDocs {
             @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
+
+
+    @Operation(summary = "무중단 재인덱싱 실행", description = "무중단으로 재인덱싱을 실행합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "재인덱싱 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "400", description = "재인덱싱 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<String> reindex();
+
+
+    @Operation(summary = "구 인덱스 삭제", description = "구 인덱스를 삭제합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "인덱스 삭제 결과",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
+    RsData<Void> deleteOldIndex(
+            @Parameter(description = "삭제할 구 인덱스", required = true) @PathVariable String indexName
+    );
 }

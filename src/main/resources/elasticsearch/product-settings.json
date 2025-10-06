@@ -9,6 +9,16 @@
           "nori_part_of_speech",
           "nori_readingform"
         ]
+      },
+      "nori_search_analyzer": {
+        "type": "custom",
+        "tokenizer": "nori_tokenizer",
+        "filter": [
+          "lowercase",
+          "nori_part_of_speech",
+          "nori_readingform",
+          "synonym_filter"
+        ]
       }
     },
     "tokenizer": {
@@ -38,6 +48,11 @@
           "NA",
           "VSV"
         ]
+      },
+      "synonym_filter": {
+        "type": "synonym",
+        "synonyms_path": "analysis/synonyms.txt",
+        "updateable": true
       }
     }
   }
