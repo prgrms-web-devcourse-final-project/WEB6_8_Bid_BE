@@ -1,4 +1,4 @@
-package com.backend.domain.cash.constant;
+package com.backend.domain.cash.enums;
 
 public enum RelatedType {
     PAYMENT,

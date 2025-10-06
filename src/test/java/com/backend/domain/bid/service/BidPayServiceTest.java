@@ -163,4 +163,30 @@ class BidPayServiceTest {
                 .isInstanceOf(ServiceException.class)
                 .hasMessageContaining("낙찰이 확정되지");
     }
+
+    @Test
+    void 결제_성공하면_Bid와_Product_상태가_결제완료로_변경된다() {
+        Bid myBid = Bid.builder()
+                .bidPrice(7_000L)
+                .status(BidStatus.BIDDING)
+                .product(product)
+                .member(me)
+                .build();
+        bidRepository.save(myBid);
+
+        RsData<BidPayResponseDto> rs = bidPaymentService.payForBid(me.getId(), myBid.getId());
+
+        assertThat(rs.resultCode()).isEqualTo("200");
+        assertThat(rs.msg()).contains("낙찰 결제");
+
+        em.flush();
+        em.clear();
+
+        Bid reloadedBid = bidRepository.findById(myBid.getId()).orElseThrow();
+        Product reloadedProduct = em.find(Product.class, product.getId());
+
+        assertThat(reloadedBid.getStatus()).isEqualTo(BidStatus.PAID);
+
+        assertThat(reloadedProduct.getStatus()).isEqualTo("결제 완료");
+    }
 }

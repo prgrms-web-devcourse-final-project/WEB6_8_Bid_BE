@@ -1,4 +1,4 @@
-package com.backend.domain.payment.constant;
+package com.backend.domain.payment.enums;
 
 public enum PaymentStatus {
     PENDING,   // 아직 처리 중..

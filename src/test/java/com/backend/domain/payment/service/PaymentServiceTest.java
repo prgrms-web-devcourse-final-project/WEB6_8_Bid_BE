@@ -5,7 +5,7 @@ import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.payment.constant.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.dto.MyPaymentResponse;
 import com.backend.domain.payment.dto.MyPaymentsResponse;
 import com.backend.domain.payment.dto.PgChargeResultResponse;
@@ -23,8 +23,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.BDDMockito.given;

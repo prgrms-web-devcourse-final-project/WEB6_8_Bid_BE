@@ -1,6 +1,6 @@
 package com.backend.domain.cash.repository;
 
-import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import org.springframework.data.domain.Page;
