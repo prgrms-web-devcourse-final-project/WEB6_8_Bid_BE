@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -243,5 +244,20 @@ class ProductElasticRepositoryTest {
                         .isGreaterThan(result.getContent().get(i + 1).getProductId());
             }
         }
+    }
+
+    @Test
+    @DisplayName("정렬 - Elasticsearch score 기준")
+    void searchWithDefaultSort() {
+        // given
+        ProductSearchDto search = new ProductSearchDto("아이폰", null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
+
+        // when
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
+
+        // then
+        assertThat(result.getContent()).isNotEmpty();
+        assertThat(result.getContent().get(0).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
     }
 }
