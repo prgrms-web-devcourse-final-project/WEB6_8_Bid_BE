@@ -2,14 +2,13 @@ package com.backend.domain.payment.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.payment.constant.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
-import com.backend.global.exception.ServiceException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;

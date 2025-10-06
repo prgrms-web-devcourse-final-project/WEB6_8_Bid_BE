@@ -1,13 +1,13 @@
 package com.backend.domain.payment.service;
 
-import com.backend.domain.cash.constant.CashTxType;
-import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.constant.PaymentStatus;
+import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.domain.payment.dto.*;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.payment.entity.PaymentMethod;

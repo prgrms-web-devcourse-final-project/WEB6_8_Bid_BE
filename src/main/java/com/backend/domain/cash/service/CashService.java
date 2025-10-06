@@ -1,8 +1,8 @@
 package com.backend.domain.cash.service;
 
 import com.backend.domain.bid.repository.BidRepository;
-import com.backend.domain.cash.constant.CashTxType;
-import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.dto.CashResponse;
 import com.backend.domain.cash.dto.CashTransactionItemResponse;
 import com.backend.domain.cash.dto.CashTransactionResponse;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 

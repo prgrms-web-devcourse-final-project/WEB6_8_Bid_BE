@@ -2,7 +2,7 @@ package com.backend.domain.payment.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.payment.constant.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.PaymentMethodEditRequest;

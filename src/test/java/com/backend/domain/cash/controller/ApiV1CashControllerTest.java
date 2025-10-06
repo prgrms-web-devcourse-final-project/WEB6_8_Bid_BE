@@ -1,7 +1,7 @@
 package com.backend.domain.cash.controller;
 
-import com.backend.domain.cash.constant.CashTxType;
-import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.repository.CashRepository;

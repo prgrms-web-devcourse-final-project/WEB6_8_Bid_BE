@@ -1,7 +1,7 @@
 package com.backend.domain.payment.entity;
 
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.constant.PaymentStatus;
+import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

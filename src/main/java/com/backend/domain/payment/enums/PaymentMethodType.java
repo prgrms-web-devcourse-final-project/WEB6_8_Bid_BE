@@ -1,4 +1,4 @@
-package com.backend.domain.payment.constant;
+package com.backend.domain.payment.enums;
 
 public enum PaymentMethodType {
     CARD,  // 카드..
