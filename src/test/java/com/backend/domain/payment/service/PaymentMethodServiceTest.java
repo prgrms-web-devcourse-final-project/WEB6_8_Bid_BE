@@ -48,7 +48,7 @@ class PaymentMethodServiceTest {
     private PaymentMethod cardEntity(Long id, Member m) {
         PaymentMethod e = PaymentMethod.builder()
                 .member(m)
-                .type(PaymentMethodType.CARD)
+                .methodType(PaymentMethodType.CARD)
                 .alias("카드별칭")
                 .isDefault(false)
                 .brand("VISA")
@@ -63,7 +63,7 @@ class PaymentMethodServiceTest {
     private PaymentMethod bankEntity(Long id, Member m) {
         PaymentMethod e = PaymentMethod.builder()
                 .member(m)
-                .type(PaymentMethodType.BANK)
+                .methodType(PaymentMethodType.BANK)
                 .alias("계좌별칭")
                 .isDefault(false)
                 .bankCode("004")
@@ -120,7 +120,7 @@ class PaymentMethodServiceTest {
             ArgumentCaptor<PaymentMethod> captor = ArgumentCaptor.forClass(PaymentMethod.class);
             verify(paymentMethodRepository).save(captor.capture());
             PaymentMethod saved = captor.getValue();
-            assertThat(saved.getType()).isEqualTo(PaymentMethodType.CARD);
+            assertThat(saved.getMethodType()).isEqualTo(PaymentMethodType.CARD);
             assertThat(saved.getIsDefault()).isTrue();
         }
 
@@ -163,7 +163,7 @@ class PaymentMethodServiceTest {
 
             PaymentMethod defaultCard = PaymentMethod.builder()
                     .member(member)
-                    .type(PaymentMethodType.CARD)
+                    .methodType(PaymentMethodType.CARD)
                     .alias("내 주력카드")
                     .isDefault(true)
                     .brand("SHINHAN")
@@ -174,7 +174,7 @@ class PaymentMethodServiceTest {
 
             PaymentMethod bank = PaymentMethod.builder()
                     .member(member)
-                    .type(PaymentMethodType.BANK)
+                    .methodType(PaymentMethodType.BANK)
                     .alias("급여통장")
                     .isDefault(false)
                     .bankCode("004")
@@ -340,7 +340,7 @@ class PaymentMethodServiceTest {
 
         PaymentMethod entity = PaymentMethod.builder()
                 .member(member)
-                .type(PaymentMethodType.CARD) // CARD | BANK
+                .methodType(PaymentMethodType.CARD) // CARD | BANK
                 .alias("결혼식 카드")
                 .brand("SHINHAN")
                 .last4("1234")
