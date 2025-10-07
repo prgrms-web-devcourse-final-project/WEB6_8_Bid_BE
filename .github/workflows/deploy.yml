@@ -239,7 +239,14 @@ jobs:
               -e JWT_SECRET="${JWT_SECRET}" \
               -e SPRING_DATASOURCE_URL___DB_NAME="${SPRING_DATASOURCE_URL___DB_NAME}" \
               -v /bid_data:/data \
+              -v /bid_es_config/analysis:/es-dict \
               "${IMAGE}"
+            
+            # 컨테이너에서 호스트로 사전 파일 복사
+            docker cp "${GREEN}":/es-dict/user_dictionary.txt /bid_es_config/analysis/user_dictionary.txt
+            docker cp "${GREEN}":/es-dict/synonyms.txt /bid_es_config/analysis/synonyms.txt
+            chmod 644 /bid_es_config/analysis/*.txt
+            chown 1000:1000 /bid_es_config/analysis/*.txt
 
             # ---------------------------------------------------------
             # 5) 헬스체크 (/actuator/health 200 OK까지 대기)
