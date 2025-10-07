@@ -6,10 +6,7 @@ import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
-import com.backend.domain.product.dto.response.MyProductListItemDto;
-import com.backend.domain.product.dto.response.ProductListByMemberItemDto;
-import com.backend.domain.product.dto.response.ProductListItemDto;
-import com.backend.domain.product.dto.response.ProductResponse;
+import com.backend.domain.product.dto.response.*;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
@@ -253,5 +250,16 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
 
         PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponse(products);
         return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
+    }
+
+    /**
+     * Elasticsearch 검색 분석기 재로드
+     * 사용자 사전, 동의어 사전 변경 후 호출 필요
+     * TODO: 관리자만 접근 가능하도록 변경 필요
+     */
+    @PostMapping("/reload-analyzers")
+//    @PreAuthorize("hasRole('ADMIN')")
+    public RsData<ReloadAnalyzersResponse> reloadSearchAnalyzers() {
+        return productSearchService.reloadSearchAnalyzers();
     }
 }

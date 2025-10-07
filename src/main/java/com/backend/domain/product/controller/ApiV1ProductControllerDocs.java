@@ -2,15 +2,12 @@ package com.backend.domain.product.controller;
 
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
-import com.backend.domain.product.dto.response.MyProductListItemDto;
-import com.backend.domain.product.dto.response.ProductListByMemberItemDto;
-import com.backend.domain.product.dto.response.ProductListItemDto;
-import com.backend.domain.product.dto.response.ProductResponse;
+import com.backend.domain.product.dto.response.*;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
-import com.backend.global.response.RsData;
 import com.backend.global.page.dto.PageDto;
+import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -165,4 +162,6 @@ public interface ApiV1ProductControllerDocs {
             @Parameter(description = "판매 상태") @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
+
+    RsData<ReloadAnalyzersResponse> reloadSearchAnalyzers();
 }

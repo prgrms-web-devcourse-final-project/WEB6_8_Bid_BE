@@ -4,8 +4,11 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
+import com.backend.domain.product.dto.response.ReloadAnalyzersResponse;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
+import com.backend.global.response.RsData;
+import com.backend.global.response.RsStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -183,6 +187,36 @@ public class ProductSearchService {
         } catch (IOException e) {
             log.error("Failed to update product {} bidderCount", productId, e);
             throw new RuntimeException("Failed to update product bidderCount", e);
+        }
+    }
+
+    // ======================================= etc methods ======================================= //
+    public RsData<ReloadAnalyzersResponse> reloadSearchAnalyzers() {
+        try {
+            // ElasticsearchClient를 통한 직접 호출
+            var response = elasticsearchClient.indices()
+                    .reloadSearchAnalyzers(r -> r.index("products"));
+
+            ReloadAnalyzersResponse result = new ReloadAnalyzersResponse(
+                    true,
+                    response.reloadDetails(),
+                    LocalDateTime.now()
+            );
+
+            return RsData.ok("검색 분석기 재로드 성공", result);
+
+        } catch (Exception e) {
+            ReloadAnalyzersResponse result = new ReloadAnalyzersResponse(
+                    false,
+                    null,
+                    LocalDateTime.now()
+            );
+
+            return RsData.of(
+                    RsStatus.INTERNAL_SERVER_ERROR.getResultCode(),
+                    "검색 분석기 재로드 실패: " + e.getMessage(),
+                    result
+            );
         }
     }
 }
