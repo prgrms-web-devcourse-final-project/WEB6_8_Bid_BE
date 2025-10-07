@@ -163,5 +163,12 @@ public interface ApiV1ProductControllerDocs {
             @Parameter(description = "정렬 기준") @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     );
 
+    @Operation(summary = "Elasticsearch 검색 분석기 재로드", description = "Elasticsearch 검색 분석기를 재로드합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "검색 분석기 재로드 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "500", description = "검색 분석기 재로드 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     RsData<ReloadAnalyzersResponse> reloadSearchAnalyzers();
 }
