@@ -3,10 +3,10 @@ package com.backend.domain.payment.service;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.payment.enums.PaymentMethodType;
-import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
-import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
-import com.backend.domain.payment.dto.PaymentMethodEditRequest;
-import com.backend.domain.payment.dto.PaymentMethodResponse;
+import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.response.PaymentMethodDeleteResponse;
+import com.backend.domain.payment.dto.request.PaymentMethodEditRequest;
+import com.backend.domain.payment.dto.response.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import lombok.RequiredArgsConstructor;
@@ -107,7 +107,7 @@ public class PaymentMethodService {
 
         PaymentMethod entity = PaymentMethod.builder()
                 .member(member)
-                .type(type)
+                .methodType(type)
                 .token(req.getToken())
                 .alias(req.getAlias())
                 .isDefault(shouldBeDefault)
@@ -175,7 +175,7 @@ public class PaymentMethodService {
         req.setAcctLast4(nvlBlankToNull(req.getAcctLast4()));
 
         // 타입 불일치 필드가 들어오면 즉시 400..
-        ensureNoCrossTypeFields(entity.getType(), req);
+        ensureNoCrossTypeFields(entity.getMethodType(), req);
 
         // 별칭..
         if (req.getAlias() != null) {
@@ -199,7 +199,7 @@ public class PaymentMethodService {
         }
 
         // 타입별 부분 수정..
-        switch (entity.getType()) {
+        switch (entity.getMethodType()) {
             case CARD -> {
                 if (req.getBrand()    != null) entity.setBrand(req.getBrand());
                 if (req.getLast4()    != null) entity.setLast4(req.getLast4());
@@ -299,7 +299,7 @@ public class PaymentMethodService {
         return PaymentMethodResponse.builder()
                 .id(e.getId())
 
-                .type(e.getType().name())
+                .type(e.getMethodType().name())
                 .alias(e.getAlias())
                 .isDefault(e.getIsDefault())
 

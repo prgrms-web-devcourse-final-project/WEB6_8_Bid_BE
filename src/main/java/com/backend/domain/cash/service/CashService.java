@@ -3,10 +3,10 @@ package com.backend.domain.cash.service;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.cash.enums.CashTxType;
 import com.backend.domain.cash.enums.RelatedType;
-import com.backend.domain.cash.dto.CashResponse;
-import com.backend.domain.cash.dto.CashTransactionItemResponse;
-import com.backend.domain.cash.dto.CashTransactionResponse;
-import com.backend.domain.cash.dto.CashTransactionsResponse;
+import com.backend.domain.cash.dto.response.CashResponse;
+import com.backend.domain.cash.dto.response.CashTransactionItemResponse;
+import com.backend.domain.cash.dto.response.CashTransactionResponse;
+import com.backend.domain.cash.dto.response.CashTransactionsResponse;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.repository.CashRepository;
@@ -176,15 +176,17 @@ public class CashService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잔액이 부족합니다.");
          }
 
+        long delta = -Math.abs(amount);    // 출금은 음수로 저장..
+        long newBalance = current + delta; // = current - amount
+
         // 잔액 차감..
-        long newBalance = current - amount;
         cash.setBalance(newBalance);
 
         // 원장(WITHDRAW) 한 줄 추가..
         var tx = CashTransaction.builder()
                 .cash(cash)
                 .type(CashTxType.WITHDRAW)  // 출금..
-                .amount(amount)             // 항상 양수로 저장..
+                .amount(delta)              // 음수로 저장..
                 .balanceAfter(newBalance)   // 이 줄 반영 후 잔액..
                 .relatedType(relatedType)   // 돈이 왜 빠졌는지..
                 .relatedId(relatedId)       // 관련 ID (예: bidId)..

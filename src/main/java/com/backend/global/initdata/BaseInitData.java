@@ -3,8 +3,20 @@ package com.backend.global.initdata;
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
+import com.backend.domain.cash.entity.Cash;
+import com.backend.domain.cash.entity.CashTransaction;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
+import com.backend.domain.cash.repository.CashRepository;
+import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.payment.entity.Payment;
+import com.backend.domain.payment.entity.PaymentMethod;
+import com.backend.domain.payment.enums.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentStatus;
+import com.backend.domain.payment.repository.PaymentMethodRepository;
+import com.backend.domain.payment.repository.PaymentRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.ProductRepository;
 import com.backend.domain.product.service.ProductSyncService;
@@ -31,6 +43,10 @@ public class BaseInitData {
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
     private final ProductSyncService productSyncService;
+    private final CashRepository cashRepository;
+    private final CashTransactionRepository cashTransactionRepository;
+    private final PaymentMethodRepository paymentMethodRepository;
+    private final PaymentRepository paymentRepository;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -141,5 +157,130 @@ public class BaseInitData {
                 .member(bidder1)
                 .status(BidStatus.BIDDING)
                 .build());
+
+        Cash bidder1Cash = cashRepository.findByMember(bidder1)
+                .orElseGet(() -> cashRepository.save(
+                        Cash.builder()
+                                .member(bidder1)
+                                .balance(0L)
+                                .build()
+                ));
+
+        Cash bidder2Cash = cashRepository.findByMember(bidder2)
+                .orElseGet(() -> cashRepository.save(
+                        Cash.builder()
+                                .member(bidder2)
+                                .balance(0L)
+                                .build()
+                ));
+
+        // 충전: 입금(+150,000)..
+        long b1After = bidder1Cash.getBalance() + 150_000L;
+        bidder1Cash.setBalance(b1After);
+        cashRepository.save(bidder1Cash);
+
+        CashTransaction b1Deposit = CashTransaction.builder()
+                .cash(bidder1Cash)
+                .type(CashTxType.DEPOSIT)
+                .amount(150_000L)           // 입금은 양수..
+                .balanceAfter(b1After)
+                .relatedType(RelatedType.PAYMENT)
+                .relatedId(101L)            // 샘플 결제ID(일단 아무 값이나 고정)..
+                .build();
+        cashTransactionRepository.save(b1Deposit);
+
+        // 충전: 입금(+80,000)..
+        long b2After = bidder2Cash.getBalance() + 80_000L;
+        bidder2Cash.setBalance(b2After);
+        cashRepository.save(bidder2Cash);
+
+        CashTransaction b2Deposit = CashTransaction.builder()
+                .cash(bidder2Cash)
+                .type(CashTxType.DEPOSIT)
+                .amount(80_000L)
+                .balanceAfter(b2After)
+                .relatedType(RelatedType.PAYMENT)
+                .relatedId(102L)
+                .build();
+        cashTransactionRepository.save(b2Deposit);
+
+        // 출금: 낙찰 결제(-32,000) — 음수로 저장..
+        long pay = 32_000L;
+        if (bidder1Cash.getBalance() >= pay) {
+            long afterW = bidder1Cash.getBalance() - pay;
+            bidder1Cash.setBalance(afterW);
+            cashRepository.save(bidder1Cash);
+
+            CashTransaction b1Withdraw = CashTransaction.builder()
+                    .cash(bidder1Cash)
+                    .type(CashTxType.WITHDRAW)
+                    .amount(-pay)                   // 출금은 음수
+                    .balanceAfter(afterW)
+                    .relatedType(RelatedType.BID)
+                    .relatedId(3456L)               // 샘플 입찰ID
+                    .build();
+            cashTransactionRepository.save(b1Withdraw);
+        }
+
+        // 카드 등록
+        PaymentMethod b1Card = paymentMethodRepository.save(
+                PaymentMethod.builder()
+                        .member(bidder1)
+                        .methodType(PaymentMethodType.CARD)
+                        .alias("주거래 카드")
+                        .brand("KB")
+                        .last4("4321")
+                        .expMonth(3)
+                        .expYear(2028)
+                        .isDefault(true)
+                        .provider("toss")
+                        .build()
+        );
+
+        // 계좌 등록
+        PaymentMethod b1Bank = paymentMethodRepository.save(
+                PaymentMethod.builder()
+                        .member(bidder1)
+                        .methodType(PaymentMethodType.BANK)
+                        .alias("급여통장")
+                        .bankCode("004")
+                        .bankName("KB국민은행")
+                        .acctLast4("5678")
+                        .isDefault(false)
+                        .provider("toss")
+                        .build()
+        );
+
+        // 결제(충전)..
+        long charge = 50_000L;
+        long after = bidder1Cash.getBalance() + charge;
+        bidder1Cash.setBalance(after);
+        cashRepository.save(bidder1Cash);
+
+        CashTransaction cTx = cashTransactionRepository.save(
+                CashTransaction.builder()
+                        .cash(bidder1Cash)
+                        .type(CashTxType.DEPOSIT)
+                        .amount(charge)              // 입금은 양수
+                        .balanceAfter(after)
+                        .relatedType(RelatedType.PAYMENT)
+                        .relatedId(3456L)
+                        .build()
+        );
+
+        Payment payment = paymentRepository.save(
+                Payment.builder()
+                        .member(bidder1)
+                        .paymentMethod(b1Card)
+                        .status(PaymentStatus.SUCCESS)
+                        .amount(charge)
+                        .provider("toss")
+                        .methodType(PaymentMethodType.CARD)
+                        .transactionId("pg_tx_seed_001")
+                        .idempotencyKey("seed-" + System.currentTimeMillis())
+                        .cashTransaction(cTx)
+                        .build()
+        );
+
     }
 }

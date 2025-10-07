@@ -26,7 +26,7 @@ public class PaymentMethod extends BaseEntity {
     // 결제수단의 종류(CARD/BANK)...
     @Enumerated(EnumType.STRING)
     @Column(length = 16, nullable = false)
-    private PaymentMethodType type;                                    // 카드인지, 계좌인지..
+    private PaymentMethodType methodType;                                    // 카드인지, 계좌인지..
 
     // 공통 정보..
     @Column(length = 200)

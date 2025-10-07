@@ -2,9 +2,9 @@ package com.backend.domain.payment.controller;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
-import com.backend.domain.payment.dto.PaymentMethodEditRequest;
-import com.backend.domain.payment.dto.PaymentMethodResponse;
+import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.request.PaymentMethodEditRequest;
+import com.backend.domain.payment.dto.response.PaymentMethodResponse;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;

@@ -1,4 +1,4 @@
-package com.backend.domain.payment.dto;
+package com.backend.domain.payment.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
