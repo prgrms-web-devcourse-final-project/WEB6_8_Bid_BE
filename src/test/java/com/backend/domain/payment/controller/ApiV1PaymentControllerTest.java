@@ -70,7 +70,7 @@ class ApiV1PaymentControllerTest {
         pmCard = paymentMethodRepository.save(
                 PaymentMethod.builder()
                         .member(me)
-                        .type(PaymentMethodType.CARD)
+                        .methodType(PaymentMethodType.CARD)
                         .token(billingKey)   // 토스 빌링키
                         .alias("메인카드")
                         .isDefault(true)
