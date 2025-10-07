@@ -113,7 +113,10 @@ class ApiV1ProductElasticsearchControllerTest {
         // 검색된 상품이 키워드를 포함하는지 확인
         List<ProductDocument> products = productPage.getContent();
         for (int i = 0; i < products.size(); i++) {
-            resultActions.andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(Matchers.containsString("아이폰")));
+            resultActions.andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(Matchers.anyOf(
+                    Matchers.containsString("아이폰"),
+                    Matchers.containsString("iPhone")
+            )));
         }
     }
 

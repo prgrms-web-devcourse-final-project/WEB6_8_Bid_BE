@@ -39,8 +39,9 @@ class ProductElasticRepositoryTest {
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
 
         // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getProductName()).contains("아이폰");
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent())
+                .allMatch(item -> item.getProductName().contains("아이폰") || item.getProductName().contains("iPhone"));
     }
 
     @Test
@@ -258,6 +259,7 @@ class ProductElasticRepositoryTest {
 
         // then
         assertThat(result.getContent()).isNotEmpty();
-        assertThat(result.getContent().get(0).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
+        assertThat(result.getContent().get(0).getProductName()).isEqualTo("iPhone 15 Pro");
+        assertThat(result.getContent().get(1).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
     }
 }

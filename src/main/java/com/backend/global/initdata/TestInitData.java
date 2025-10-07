@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-@Profile("dev")
+@Profile("test")
 @Configuration
 @RequiredArgsConstructor
 public class TestInitData {
