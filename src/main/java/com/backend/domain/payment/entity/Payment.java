@@ -1,6 +1,8 @@
 package com.backend.domain.payment.entity;
 
+import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.member.entity.Member;
+import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -54,8 +56,9 @@ public class Payment extends BaseEntity {
     @Column(length = 50, nullable = false)
     private String provider;                         // PG 이름(예: toss)..
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 16, nullable = false)
-    private String methodType;                       // 수단 종류 (CARD/BANK)...
+    private PaymentMethodType methodType;                       // 수단 종류 (CARD/BANK)...
 
     @Column(name = "idempotency_key", length = 64, nullable = false) // 재시도/중복 클릭 방지..
     private String idempotencyKey;                   // 중복 결제 막는 키(멱등성)..
@@ -78,4 +81,8 @@ public class Payment extends BaseEntity {
 
     @Column(length=4)
     private String bankLast4;   // 계좌 끝 4자리
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_transaction_id")
+    private CashTransaction cashTransaction;
 }

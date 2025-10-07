@@ -1,7 +1,7 @@
 package com.backend.domain.payment.service;
 
-import com.backend.domain.payment.dto.PgChargeResultResponse;
-import com.backend.domain.payment.dto.TossIssueBillingKeyResponse;
+import com.backend.domain.payment.dto.response.PgChargeResultResponse;
+import com.backend.domain.payment.dto.response.TossIssueBillingKeyResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

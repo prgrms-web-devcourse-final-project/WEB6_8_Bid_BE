@@ -1,4 +1,4 @@
-package com.backend.domain.payment.dto;
+package com.backend.domain.payment.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
