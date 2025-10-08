@@ -15,6 +15,18 @@ public enum RsStatus {
     FORBIDDEN(403, "권한 없음"),
     NOT_FOUND(404, "리소스를 찾을 수 없음"),
     CONFLICT(409, "중복된 요청"),
+
+    // Member
+    MEMBER_NOT_FOUND(404, "사용자를 찾을 수 없음"),
+
+    // Product
+    PRODUCT_NOT_FOUND(404, "상품을 찾을 수 없음"),
+
+    // Review
+    REVIEW_NOT_FOUND(404, "리뷰를 찾을 수 없음"),
+    REVIEW_ALREADY_EXISTS(409, "이미 리뷰를 작성한 상품입니다"),
+    REVIEW_ACCESS_DENIED(403, "리뷰에 대한 권한이 없습니다"),
+
     
     // 서버 오류
     INTERNAL_SERVER_ERROR(500, "서버 내부 오류"),
