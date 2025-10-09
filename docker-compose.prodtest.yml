@@ -83,9 +83,7 @@ services:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - TZ=Asia/Seoul
     volumes:
-      - ./certs:/usr/share/elasticsearch/config/certs:ro
       - elasticsearch_data:/usr/share/elasticsearch/data
-      - elasticsearch_config:/usr/share/elasticsearch/config/analysis
     networks:
       - common
     ports:
