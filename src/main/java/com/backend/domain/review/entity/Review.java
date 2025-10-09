@@ -8,8 +8,8 @@ import lombok.*;
 
 @Entity
 @Table(name = "reviews")
-@Getter @Setter
-@NoArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class Review extends BaseEntity {
@@ -21,10 +21,15 @@ public class Review extends BaseEntity {
     private Boolean isSatisfied;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewer_id", insertable = false, updatable = false)
+    @JoinColumn(name = "reviewer_id")
     private Member reviewer;
+
+    public void update(String comment, Boolean isSatisfied) {
+        this.comment = comment;
+        this.isSatisfied = isSatisfied;
+    }
 }

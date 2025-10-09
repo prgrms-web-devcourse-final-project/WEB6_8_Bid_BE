@@ -1,4 +1,4 @@
-package com.backend.domain.cash.constant;
+package com.backend.domain.cash.enums;
 
 public enum CashTxType {
     DEPOSIT,  // 입금(돈 들어옴)..

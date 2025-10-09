@@ -1,14 +1,16 @@
 package com.backend.domain.payment.service;
 
-import com.backend.domain.cash.constant.CashTxType;
-import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.constant.PaymentStatus;
-import com.backend.domain.payment.dto.*;
+import com.backend.domain.payment.dto.request.PaymentRequest;
+import com.backend.domain.payment.dto.response.*;
+import com.backend.domain.payment.enums.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
@@ -78,7 +80,7 @@ public class PaymentService {
                 .currency("KRW")                                   // 통화 고정..
                 .status(PaymentStatus.PENDING)                     // 대기 상태..
                 .provider(pm.getProvider())                        // PG 스냅샷..
-                .methodType(pm.getType().name())                   // "CARD"/"BANK"..
+                .methodType(PaymentMethodType.CARD)                // "CARD"/"BANK"..
                 .idempotencyKey(req.getIdempotencyKey())           // 멱등키..
 
                 // 표시용 스냅샷..
@@ -170,7 +172,7 @@ public class PaymentService {
     // 내 결제 단건 상세..
     private MyPaymentListItemResponse toListItem(Payment p) {
         String provider   = p.getProvider();
-        String methodType = p.getMethodType();
+        PaymentMethodType methodType = p.getMethodType();
 
         // 결제 건에 연결된 입금 원장 찾아서 id/balanceAfter 세팅..
         var txOpt = cashTransactionRepository

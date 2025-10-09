@@ -1,4 +1,4 @@
-package com.backend.domain.payment.dto;
+package com.backend.domain.payment.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

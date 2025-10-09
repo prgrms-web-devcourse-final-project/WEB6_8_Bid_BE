@@ -1,5 +1,6 @@
-package com.backend.domain.payment.dto;
+package com.backend.domain.payment.dto.response;
 
+import com.backend.domain.payment.enums.PaymentMethodType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,7 +17,7 @@ public class PaymentResponse {
     private final Long amount;            // 충전 금액(원)..
     private final String currency;        // "KRW"..
     private final String provider;        // 예: "toss"..
-    private final String methodType;      // "CARD"/"BANK"..
+    private final PaymentMethodType methodType;      // "CARD"/"BANK"..
     private final String transactionId;   // PG 트랜잭션 ID..
     private final LocalDateTime createdAt;       // 생성/승인 시각(문자열, Z 유지)..
     private final LocalDateTime paidAt;          // 성공 승인 시각..

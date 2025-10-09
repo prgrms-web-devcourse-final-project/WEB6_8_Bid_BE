@@ -1,7 +1,7 @@
 package com.backend.domain.payment.entity;
 
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.constant.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,7 +26,7 @@ public class PaymentMethod extends BaseEntity {
     // 결제수단의 종류(CARD/BANK)...
     @Enumerated(EnumType.STRING)
     @Column(length = 16, nullable = false)
-    private PaymentMethodType type;                                    // 카드인지, 계좌인지..
+    private PaymentMethodType methodType;                                    // 카드인지, 계좌인지..
 
     // 공통 정보..
     @Column(length = 200)
