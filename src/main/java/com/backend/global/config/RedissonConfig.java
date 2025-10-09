@@ -6,11 +6,11 @@ import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
-/**
- * RedissonClient Configuration
- */
+// 테스트 환경에서는 TestRedisConfiguration 사용
 @Configuration
+@Profile("!test & !bidtest")
 public class RedissonConfig {
     
     @Value("${spring.data.redis.host}")

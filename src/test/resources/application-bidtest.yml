@@ -1,0 +1,19 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
+  data:
+    elasticsearch:
+      repositories:
+        enabled: false
+
+jwt:
+  secret: test-secret-key-for-bidservice-test-minimum-256-bits-long
+  access_token_expiration_minutes: 60
+  refresh_token_expiration_days: 7
+
+file:
+  upload:
+    path: /tmp/test-uploads
+    base-url: http://localhost:8080/uploads

@@ -41,12 +41,13 @@ public class BidService {
     private final ApplicationEventPublisher eventPublisher;
 
     // ======================================= create methods ======================================= //
+    @DistributedLock(key = "'product:' + #productId", waitTime = 10, leaseTime = 5)
     public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request) {
-        return createBidWithLock(productId, bidderId, request);
+        return createBidInternal(productId, bidderId, request);
     }
 
-    @DistributedLock(key = "'product:' + #productId")
-    public RsData<BidResponseDto> createBidWithLock(Long productId, Long bidderId, BidRequestDto request) {
+    @Transactional
+    public RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
         // Product/Member 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> ServiceException.notFound("존재하지 않는 상품입니다."));

@@ -49,7 +49,7 @@ public class DistributedLockAop {
             
             if (!available) {
                 log.warn("Redisson Lock 획득 실패 - method: {}, key: {}", method.getName(), key);
-                return false;
+                throw new RuntimeException("현재 다른 요청을 처리 중입니다. 잠시 후 다시 시도해주세요.");
             }
             
             log.debug("Redisson Lock 획득 성공 - method: {}, key: {}", method.getName(), key);
