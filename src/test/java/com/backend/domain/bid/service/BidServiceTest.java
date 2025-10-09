@@ -9,7 +9,7 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;

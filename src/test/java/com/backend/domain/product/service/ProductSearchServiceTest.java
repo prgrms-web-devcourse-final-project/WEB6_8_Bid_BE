@@ -6,7 +6,7 @@ import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
-import com.backend.domain.product.repository.ProductElasticRepository;
+import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

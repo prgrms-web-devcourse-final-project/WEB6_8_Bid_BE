@@ -1,4 +1,4 @@
-package com.backend.domain.product.repository;
+package com.backend.domain.product.repository.jpa;
 
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.entity.Product;

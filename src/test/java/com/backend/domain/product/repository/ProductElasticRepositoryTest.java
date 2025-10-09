@@ -3,6 +3,7 @@ package com.backend.domain.product.repository;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.*;
+import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

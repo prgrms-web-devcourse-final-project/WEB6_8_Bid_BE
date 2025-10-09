@@ -10,7 +10,7 @@ import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.event.helper.ProductChangeTracker;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.response.RsData;
 import com.backend.global.websocket.service.WebSocketService;
