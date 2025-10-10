@@ -33,11 +33,6 @@ spring:
         default_batch_fetch_size: 100 # N+1 문제 해결
     open-in-view: false
 
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
   elasticsearch:
     uris: http://localhost:9200
     connection-timeout: 5s
