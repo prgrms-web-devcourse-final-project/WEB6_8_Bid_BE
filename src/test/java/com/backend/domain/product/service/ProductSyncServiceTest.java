@@ -111,7 +111,7 @@ class ProductSyncServiceTest {
         doNothing().when(productSearchService).indexProduct(any(ProductDocument.class));
 
         // when
-        productSyncService.reindexAllProducts();
+        productSyncService.indexAllProducts();
 
         // then
         verify(productRepository, times(1)).count();
@@ -126,7 +126,7 @@ class ProductSyncServiceTest {
         when(productRepository.count()).thenReturn(0L);
 
         // when
-        productSyncService.reindexAllProducts();
+        productSyncService.indexAllProducts();
 
         // then
         verify(productRepository, times(1)).count();
@@ -155,7 +155,7 @@ class ProductSyncServiceTest {
                 .when(productSearchService).indexProduct(any(ProductDocument.class));
 
         // when
-        productSyncService.reindexAllProducts();
+        productSyncService.indexAllProducts();
 
         // then
         verify(productRepository, times(1)).count();
@@ -185,7 +185,7 @@ class ProductSyncServiceTest {
         doNothing().when(productSearchService).indexProduct(any());
 
         // when
-        productSyncService.reindexAllProducts();
+        productSyncService.indexAllProducts();
 
         // then
         verify(productRepository, times(1)).count();
