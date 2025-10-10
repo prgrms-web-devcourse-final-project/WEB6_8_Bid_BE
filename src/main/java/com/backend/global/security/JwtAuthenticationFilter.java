@@ -28,13 +28,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         
-        // 테스트 API는 JWT 검증 건너뛰기
-        String path = request.getRequestURI();
-        if (path.startsWith("/api/v1/bids/") || path.startsWith("/notifications/") || path.startsWith("/api/test/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-        
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {

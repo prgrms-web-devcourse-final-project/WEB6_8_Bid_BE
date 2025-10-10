@@ -8,7 +8,6 @@ import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.enums.SaleStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -46,18 +45,8 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
         // 필터 적용
         applyFilters(boolQuery, search);
 
-        return createPagedQuery(boolQuery, pageable);
-    }
-
-    @Override
-    public Page<ProductDocument> searchProductsByMember(Pageable pageable, Long actorId, SaleStatus status) {
-        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
-
-        // 필터 적용
-        if (actorId != null) boolQuery.filter(f -> f.term(t -> t.field("sellerId").value(actorId)));
-        if (status != null) boolQuery.filter(f -> f.term(t -> t.field("status").value(status.getDisplayName())));
-
-        return createPagedQuery(boolQuery, pageable);
+        boolean hasKeyword = search.keyword() != null && !search.keyword().isBlank();
+        return createPagedQuery(boolQuery, pageable, hasKeyword);
     }
 
 
@@ -72,9 +61,9 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
      * @param pageable 페이징 정보
      * @return 페이징된 검색 결과
      */
-    private Page<ProductDocument> createPagedQuery(BoolQuery.Builder boolQuery, Pageable pageable) {
+    private Page<ProductDocument> createPagedQuery(BoolQuery.Builder boolQuery, Pageable pageable, boolean hasKeyword) {
         // 정렬 적용
-        List<SortOptions> sortOptions = applySorting(pageable.getSort());
+        List<SortOptions> sortOptions = applySorting(pageable.getSort(), hasKeyword);
 
         // 검색 쿼리 생성
         Query query = NativeQuery.builder()
@@ -158,29 +147,32 @@ public class ProductElasticRepositoryImpl implements ProductElasticRepositoryCus
      * @param sort Spring Data Sort
      * @return Elasticsearch SortOptions 리스트
      */
-    private List<SortOptions> applySorting(Sort sort) {
+    private List<SortOptions> applySorting(Sort sort, boolean hasKeyword) {
         List<SortOptions> sortOptions = new ArrayList<>();
 
-        // Sort의 각 Order를 SortOptions로 변환
-        for (Sort.Order order : sort) {
-            SortOptions sortOption = SortOptions.of(s -> s
-                    .field(f -> f
-                            .field(order.getProperty())
-                            .order(order.isAscending() ? SortOrder.Asc : SortOrder.Desc)
-                    )
-            );
-            sortOptions.add(sortOption);
+        // 1. 사용자가 명시적으로 정렬을 지정한 경우
+        if (sort.isSorted()) {
+            for (Sort.Order order : sort) {
+                sortOptions.add(SortOptions.of(s -> s
+                        .field(f -> f
+                                .field(order.getProperty())
+                                .order(order.isAscending() ? SortOrder.Asc : SortOrder.Desc)
+                        )
+                ));
+            }
+        }
+        // 2. 정렬 지정 안했지만 키워드 검색이 있는 경우 -> score 정렬
+        else if (hasKeyword) {
+            sortOptions.add(SortOptions.of(s -> s.score(sc -> sc.order(SortOrder.Desc))));
         }
 
-        // 정렬이 있을 때만 productId 타이브레이커 추가
-        if (!sortOptions.isEmpty()) {
-            sortOptions.add(SortOptions.of(s -> s
-                    .field(f -> f
-                            .field("productId")
-                            .order(SortOrder.Desc)
-                    )
-            ));
-        }
+        // 타이브레이커 추가 (키워드도 업고, 정렬 기준도 없으면 최신순 정렬)
+        sortOptions.add(SortOptions.of(s -> s
+                .field(f -> f
+                        .field("productId")
+                        .order(SortOrder.Desc)
+                )
+        ));
 
         return sortOptions;
     }

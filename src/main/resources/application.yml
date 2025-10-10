@@ -33,11 +33,6 @@ spring:
         default_batch_fetch_size: 100 # N+1 문제 해결
     open-in-view: false
 
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
   elasticsearch:
     uris: http://localhost:9200
     connection-timeout: 5s
@@ -61,3 +56,6 @@ management:
       probes:
         enabled: true                 # /actuator/health/{liveness,readiness} 활성화
       show-details: never             # 프로브 용도면 never 권장(민감정보 차단)
+  health:
+    redis:
+      enabled: false                  # Redis health indicator 비활성화

@@ -7,7 +7,7 @@ spring:
       - org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRepositoriesAutoConfiguration
 
   datasource:
-    url: "jdbc:mysql://mysql_1:3306/${SPRING__DATASOURCE__URL___DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
+    url: "jdbc:mysql://mysql_1:3306/${SPRING_DATASOURCE_URL___DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul"
     username: lldjlocal
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -22,12 +22,16 @@ spring:
   data:
     redis:
       host: redis_1
-      password: ${SPRING__DATA__REDIS__PASSWORD}
+      port: 6379
+      password: ${SPRING_DATA_REDIS_PASSWORD}
+      lettuce:
+        pool:
+          enabled: true
 
   elasticsearch:
     uris: http://elasticsearch_1:9200
     username: elastic
-    password: ${SPRING__DATA__REDIS__PASSWORD}
+    password: ${SPRING_DATA_REDIS_PASSWORD}
 
 jwt:
   secret: ${JWT_SECRET}
