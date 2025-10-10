@@ -29,8 +29,8 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 COPY --from=builder /app/.env .env
 
 # Elasticsearch 사전 파일을 별도 경로로 복사
-COPY --from=builder /app/src/main/resources/elasticsearch/user_dictionary.txt /es-dict/user_dictionary.txt
-COPY --from=builder /app/src/main/resources/elasticsearch/synonyms.txt /es-dict/synonyms.txt
+# COPY --from=builder /app/src/main/resources/elasticsearch/user_dictionary.txt /es-dict/user_dictionary.txt
+# COPY --from=builder /app/src/main/resources/elasticsearch/synonyms.txt /es-dict/synonyms.txt
 
 RUN mkdir /data
 

@@ -340,7 +340,6 @@ echo "${var.github_access_token_1}" | docker login ghcr.io -u ${var.github_acces
 # Elasticsearch를 위한 빌드 환경 설정 및 Nori 플러그인 영구 저장 디렉토리 생성
 mkdir -p /dockerProjects/elasticsearch_1/volumes/plugins
 mkdir -p /bid_es_data
-mkdir -p /bid_es_config/analysis
 
 # Dockerfile 생성
 cat << 'ES_DOCKERFILE' > /tmp/Dockerfile-ES
@@ -367,7 +366,6 @@ docker run -d \
   -e TZ=Asia/Seoul \
   -v /bid_es_data:/usr/share/elasticsearch/data \
   -v /dockerProjects/elasticsearch_1/volumes/plugins:/usr/share/elasticsearch/plugins \
-  -v /bid_es_config/analysis:/usr/share/elasticsearch/config/analysis \
   elasticsearch-nori-local:9.1.3
 
 # Elasticsearch가 완전히 시작될 때까지 대기
