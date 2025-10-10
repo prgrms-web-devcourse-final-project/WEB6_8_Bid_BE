@@ -115,22 +115,17 @@ public class Product extends BaseEntity {
         }
     }
 
-    /**
-     * 상품 정보 수정
-     * - null이 아닌 필드만 업데이트
-     * - 경매 시작 전에만 수정 가능 (호출 전에 검증 필요)
-     *
-     * @param validatedRequest 검증된 수정 요청 (변경할 필드만 non-null)
-     */
-    public void modify(ProductModifyRequest validatedRequest) {
-        if (validatedRequest.name() != null) this.productName = validatedRequest.name();
-        if (validatedRequest.description() != null) this.description = validatedRequest.description();
-        if (validatedRequest.categoryId() != null) this.category = ProductCategory.fromId(validatedRequest.categoryId());
-        if (validatedRequest.initialPrice() != null) this.initialPrice = validatedRequest.initialPrice();
-        if (validatedRequest.auctionStartTime() != null) this.startTime = validatedRequest.auctionStartTime();
-        if (validatedRequest.auctionDuration() != null) this.duration = AuctionDuration.fromValue(validatedRequest.auctionDuration());
-        if (validatedRequest.deliveryMethod() != null) this.deliveryMethod = validatedRequest.deliveryMethod();
-        if (validatedRequest.location() != null) this.location = validatedRequest.location();
+    // 상품 정보 수정
+    public void modify(ProductModifyRequest request) {
+        this.productName = request.name();
+        this.description = request.description();
+        this.category = ProductCategory.fromId(request.categoryId());
+        this.initialPrice = request.initialPrice();
+        this.startTime = request.auctionStartTime();
+        this.duration = AuctionDuration.fromValue(request.auctionDuration());
+        this.endTime = this.startTime.plusHours(this.duration);
+        this.deliveryMethod = request.deliveryMethod();
+        this.location = request.location();
     }
 
     // ======================================= image methods ======================================= //

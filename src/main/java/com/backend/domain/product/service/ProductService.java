@@ -217,7 +217,6 @@ public class ProductService {
      * 상품 수정 요청 검증
      * - 경매 시작 후 수정 불가 검증
      * - 배송 방법에 따른 위치 정보 검증
-     * - 변경되지 않은 필드는 null로 설정 (불필요한 업데이트 방지)
      *
      * @param product 기존 상품 정보
      * @param request 수정 요청 정보
@@ -233,26 +232,20 @@ public class ProductService {
         // 배송 방법 변경 시 위치 정보 검증
         validateLocation(request.location(), request.deliveryMethod());
 
-        // 각 필드의 변경 여부 확인
-        // 기존 값과 동일한 경우 null로 설정 (업데이트 스킵)
-        String newTitle = request.name();
-        String newDescription = request.description();
-        Integer newCategoryId = request.categoryId();
-        Long newInitialPrice = request.initialPrice();
-        LocalDateTime newAuctionStartTime = request.auctionStartTime();
-        String newAuctionDuration = request.auctionDuration();
-        DeliveryMethod newDeliveryMethod = request.deliveryMethod();
-        String newLocation = request.location();
+        // request 필드가 null일 경우, 기존 객체의 필드로 덮어쓰기
+        return new ProductModifyRequest(
+                (request.name() != null) ? request.name() : product.getProductName(),
+                (request.description() != null) ? request.description() : product.getDescription(),
+                (request.categoryId() != null) ? request.categoryId() : product.getCategory().getId(),
+                (request.initialPrice() != null) ? request.initialPrice() : product.getInitialPrice(),
+                (request.auctionStartTime() != null) ? request.auctionStartTime() : product.getStartTime(),
+                (request.auctionDuration() != null) ? request.auctionDuration() : getDurationString(product),
+                (request.deliveryMethod() != null) ? request.deliveryMethod() : product.getDeliveryMethod(),
+                (request.location() != null) ? request.location() : product.getLocation()
+        );
+    }
 
-        if (newTitle != null && newTitle.equals(product.getProductName())) newTitle = null;
-        if (newDescription != null && newDescription.equals(product.getDescription())) newDescription = null;
-        if (newCategoryId != null && ProductCategory.fromId(newCategoryId).equals(product.getCategory())) newCategoryId = null;
-        if (newInitialPrice != null && newInitialPrice.equals(product.getInitialPrice())) newInitialPrice = null;
-        if (newAuctionStartTime != null && newAuctionStartTime.equals(product.getStartTime())) newAuctionStartTime = null;
-        if (newAuctionDuration != null && AuctionDuration.fromValue(newAuctionDuration).equals(product.getDuration())) newAuctionDuration = null;
-        if (newDeliveryMethod != null && newDeliveryMethod.equals(product.getDeliveryMethod())) newDeliveryMethod = null;
-        if (newLocation != null && newLocation.equals(product.getLocation())) newLocation = null;
-
-        return new ProductModifyRequest(newTitle, newDescription, newCategoryId, newInitialPrice, newAuctionStartTime, newAuctionDuration, newDeliveryMethod, newLocation);
+    private String getDurationString(Product product) {
+        return product.getDuration() == 24 ? "24시간" : "48시간";
     }
 }
