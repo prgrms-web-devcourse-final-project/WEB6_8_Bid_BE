@@ -1,7 +1,7 @@
 package com.backend.global.testdata.controller;
 
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.testdata.generator.TestDataGenerator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

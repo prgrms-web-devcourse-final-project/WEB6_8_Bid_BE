@@ -1,6 +1,6 @@
 package com.backend.global.elasticsearch;
 
-import com.backend.domain.product.repository.ProductElasticRepository;
+import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import com.backend.domain.product.service.ProductSearchService;
 import com.backend.domain.product.service.ProductSyncService;
 import org.springframework.boot.test.context.TestConfiguration;

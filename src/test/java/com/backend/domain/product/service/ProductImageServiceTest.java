@@ -3,7 +3,7 @@ package com.backend.domain.product.service;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.exception.ProductException;
-import com.backend.domain.product.repository.ProductImageRepository;
+import com.backend.domain.product.repository.jpa.ProductImageRepository;
 import com.backend.global.file.service.LocalFileService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

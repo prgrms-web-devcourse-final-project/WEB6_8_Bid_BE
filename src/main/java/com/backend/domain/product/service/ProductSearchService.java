@@ -7,7 +7,7 @@ import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
-import com.backend.domain.product.repository.ProductElasticRepository;
+import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

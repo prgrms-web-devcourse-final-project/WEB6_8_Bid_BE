@@ -1,4 +1,4 @@
-package com.backend.domain.product.repository;
+package com.backend.domain.product.repository.elasticsearch;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
