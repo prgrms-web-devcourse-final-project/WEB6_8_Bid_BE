@@ -6,6 +6,7 @@
     "productName": {
       "type": "text",
       "analyzer": "nori_analyzer",
+      "search_analyzer": "nori_search_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword"
@@ -45,6 +46,7 @@
     "location": {
       "type": "text",
       "analyzer": "nori_analyzer",
+      "search_analyzer": "nori_search_analyzer",
       "fields": {
         "keyword": {
           "type": "keyword"
@@ -60,7 +62,8 @@
     },
     "sellerNickname": {
       "type": "text",
-      "analyzer": "nori_analyzer"
+      "analyzer": "nori_analyzer",
+      "search_analyzer": "nori_search_analyzer"
     },
     "bidderCount": {
       "type": "long"

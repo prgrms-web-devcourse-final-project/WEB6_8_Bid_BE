@@ -52,7 +52,7 @@ public class BaseInitData {
     ApplicationRunner baseInitDataApplicationRunner() {
         return args -> {
             self.work1();
-            productSyncService.reindexAllProducts();
+            productSyncService.indexAllProducts();
         };
     }
 
