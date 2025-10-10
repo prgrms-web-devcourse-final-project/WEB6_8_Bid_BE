@@ -239,7 +239,6 @@ jobs:
               -e JWT_SECRET="${JWT_SECRET}" \
               -e SPRING_DATASOURCE_URL___DB_NAME="${SPRING_DATASOURCE_URL___DB_NAME}" \
               -v /bid_data:/data \
-            #  -v /bid_es_config/analysis:/es-dict \
               "${IMAGE}"
             
             # 컨테이너에서 호스트로 사전 파일 복사
