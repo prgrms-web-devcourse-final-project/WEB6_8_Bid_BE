@@ -34,11 +34,6 @@ jwt:
   access_token_expiration_minutes: ${JWT_ACCESS_TOKEN_EXPIRATION:30}
   refresh_token_expiration_days: ${JWT_REFRESH_TOKEN_EXPIRATION:7}
 
-management:
-  health:
-    redis:
-      enabled: false
-
 file:
   upload:
     path: /data
