@@ -61,3 +61,6 @@ management:
       probes:
         enabled: true                 # /actuator/health/{liveness,readiness} 활성화
       show-details: never             # 프로브 용도면 never 권장(민감정보 차단)
+  health:
+    redis:
+      enabled: false                  # Redis health indicator 비활성화
