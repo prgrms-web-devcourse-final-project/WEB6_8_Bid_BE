@@ -7,7 +7,7 @@ import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.*;
 import com.backend.domain.product.exception.ProductException;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

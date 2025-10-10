@@ -1,4 +1,4 @@
-package com.backend.domain.product.repository;
+package com.backend.domain.product.repository.elasticsearch;
 
 import com.backend.domain.product.document.ProductDocument;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;

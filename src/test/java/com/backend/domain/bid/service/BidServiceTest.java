@@ -9,6 +9,7 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -51,7 +52,7 @@ class BidServiceTest {
 
     @Autowired
     private MemberRepository memberRepository;
-    
+
     @Autowired
     private EntityManager entityManager;
 
@@ -68,22 +69,22 @@ class BidServiceTest {
         bidRepository.deleteAll();
         productRepository.deleteAll();
         memberRepository.deleteAll();
-        
+
         // 새로운 테스트 데이터 생성
         createTestMembers();
         createTestProducts();
-        
+
         // 다시 조회해서 사용
         bidder1 = memberRepository.findByNickname("테스트입찰자1").orElseThrow();
         bidder2 = memberRepository.findByNickname("테스트입찰자2").orElseThrow();
         seller = memberRepository.findByNickname("테스트판매자").orElseThrow();
-        
+
         List<Product> products = productRepository.findAll();
         activeProduct = products.stream()
                 .filter(p -> p.getProductName().equals("테스트상품1"))
                 .findFirst()
                 .orElseThrow();
-        
+
         productWithBids = products.stream()
                 .filter(p -> p.getProductName().equals("입찰있는상품"))
                 .findFirst()
@@ -101,7 +102,7 @@ class BidServiceTest {
                 .authority("ROLE_USER")
                 .build();
         memberRepository.save(bidder1);
-        
+
         bidder2 = Member.builder()
                 .email("test-bidder2@test.com")
                 .password("password")
@@ -111,7 +112,7 @@ class BidServiceTest {
                 .authority("ROLE_USER")
                 .build();
         memberRepository.save(bidder2);
-        
+
         seller = Member.builder()
                 .email("test-seller@test.com")
                 .password("password")
@@ -139,7 +140,7 @@ class BidServiceTest {
                 .seller(seller)
                 .testBuild();
         productRepository.save(activeProduct);
-        
+
         productWithBids = Product.testBuilder()
                 .productName("입찰있는상품")
                 .description("이미 입찰이 있는 상품입니다")
@@ -220,7 +221,7 @@ class BidServiceTest {
         // Given: 먼저 높은 입찰을 생성
         BidRequestDto highBid = new BidRequestDto(1200000L);
         bidService.createBid(productWithBids.getId(), bidder2.getId(), highBid);
-        
+
         // 현재가보다 낮은 금액으로 입찰 시도
         BidRequestDto lowBidRequest = new BidRequestDto(1100000L);
 

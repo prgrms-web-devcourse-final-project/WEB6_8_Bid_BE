@@ -2,7 +2,7 @@ package com.backend.domain.product.service;
 
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

@@ -7,7 +7,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -116,7 +116,7 @@ class ApiV1BidControllerTest {
 
     private void createTestProducts() {
         Member seller = memberRepository.findByNickname("테스트판매자").orElseThrow();
-        
+
         Product product = Product.testBuilder()
                 .productName("테스트상품1")
                 .description("테스트용 상품입니다")

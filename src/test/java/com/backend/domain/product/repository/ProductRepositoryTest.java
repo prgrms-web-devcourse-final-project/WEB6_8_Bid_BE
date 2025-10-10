@@ -5,6 +5,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

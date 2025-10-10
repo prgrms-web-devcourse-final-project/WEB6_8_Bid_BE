@@ -1,4 +1,4 @@
-package com.backend.domain.product.repository;
+package com.backend.domain.product.repository.jpa;
 
 import com.backend.domain.product.entity.ProductImage;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -18,7 +18,7 @@ import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.repository.PaymentRepository;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.domain.product.service.ProductSyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
