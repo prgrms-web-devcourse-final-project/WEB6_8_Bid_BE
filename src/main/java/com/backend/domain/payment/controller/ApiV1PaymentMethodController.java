@@ -11,6 +11,11 @@ import com.backend.domain.payment.dto.response.PaymentMethodResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,10 +46,21 @@ public class ApiV1PaymentMethodController {
     @PostMapping
     @Operation(summary = "결제 수단 등록", description = "type: card, bank \n\n" + "CARD 등록: alias, isDefault, brand, last4, expMonth, expYear만 보내고 bankCode, bankName, acctLast4는 넣지마세요!\n\n" +
             "BANK 등록: alias, isDefault, bankCode(선택), bankName, acctLast4만 보내고 brand, last4, expMonth, expYear는 넣지마세요!")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "등록 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "409", description = "별명(alias) 중복 등 충돌",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     public RsData<PaymentMethodResponse> create(
-            @AuthenticationPrincipal User user,
+            @Parameter(hidden = true) @AuthenticationPrincipal User user,
             @RequestBody PaymentMethodCreateRequest request
     ) {
+
         Member actor = getActor(user);
         PaymentMethodResponse data = paymentMethodService.create(actor.getId(), request);
 
@@ -53,6 +69,12 @@ public class ApiV1PaymentMethodController {
 
     @GetMapping
     @Operation(summary = "결제 수단 다건 조회", description = "로그인한 사용자의 결제 수단 목록을 반환합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     @Transactional(readOnly = true)
     public RsData<List<PaymentMethodResponse>> list(@AuthenticationPrincipal User user) {
         Member actor = getActor(user);
@@ -63,8 +85,18 @@ public class ApiV1PaymentMethodController {
 
     @GetMapping("/{id}")
     @Operation(summary = "결제 수단 단건 조회", description = "로그인한 사용자의 결제 수단 단건을 반환합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "단건 조회 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "403", description = "권한 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "결제 수단 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     public RsData<PaymentMethodResponse> getOne(
-            @AuthenticationPrincipal User user,
+            @Parameter(hidden = true) @AuthenticationPrincipal User user,
             @PathVariable("id") Long paymentMethodId
     ) {
         Member actor = getActor(user);
@@ -76,8 +108,22 @@ public class ApiV1PaymentMethodController {
     @PutMapping("/{id}")
     @Operation(summary = "결제 수단 수정", description = "CARD 수정: alias, isDefault, brand, last4, expMonth, expYear만 보내고 bankCode, bankName, acctLast4는 삭제\n\n" +
             "BANK 수정: alias, isDefault, bankCode(선택), bankName, acctLast4만 보내고 brand, last4, expMonth, expYear는 삭제")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "403", description = "권한 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "결제수단 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "409", description = "별명(alias) 중복 등 충돌",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     public RsData<PaymentMethodResponse> edit(
-            @AuthenticationPrincipal User user,
+            @Parameter(hidden = true) @AuthenticationPrincipal User user,
             @PathVariable("id") Long paymentMethodId,
             @RequestBody PaymentMethodEditRequest request
     ) {
@@ -89,8 +135,18 @@ public class ApiV1PaymentMethodController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "결제 수단 삭제", description = "기본 수단 삭제 시 최근 생성 수단으로 자동 승계합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "삭제 성공",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "403", description = "권한 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class))),
+            @ApiResponse(responseCode = "404", description = "결제수단 없음",
+                    content = @Content(schema = @Schema(implementation = RsData.class)))
+    })
     public RsData<PaymentMethodDeleteResponse> delete(
-            @AuthenticationPrincipal User user,
+            @Parameter(hidden = true) @AuthenticationPrincipal User user,
             @PathVariable("id") Long paymentMethodId
     ) {
         Member actor = getActor(user);

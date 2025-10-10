@@ -272,6 +272,7 @@ public class PaymentMethodService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
 
+        // 본인 소유 + 삭제 안 된 수단 찾기..
         PaymentMethod target = paymentMethodRepository.findByIdAndMemberAndDeletedFalse(paymentMethodId, member)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
 
@@ -281,6 +282,7 @@ public class PaymentMethodService {
 
         Long newDefaultId = null;
         if (wasDefault) {
+            // 기본이 없어졌으니, 가장 최근 만든 수단을 새 기본으로..
             newDefaultId = paymentMethodRepository.findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member)
                     .map(pm -> { pm.setIsDefault(true); return pm.getId(); })
                     .orElse(null);
@@ -324,7 +326,4 @@ public class PaymentMethodService {
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
-
-
-
 }
