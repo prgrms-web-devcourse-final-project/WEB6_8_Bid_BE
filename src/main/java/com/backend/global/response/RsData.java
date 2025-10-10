@@ -32,4 +32,8 @@ public record RsData<T>(
     public static <T> RsData<T> created(String msg, T data) {
         return new RsData<>(RsStatus.CREATED.getResultCode(), RsStatus.CREATED.getStatusCode(), msg, data);
     }
+
+    public static <T> RsData<T> of(String resultCode, String msg, T data) {
+        return new RsData<>(resultCode, msg, data);
+    }
 }

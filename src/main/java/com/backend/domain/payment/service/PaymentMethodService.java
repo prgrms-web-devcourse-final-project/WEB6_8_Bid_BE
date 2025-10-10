@@ -2,11 +2,11 @@ package com.backend.domain.payment.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.payment.constant.PaymentMethodType;
-import com.backend.domain.payment.dto.PaymentMethodCreateRequest;
-import com.backend.domain.payment.dto.PaymentMethodDeleteResponse;
-import com.backend.domain.payment.dto.PaymentMethodEditRequest;
-import com.backend.domain.payment.dto.PaymentMethodResponse;
+import com.backend.domain.payment.enums.PaymentMethodType;
+import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
+import com.backend.domain.payment.dto.response.PaymentMethodDeleteResponse;
+import com.backend.domain.payment.dto.request.PaymentMethodEditRequest;
+import com.backend.domain.payment.dto.response.PaymentMethodResponse;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import lombok.RequiredArgsConstructor;
@@ -107,7 +107,7 @@ public class PaymentMethodService {
 
         PaymentMethod entity = PaymentMethod.builder()
                 .member(member)
-                .type(type)
+                .methodType(type)
                 .token(req.getToken())
                 .alias(req.getAlias())
                 .isDefault(shouldBeDefault)
@@ -175,7 +175,7 @@ public class PaymentMethodService {
         req.setAcctLast4(nvlBlankToNull(req.getAcctLast4()));
 
         // 타입 불일치 필드가 들어오면 즉시 400..
-        ensureNoCrossTypeFields(entity.getType(), req);
+        ensureNoCrossTypeFields(entity.getMethodType(), req);
 
         // 별칭..
         if (req.getAlias() != null) {
@@ -199,7 +199,7 @@ public class PaymentMethodService {
         }
 
         // 타입별 부분 수정..
-        switch (entity.getType()) {
+        switch (entity.getMethodType()) {
             case CARD -> {
                 if (req.getBrand()    != null) entity.setBrand(req.getBrand());
                 if (req.getLast4()    != null) entity.setLast4(req.getLast4());
@@ -272,6 +272,7 @@ public class PaymentMethodService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
 
+        // 본인 소유 + 삭제 안 된 수단 찾기..
         PaymentMethod target = paymentMethodRepository.findByIdAndMemberAndDeletedFalse(paymentMethodId, member)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
 
@@ -281,6 +282,7 @@ public class PaymentMethodService {
 
         Long newDefaultId = null;
         if (wasDefault) {
+            // 기본이 없어졌으니, 가장 최근 만든 수단을 새 기본으로..
             newDefaultId = paymentMethodRepository.findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member)
                     .map(pm -> { pm.setIsDefault(true); return pm.getId(); })
                     .orElse(null);
@@ -299,7 +301,7 @@ public class PaymentMethodService {
         return PaymentMethodResponse.builder()
                 .id(e.getId())
 
-                .type(e.getType().name())
+                .type(e.getMethodType().name())
                 .alias(e.getAlias())
                 .isDefault(e.getIsDefault())
 
@@ -324,7 +326,4 @@ public class PaymentMethodService {
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
-
-
-
 }

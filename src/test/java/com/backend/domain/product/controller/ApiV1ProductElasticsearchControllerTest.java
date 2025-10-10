@@ -1,13 +1,11 @@
 package com.backend.domain.product.controller;
 
-import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.enums.ProductSearchSortType;
-import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.service.ProductSearchService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -116,7 +113,10 @@ class ApiV1ProductElasticsearchControllerTest {
         // 검색된 상품이 키워드를 포함하는지 확인
         List<ProductDocument> products = productPage.getContent();
         for (int i = 0; i < products.size(); i++) {
-            resultActions.andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(Matchers.containsString("아이폰")));
+            resultActions.andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(Matchers.anyOf(
+                    Matchers.containsString("아이폰"),
+                    Matchers.containsString("iPhone")
+            )));
         }
     }
 
@@ -301,175 +301,5 @@ class ApiV1ProductElasticsearchControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.data.pageable.totalElements").value(0))
                 .andExpect(jsonPath("$.data.content.length()").value(0));
-    }
-
-    @Test
-    @DisplayName("내 상품 목록 조회 - Elasticsearch")
-    @WithMockUser("user1@example.com")
-    void getMyProductsByElasticsearch() throws Exception {
-        // when
-        ResultActions resultActions = mvc
-                .perform(get("/api/v1/products/es/me"))
-                .andDo(print());
-
-        Member actor = memberRepository.findByEmail("user1@example.com").get();
-        Page<ProductDocument> productPage = productSearchService.searchProductsByMember(
-                1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING
-        );
-
-        // then
-        resultActions
-                .andExpect(handler().handlerType(ApiV1ProductController.class))
-                .andExpect(handler().methodName("getMyProductsByElasticsearch"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다"))
-                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
-                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
-                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
-                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()))
-                .andExpect(jsonPath("$.data.pageable.hasNext").value(productPage.hasNext()))
-                .andExpect(jsonPath("$.data.pageable.hasPrevious").value(productPage.hasPrevious()));
-
-        List<ProductDocument> products = productPage.getContent();
-        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
-
-        for (int i = 0; i < products.size(); i++) {
-            ProductDocument product = products.get(i);
-            resultActions
-                    .andExpect(jsonPath("$.data.content[%d].productId".formatted(i)).value(product.getProductId()))
-                    .andExpect(jsonPath("$.data.content[%d].name".formatted(i)).value(product.getProductName()))
-                    .andExpect(jsonPath("$.data.content[%d].status".formatted(i)).value(product.getStatus()));
-        }
-    }
-
-    @Test
-    @DisplayName("내 상품 목록 조회 - 판매 완료 필터링 - Elasticsearch")
-    @WithMockUser("user1@example.com")
-    void getMyProductsByElasticsearchWithSoldStatus() throws Exception {
-        // when
-        ResultActions resultActions = mvc
-                .perform(get("/api/v1/products/es/me")
-                        .param("status", "SOLD"))
-                .andDo(print());
-
-        Member actor = memberRepository.findByEmail("user1@example.com").get();
-        Page<ProductDocument> productPage = productSearchService.searchProductsByMember(
-                1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD
-        );
-
-        // then
-        resultActions
-                .andExpect(handler().handlerType(ApiV1ProductController.class))
-                .andExpect(handler().methodName("getMyProductsByElasticsearch"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("내 상품 목록이 조회되었습니다"))
-                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()));
-    }
-
-    @Test
-    @DisplayName("내 상품 목록 조회 - 인기순 정렬 - Elasticsearch")
-    @WithMockUser("user1@example.com")
-    void getMyProductsByElasticsearchSortedByPopularity() throws Exception {
-        // when
-        ResultActions resultActions = mvc
-                .perform(get("/api/v1/products/es/me")
-                        .param("sort", "POPULAR"))
-                .andDo(print());
-
-        Member actor = memberRepository.findByEmail("user1@example.com").get();
-        Page<ProductDocument> productPage = productSearchService.searchProductsByMember(
-                1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING
-        );
-
-        // then
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
-
-        // 아이폰이 입찰자가 많아서 첫 번째에 와야 함
-        if (!productPage.getContent().isEmpty()) {
-            resultActions.andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
-        }
-    }
-
-    @Test
-    @DisplayName("특정 회원 상품 목록 조회 - Elasticsearch")
-    void getProductsByMemberAndElasticsearch() throws Exception {
-        // when
-        Long memberId = 1L;
-        ResultActions resultActions = mvc
-                .perform(get("/api/v1/products/es/members/" + memberId))
-                .andDo(print());
-
-        Member actor = memberRepository.findById(memberId).get();
-        Page<ProductDocument> productPage = productSearchService.searchProductsByMember(
-                1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING
-        );
-
-        // then
-        resultActions
-                .andExpect(handler().handlerType(ApiV1ProductController.class))
-                .andExpect(handler().methodName("getProductsByMemberAndElasticsearch"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId)))
-                .andExpect(jsonPath("$.data.pageable.currentPage").value(1))
-                .andExpect(jsonPath("$.data.pageable.pageSize").value(20))
-                .andExpect(jsonPath("$.data.pageable.totalPages").value(productPage.getTotalPages()))
-                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()));
-
-        List<ProductDocument> products = productPage.getContent();
-        resultActions.andExpect(jsonPath("$.data.content.length()").value(products.size()));
-    }
-
-    @Test
-    @DisplayName("특정 회원 상품 목록 조회 - 판매 완료 필터링 - Elasticsearch")
-    void getProductsByMemberAndElasticsearchWithSoldStatus() throws Exception {
-        // when
-        Long memberId = 1L;
-        ResultActions resultActions = mvc
-                .perform(get("/api/v1/products/es/members/" + memberId)
-                        .param("status", "SOLD"))
-                .andDo(print());
-
-        Member actor = memberRepository.findById(memberId).get();
-        Page<ProductDocument> productPage = productSearchService.searchProductsByMember(
-                1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SOLD
-        );
-
-        // then
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.pageable.totalElements").value(productPage.getTotalElements()));
-    }
-
-    @Test
-    @DisplayName("특정 회원 상품 목록 조회 - 인기순 정렬 - Elasticsearch")
-    void getProductsByMemberAndElasticsearchSortedByPopularity() throws Exception {
-        // when
-        Long memberId = 1L;
-        ResultActions resultActions = mvc
-                .perform(get("/api/v1/products/es/members/" + memberId)
-                        .param("sort", "POPULAR"))
-                .andDo(print());
-
-        Member actor = memberRepository.findById(memberId).get();
-        Page<ProductDocument> productPage = productSearchService.searchProductsByMember(
-                1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING
-        );
-
-        // then
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.content.length()").value(productPage.getContent().size()));
-
-        if (!productPage.getContent().isEmpty()) {
-            resultActions.andExpect(jsonPath("$.data.content[0].name").value(Matchers.containsString("아이폰")));
-        }
     }
 }

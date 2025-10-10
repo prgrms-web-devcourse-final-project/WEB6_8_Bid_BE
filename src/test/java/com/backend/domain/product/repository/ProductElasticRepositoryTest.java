@@ -3,6 +3,7 @@ package com.backend.domain.product.repository;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.*;
+import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -37,8 +39,9 @@ class ProductElasticRepositoryTest {
         Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
 
         // then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getProductName()).contains("아이폰");
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent())
+                .allMatch(item -> item.getProductName().contains("아이폰") || item.getProductName().contains("iPhone"));
     }
 
     @Test
@@ -245,129 +248,18 @@ class ProductElasticRepositoryTest {
     }
 
     @Test
-    @DisplayName("특정 회원의 모든 상품 조회")
-    void searchByMemberAll() {
+    @DisplayName("정렬 - Elasticsearch score 기준")
+    void searchWithDefaultSort() {
         // given
-        Long sellerId = 5L;
-        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
+        ProductSearchDto search = new ProductSearchDto("아이폰", null, null, null, AuctionStatus.BIDDING);
+        Pageable pageable = PageRequest.of(0, 10, Sort.unsorted());
 
         // when
-        Page<ProductDocument> result = productElasticRepository.searchProductsByMember(pageable, sellerId, null);
+        Page<ProductDocument> result = productElasticRepository.searchProducts(pageable, search);
 
         // then
         assertThat(result.getContent()).isNotEmpty();
-        assertThat(result.getContent())
-                .allMatch(doc -> doc.getSellerId().equals(sellerId));
-    }
-
-    @Test
-    @DisplayName("특정 회원의 경매중인 상품만 조회")
-    void searchByMemberWithSellingStatus() {
-        // given
-        Long sellerId = 5L;
-        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
-
-        // when
-        Page<ProductDocument> result = productElasticRepository.searchProductsByMember(pageable, sellerId, SaleStatus.SELLING);
-
-        // then
-        assertThat(result.getContent())
-                .allMatch(doc -> doc.getSellerId().equals(sellerId))
-                .allMatch(doc -> doc.getStatus().equals(AuctionStatus.BIDDING.getDisplayName()));
-    }
-
-    @Test
-    @DisplayName("특정 회원의 판매완료 상품만 조회")
-    void searchByMemberWithSoldStatus() {
-        // given
-        Long sellerId = 4L;
-        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
-
-        // when
-        Page<ProductDocument> result = productElasticRepository.searchProductsByMember(pageable, sellerId, SaleStatus.SOLD);
-
-        // then
-        assertThat(result.getContent())
-                .allMatch(doc -> doc.getSellerId().equals(sellerId))
-                .allMatch(doc -> doc.getStatus().equals(AuctionStatus.SUCCESSFUL.getDisplayName()));
-    }
-
-    @Test
-    @DisplayName("특정 회원의 유찰 상품만 조회")
-    void searchByMemberWithFailedStatus() {
-        // given
-        Long sellerId = 3L;
-        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
-
-        // when
-        Page<ProductDocument> result = productElasticRepository.searchProductsByMember(pageable, sellerId, SaleStatus.FAILED);
-
-        // then
-        assertThat(result.getContent())
-                .allMatch(doc -> doc.getSellerId().equals(sellerId))
-                .allMatch(doc -> doc.getStatus().equals(AuctionStatus.FAILED.getDisplayName()));
-    }
-
-    @Test
-    @DisplayName("회원별 상품 조회 - 페이징")
-    void searchByMemberWithPaging() {
-        // given
-        Long sellerId = 1L;
-        Pageable pageable = PageRequest.of(0, 2, ProductSearchSortType.LATEST.toSort());
-
-        // when
-        Page<ProductDocument> result = productElasticRepository.searchProductsByMember(pageable, sellerId, null);
-
-        // then
-        assertThat(result.getContent()).hasSizeLessThanOrEqualTo(2);
-        assertThat(result.getContent())
-                .allMatch(doc -> doc.getSellerId().equals(sellerId));
-    }
-
-    @Test
-    @DisplayName("회원별 상품 조회 - 정렬 확인")
-    void searchByMemberWithSort() {
-        // given
-        Long sellerId = 1L;
-        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
-
-        // when
-        Page<ProductDocument> result = productElasticRepository.searchProductsByMember(pageable, sellerId, null);
-
-        // then
-        if (result.getContent().size() > 1) {
-            for (int i = 0; i < result.getContent().size() - 1; i++) {
-                ProductDocument current = result.getContent().get(i);
-                ProductDocument next = result.getContent().get(i + 1);
-
-                // createDate 내림차순 확인
-                assertThat(current.getCreateDate())
-                        .isAfterOrEqualTo(next.getCreateDate());
-
-                // 같은 createDate면 productId 내림차순 확인 (타이브레이커)
-                if (current.getCreateDate().equals(next.getCreateDate())) {
-                    assertThat(current.getProductId())
-                            .isGreaterThan(next.getProductId());
-                }
-            }
-        }
-    }
-
-    @Test
-    @DisplayName("회원별 상품 조회 - 복합 조건")
-    void searchByMemberComplexCondition() {
-        // given
-        Long sellerId = 1L;
-        Pageable pageable = PageRequest.of(0, 10, ProductSearchSortType.LATEST.toSort());
-
-        // when
-        Page<ProductDocument> sellingProducts = productElasticRepository.searchProductsByMember(pageable, sellerId, SaleStatus.SELLING);
-        Page<ProductDocument> allProducts = productElasticRepository.searchProductsByMember(pageable, sellerId, null);
-
-        // then
-        assertThat(sellingProducts.getTotalElements()).isLessThanOrEqualTo(allProducts.getTotalElements());
-        assertThat(sellingProducts.getContent())
-                .allMatch(doc -> doc.getSellerId().equals(sellerId))
-                .allMatch(doc -> doc.getStatus().equals(AuctionStatus.BIDDING.getDisplayName()));
+        assertThat(result.getContent().get(0).getProductName()).isEqualTo("iPhone 15 Pro");
+        assertThat(result.getContent().get(1).getProductName()).isEqualTo("아이폰 15 Pro 256GB");
     }
 }

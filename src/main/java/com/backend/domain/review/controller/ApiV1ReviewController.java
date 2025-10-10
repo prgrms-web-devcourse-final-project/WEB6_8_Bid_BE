@@ -1,58 +1,54 @@
 package com.backend.domain.review.controller;
 
-import com.backend.domain.member.dto.MemberMyInfoResponseDto;
-import com.backend.domain.review.dto.ReviewEditResponseDto;
-import com.backend.domain.review.dto.ReviewResponseDto;
-import com.backend.domain.review.dto.ReviewWriteRequestDto;
-import com.backend.domain.review.dto.ReviewWriteResponseDto;
+import com.backend.domain.member.entity.Member;
+import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.review.dto.ReviewRequest;
+import com.backend.domain.review.dto.ReviewResponse;
 import com.backend.domain.review.service.ReviewService;
 import com.backend.global.response.RsData;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import com.backend.global.response.RsStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Date;
-
-@Controller
-@RequestMapping("/api/v1")
+@RestController
+@RequestMapping("/api/v1/reviews")
 @RequiredArgsConstructor
-@Tag(name = "Member", description = "회원 관련 API")
 public class ApiV1ReviewController {
+
     private final ReviewService reviewService;
+    private final MemberRepository memberRepository;
 
-    @Operation(summary = "리뷰 작성 API", description = "상품 리뷰 작성")
-    @PostMapping("/reviews/products")
-    public ResponseEntity<RsData<ReviewWriteResponseDto>> reviewCreate(Authentication authentication, @Valid @RequestPart ReviewWriteRequestDto reviewWriteRequestDto) {
-        ReviewWriteResponseDto reviewWriteResponseDto = new ReviewWriteResponseDto(1L, "유저1", "상품1", "좋은 거래였어요!", true);
-        return ResponseEntity.ok(new RsData<>("200", "리뷰 작성이 완료되었습니다.", reviewWriteResponseDto));
+    private Member getMember(User user) {
+        return memberRepository.findByEmail(user.getUsername()).orElseThrow(() -> new RuntimeException("Member not found"));
     }
 
-    @Operation(summary = "리뷰 조회 API", description = "상품 리뷰 조회")
-    @GetMapping("/reviews/products/{id}")
-    public ResponseEntity<RsData<ReviewResponseDto>> reviewInfo(Authentication authentication, @PathVariable Long id) {
-        ReviewResponseDto reviewResponseDto = new ReviewResponseDto(1L, "유저1", 1L,
-                "좋은 거래였어요!", true, LocalDateTime.from(Instant.now()), LocalDateTime.from(Instant.now()));
-        return ResponseEntity.ok(new RsData<>("200", "리뷰 조회가 완료되었습니다.", reviewResponseDto));
+    @PostMapping
+    public ResponseEntity<RsData<ReviewResponse>> createReview(@AuthenticationPrincipal User user, @RequestBody ReviewRequest request) {
+        Member member = getMember(user);
+        ReviewResponse response = reviewService.createReview(member.getId(), request);
+        return ResponseEntity.ok(RsData.created("리뷰가 성공적으로 등록되었습니다.", response));
     }
 
-    @Operation(summary = "리뷰 삭제 API", description = "상품 리뷰 삭제")
-    @DeleteMapping("/reviews/products")
-    public ResponseEntity<RsData<ReviewWriteResponseDto>> reviewDelete(Authentication authentication, @Valid @RequestPart ReviewWriteRequestDto reviewWriteRequestDto) {
-        return ResponseEntity.ok(new RsData<>("200", "리뷰 삭제가 완료되었습니다.", null));
+    @GetMapping("/{reviewId}")
+    public ResponseEntity<RsData<ReviewResponse>> getReview(@PathVariable Long reviewId) {
+        ReviewResponse response = reviewService.getReview(reviewId);
+        return ResponseEntity.ok(RsData.ok("리뷰를 성공적으로 조회했습니다.", response));
     }
 
-    @Operation(summary = "리뷰 수정 API", description = "상품 리뷰 수정")
-    @PutMapping("/reviews/products")
-    public ResponseEntity<RsData<ReviewEditResponseDto>> reviewModify(Authentication authentication, @Valid @RequestPart ReviewWriteRequestDto reviewWriteRequestDto) {
-        ReviewEditResponseDto reviewEditResponseDto = new ReviewEditResponseDto(1L, "유저1", "상품1", "상품이 별로였어요!", false);
-        return ResponseEntity.ok(new RsData<>("200", "리뷰 수정이 완료되었습니다.", reviewEditResponseDto));
+    @PutMapping("/{reviewId}")
+    public ResponseEntity<RsData<ReviewResponse>> updateReview(@AuthenticationPrincipal User user, @PathVariable Long reviewId, @RequestBody ReviewRequest request) {
+        Member member = getMember(user);
+        ReviewResponse response = reviewService.updateReview(member.getId(), reviewId, request);
+        return ResponseEntity.ok(RsData.ok("리뷰가 성공적으로 수정되었습니다.", response));
     }
 
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<RsData<Void>> deleteReview(@AuthenticationPrincipal User user, @PathVariable Long reviewId) {
+        Member member = getMember(user);
+        reviewService.deleteReview(member.getId(), reviewId);
+        return ResponseEntity.ok(RsData.ok("리뷰가 성공적으로 삭제되었습니다."));
+    }
 }

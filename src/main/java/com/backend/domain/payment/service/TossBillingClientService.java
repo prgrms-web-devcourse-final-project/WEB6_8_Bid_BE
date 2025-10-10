@@ -1,7 +1,7 @@
 package com.backend.domain.payment.service;
 
-import com.backend.domain.payment.dto.PgChargeResultResponse;
-import com.backend.domain.payment.dto.TossIssueBillingKeyResponse;
+import com.backend.domain.payment.dto.response.PgChargeResultResponse;
+import com.backend.domain.payment.dto.response.TossIssueBillingKeyResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,11 +28,15 @@ public class TossBillingClientService {
     @Value("${pg.toss.secretKey}")
     private String secretKey;
 
+    // 웹으로 요청을 보내는 도구 준비..
     private final WebClient web = WebClient.builder()
+
+            // 토스 API 기본 주소..
             .baseUrl("https://api.tosspayments.com/v1")
             .build();
 
-    // 1) authKey -> billingKey 발급
+    // authKey -> billingKey 발급
+    // 앱에서 카드 인증을 마치면 authKey를 얻음 -> 이걸 토스에게 보내서 billingKey(카드 토큰)를 받음..
     public TossIssueBillingKeyResponse issueBillingKey(String customerKey, String authKey) {
         String basic = Base64.getEncoder()
                 .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
@@ -40,7 +44,7 @@ public class TossBillingClientService {
         Map<String, Object> body = Map.of("customerKey", customerKey);
 
         try {
-            // POST /billing/authorizations/{authKey}
+            // POST /billing/authorizations/{authKey} 로 보내면 토스가 billingKey를 줌..
             Map<String, Object> resp = web.post()
                     .uri("/billing/authorizations/{authKey}", authKey)
                     .header(HttpHeaders.AUTHORIZATION, "Basic " + basic)
@@ -55,8 +59,7 @@ public class TossBillingClientService {
                     .block();
 
             // 응답에서 필요한 필드 꺼내기 (필드명은 토스 응답 스펙에 맞게)
-            // ---- 카드 정보 파싱 ----
-            String billingKey = (String) resp.get("billingKey");
+            String billingKey = (String) resp.get("billingKey"); // 카드 토큰..
             Map<?, ?> card = (Map<?, ?>) resp.get("card");
 
             String cardNumber = null;
@@ -109,7 +112,7 @@ public class TossBillingClientService {
     }
 
 
-
+    // billingKey로 실제 결제(충전), 이제 진짜로 돈을 결제(지갑 충전)해 달라고 토스에 부탁함..
     public PgChargeResultResponse charge(String billingKey, long amount, String idempotencyKey, String customerKey) {
         String basic = Base64.getEncoder()
                 .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
@@ -117,14 +120,16 @@ public class TossBillingClientService {
         log.info("[CHARGE->REQ] billingKey={}, customerKey={}, amount={}, idem={}",
                 billingKey, customerKey, amount, idempotencyKey);
 
+        // 토스가 필요로 하는 결제 정보..
         Map<String, Object> body = Map.of(
                 "amount", amount,
                 "orderId", "wallet-" + UUID.randomUUID(), // 고유값
                 "orderName", "지갑충전",
-                "customerKey", customerKey                 //  발급 때와 동일한 customerKey 필수
+                "customerKey", customerKey                   //  발급 때와 동일한 customerKey 필수
         );
 
         try {
+            // POST /billing/{billingKey} 로 결제 요청..
             Map<String, Object> resp = web.post()
                     .uri("/billing/{billingKey}", billingKey) //  올바른 엔드포인트
                     .header(HttpHeaders.AUTHORIZATION, "Basic " + basic)
@@ -158,7 +163,7 @@ public class TossBillingClientService {
                     .build();
 
         } catch (ResponseStatusException e) {
-            // 토스 에러를 그대로 노출 (스택 포함 서버로그)
+            // 토스 에러를 그대로 전달..
             log.error("Toss charge error: {}", e.getReason(), e);
             throw e;
         } catch (Exception e) {

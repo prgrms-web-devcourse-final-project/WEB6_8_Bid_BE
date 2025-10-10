@@ -2,7 +2,7 @@ package com.backend.domain.product.service;
 
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.repository.ProductRepository;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -122,14 +122,14 @@ public class ProductSyncService {
     }
     
     /**
-     * 전체 상품 재인덱싱
-     * - RDB의 모든 상품을 Elasticsearch에 재인덱싱
-     * - 초기 설정, 데이터 불일치 복구, 인덱스 재생성, 마이그레이션 시 사용
+     * 전체 상품 인덱싱
+     * - RDB의 모든 상품을 Elasticsearch에 인덱싱
+     * - 초기 설정 시 사용
      * - 배치 단위(100개)로 처리하여 메모리 효율성 확보
      */
     @Transactional(readOnly = true)
-    public void reindexAllProducts() {
-        log.info("========== 전체 상품 재인덱싱 시작 ==========");
+    public void indexAllProducts() {
+        log.info("========== 전체 상품 인덱싱 시작 ==========");
 
         long totalCount = productRepository.count();
         log.info("총 {}개 상품 인덱싱", totalCount);
@@ -167,7 +167,7 @@ public class ProductSyncService {
             }
         }
 
-        log.info("========== 재인덱싱 완료 ==========");
+        log.info("========== 인덱싱 완료 ==========");
         log.info("성공: {}, 실패: {}, 총: {}", successCount, failCount, totalCount);
     }
 }

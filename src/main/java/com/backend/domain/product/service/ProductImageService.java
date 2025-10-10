@@ -3,8 +3,8 @@ package com.backend.domain.product.service;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.ProductImage;
 import com.backend.domain.product.exception.ProductException;
-import com.backend.domain.product.repository.ProductImageRepository;
-import com.backend.global.file.service.LocalFileService;
+import com.backend.domain.product.repository.jpa.ProductImageRepository;
+import com.backend.global.file.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,7 +21,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class ProductImageService {
-    private final LocalFileService fileService;
+    private final FileService fileService;
     private final ProductImageRepository productImageRepository;
 
     // ======================================= public methods ======================================= //

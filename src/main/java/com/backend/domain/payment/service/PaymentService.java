@@ -1,14 +1,16 @@
 package com.backend.domain.payment.service;
 
-import com.backend.domain.cash.constant.CashTxType;
-import com.backend.domain.cash.constant.RelatedType;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
 import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.payment.constant.PaymentStatus;
-import com.backend.domain.payment.dto.*;
+import com.backend.domain.payment.dto.request.PaymentRequest;
+import com.backend.domain.payment.dto.response.*;
+import com.backend.domain.payment.enums.PaymentMethodType;
+import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.payment.entity.PaymentMethod;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
@@ -56,18 +58,19 @@ public class PaymentService {
         if (existingOpt.isPresent()) {
             var p = existingOpt.get();
             Long balanceAfter = cashRepository.findByMember(actor).map(Cash::getBalance).orElse(0L); // 최신 잔액..
-            return toResponse(p, balanceAfter, null);                       // 기존 영수증 그대로..
+            return toResponse(p, balanceAfter, null);   // 기존 영수증 그대로..
         }
 
         // 결제수단 검증(본인 소유 + 삭제X + active)..
         PaymentMethod pm = paymentMethodRepository
                 .findByIdAndMemberAndDeletedFalse(req.getPaymentMethodId(), actor) // 삭제 안 된 본인 수단..
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제수단을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "결제 수단을 찾을 수 없습니다."));
 
         if (Boolean.FALSE.equals(pm.getActive()) || Boolean.TRUE.equals(pm.getDeleted()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비활성/삭제된 결제수단입니다.");
 
         if (pm.getToken() == null || pm.getToken().isBlank())
+            // 토스에서 받은 빌링키(billingKey)가 없으면 결제를 못함..
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이 결제수단에는 billingKey가 없습니다. 카드 등록(빌링키 발급) 후 사용하세요.");
 
         // payments: PENDING 생성..
@@ -78,7 +81,7 @@ public class PaymentService {
                 .currency("KRW")                                   // 통화 고정..
                 .status(PaymentStatus.PENDING)                     // 대기 상태..
                 .provider(pm.getProvider())                        // PG 스냅샷..
-                .methodType(pm.getType().name())                   // "CARD"/"BANK"..
+                .methodType(PaymentMethodType.CARD)                // "CARD"/"BANK"..
                 .idempotencyKey(req.getIdempotencyKey())           // 멱등키..
 
                 // 표시용 스냅샷..
@@ -93,7 +96,7 @@ public class PaymentService {
         log.info("[PM] id={}, token(billingKey)={}, brand={}, last4={}",
                 pm.getId(), pm.getToken(), pm.getBrand(), pm.getLast4());
 
-        // (PG 모의) → (실제 토스 빌링 결제)로 교체..
+        // 토스에게 결제 승인 부탁하기..
         String customerKey = "user-" + actor.getId();
         PgChargeResultResponse res;
         try {
@@ -104,15 +107,13 @@ public class PaymentService {
                     customerKey
             );
         } catch (ResponseStatusException ex) {
-            // 실패 상태로 마킹(선택)
+            // 토스에서 에러가 남 → 이번 결제는 실패 표시로 바꾸고, 그 에러 그대로 던짐..
             payment.setStatus(PaymentStatus.FAILED);
             paymentRepository.save(payment);
-
-            // 4xx/5xx 그대로 클라이언트에 전달
             throw ex;
         }
 
-        // (tossBillingClient가 onStatus 에러를 던지도록 바꿨다면 아래는 안전망 정도로 유지)
+        // 안전망: 혹시 실패면 여기서도 실패 처리..
         if (!res.isSuccess()) {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setTransactionId(res.getTransactionId()); // 있을 수도/없을 수도
@@ -124,7 +125,8 @@ public class PaymentService {
         // 성공: PG에서 받은 키를 트랜잭션 ID로 저장...
         payment.setTransactionId(res.getTransactionId());
 
-        // 지갑 잠금 후 잔액 증가 + 원장 DEPOSIT 기록..
+        // 지갑 잠금 후(같은 순간에 두 사람이 동시에 그 지갑을 바꾸려 하면, 한 명은 먼저 하고,
+        // 다른 한 명은 잠깐 기다렸다가)잔액 증가 + 원장 DEPOSIT 기록..
         Cash cash = cashRepository.findWithLockByMember(actor)                     // 비관적 잠금..
                 .orElseGet(() -> cashRepository.save(newCash(actor)));            // 없으면 생성(0원)..
         long newBalance = (cash.getBalance() == null ? 0L : cash.getBalance()) + req.getAmount(); // 널 대비..
@@ -135,7 +137,7 @@ public class PaymentService {
                 .type(CashTxType.DEPOSIT)                                         // 입금..
                 .amount(req.getAmount())
                 .balanceAfter(newBalance)
-                .relatedType(RelatedType.PAYMENT)                                           // 근거: PAYMENT..
+                .relatedType(RelatedType.PAYMENT)                                 // 근거: PAYMENT..
                 .relatedId(payment.getId())
                 .build();
         cashTransactionRepository.save(tx);
@@ -167,10 +169,10 @@ public class PaymentService {
                 .build();
     }
 
-    // 내 결제 단건 상세..
+    // 목록에서 보일 간단한 모양으로 바꾸기..
     private MyPaymentListItemResponse toListItem(Payment p) {
         String provider   = p.getProvider();
-        String methodType = p.getMethodType();
+        PaymentMethodType methodType = p.getMethodType();
 
         // 결제 건에 연결된 입금 원장 찾아서 id/balanceAfter 세팅..
         var txOpt = cashTransactionRepository
@@ -191,6 +193,7 @@ public class PaymentService {
                 .build();
     }
 
+    // 내 결져 단건 상세..
     @Transactional(readOnly = true)
     public MyPaymentResponse getMyPaymentDetail(Member member, Long paymentId) {
         Payment p = paymentRepository.findByIdAndMember(paymentId, member)

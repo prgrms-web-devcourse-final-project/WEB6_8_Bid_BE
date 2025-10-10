@@ -2,7 +2,9 @@ package com.backend.domain.bid.service;
 
 import com.backend.domain.bid.dto.BidPayResponseDto;
 import com.backend.domain.bid.entity.Bid;
+import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.service.CashService;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.entity.Product;
@@ -79,19 +81,21 @@ public class BidPaymentService {
         var tx = cashService.withdraw(
                 bidder,
                 finalPrice,
-                com.backend.domain.cash.constant.RelatedType.BID,
+                RelatedType.BID,
                 bid.getId()
         );
 
         // 결제 기록
         bid.setPaidAt(LocalDateTime.now());
         bid.setPaidAmount(finalPrice);
+        bid.setStatus(BidStatus.PAID);
+        product.setStatus("결제 완료");
 
         // 응답
         BidPayResponseDto response = new BidPayResponseDto(
                 bid.getId(),
                 product.getId(),
-                finalPrice,
+                finalPrice,             // 낙찰/결제 금액..
                 bid.getPaidAt(),
                 tx.getId(),
                 tx.getBalanceAfter()

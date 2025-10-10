@@ -5,14 +5,14 @@ import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
-import com.backend.domain.payment.constant.PaymentMethodType;
-import com.backend.domain.payment.dto.MyPaymentResponse;
-import com.backend.domain.payment.dto.MyPaymentsResponse;
-import com.backend.domain.payment.dto.PgChargeResultResponse;
-import com.backend.domain.payment.dto.PaymentRequest;
-import com.backend.domain.payment.dto.PaymentResponse;
+import com.backend.domain.payment.dto.request.PaymentRequest;
+import com.backend.domain.payment.dto.response.MyPaymentResponse;
+import com.backend.domain.payment.dto.response.MyPaymentsResponse;
+import com.backend.domain.payment.dto.response.PaymentResponse;
+import com.backend.domain.payment.dto.response.PgChargeResultResponse;
 import com.backend.domain.payment.entity.Payment;
 import com.backend.domain.payment.entity.PaymentMethod;
+import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,13 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,7 +42,7 @@ class PaymentServiceTest {
     @Autowired CashRepository cashRepository;
     @Autowired CashTransactionRepository cashTransactionRepository;
 
-    @MockBean TossBillingClientService tossBillingClientService;
+    @MockitoBean TossBillingClientService tossBillingClientService;
 
     Member me;
     PaymentMethod card;
@@ -63,7 +62,7 @@ class PaymentServiceTest {
         card = paymentMethodRepository.save(
                 PaymentMethod.builder()
                         .member(me)
-                        .type(PaymentMethodType.CARD)
+                        .methodType(PaymentMethodType.CARD)
                         .token("BILL-001")          // billingKey
                         .alias("테스트카드")
                         .isDefault(true)
@@ -152,7 +151,7 @@ class PaymentServiceTest {
         PaymentMethod noBillingKey = paymentMethodRepository.save(
                 PaymentMethod.builder()
                         .member(me)
-                        .type(PaymentMethodType.CARD)
+                        .methodType(PaymentMethodType.CARD)
                         .token(null) // ★ 없음
                         .alias("무효카드")
                         .isDefault(false)

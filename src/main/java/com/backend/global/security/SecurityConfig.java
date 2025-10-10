@@ -49,6 +49,7 @@ public class SecurityConfig {
                                 "/api/*/products", "/api/*/products/{productId:\\d+}", "/api/*/products/es",
                                 "/api/*/products/members/{memberId:\\d+}", "/api/*/products/es/members/{memberId:\\d+}",
                                 "/api/v1/members/{memberId:\\d+}").permitAll()
+                        .requestMatchers("/api/v1/products/reload-analyzers").permitAll() // 관리자 기능 도입 시 ROLE 인증 추가
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/*/test-data/**").permitAll()
 

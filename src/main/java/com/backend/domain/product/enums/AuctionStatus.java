@@ -7,6 +7,7 @@ public enum AuctionStatus {
     BEFORE_START("경매 시작 전"),
     BIDDING("경매 중"),
     SUCCESSFUL("낙찰"),
+    PAID("결제 완료"),
     FAILED("유찰");
     
     private final String displayName;
