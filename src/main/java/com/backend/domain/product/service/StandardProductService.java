@@ -97,14 +97,6 @@ public class StandardProductService implements ProductService {
         return productRepository.findById(productId);
     }
 
-    public Optional<Product> findLatest() {
-        return productRepository.findFirstByOrderByIdDesc();
-    }
-
-    public long count() {
-        return productRepository.count();
-    }
-
     // ======================================= modify/delete methods ======================================= //
     @Override
     @Transactional
@@ -189,5 +181,14 @@ public class StandardProductService implements ProductService {
 
     private String getDurationString(Product product) {
         return product.getDuration() == 24 ? "24시간" : "48시간";
+    }
+
+    // ======================================= for test and init ======================================= //
+    public Optional<Product> findLatest() {
+        return productRepository.findFirstByOrderByIdDesc();
+    }
+
+    public long count() {
+        return productRepository.count();
     }
 }
