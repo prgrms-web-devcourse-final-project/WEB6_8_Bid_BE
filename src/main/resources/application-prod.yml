@@ -24,6 +24,9 @@ spring:
       host: redis_1
       port: 6379
       password: ${SPRING_DATA_REDIS_PASSWORD}
+      lettuce:
+        pool:
+          enabled: true
 
   elasticsearch:
     uris: http://elasticsearch_1:9200
