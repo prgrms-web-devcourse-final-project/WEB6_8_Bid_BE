@@ -235,7 +235,10 @@ jobs:
               --restart unless-stopped \
               --network "${NET}" \
               -e TZ=Asia/Seoul \
-              -v /bid_data:/data \
+              -e SPRING_DATA_REDIS_PASSWORD="${SPRING_DATA_REDIS_PASSWORD}" \
+              -e JWT_SECRET="${JWT_SECRET}" \
+              -e SPRING_DATASOURCE_URL___DB_NAME="${SPRING_DATASOURCE_URL___DB_NAME}" \
+              -v /bid_data:/data \1
               "${IMAGE}"
 
             # ---------------------------------------------------------
