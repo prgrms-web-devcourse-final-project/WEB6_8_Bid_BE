@@ -14,7 +14,7 @@ import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.mapper.ProductMapper;
 import com.backend.domain.product.service.ProductSearchService;
-import com.backend.domain.product.service.ProductService;
+import com.backend.domain.product.service.StandardProductService;
 import com.backend.global.page.dto.PageDto;
 import com.backend.global.response.RsData;
 import jakarta.validation.Valid;
@@ -32,7 +32,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class ApiV1ProductController implements ApiV1ProductControllerDocs {
-    private final ProductService productService;
+    private final StandardProductService productService;
     private final MemberService memberService;
     private final ProductMapper productMapper;
     private final ProductSearchService productSearchService;
