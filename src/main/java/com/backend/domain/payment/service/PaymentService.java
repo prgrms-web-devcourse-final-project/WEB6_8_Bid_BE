@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.*;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -50,8 +51,10 @@ public class PaymentService {
         if (req.getAmount() > MAX_AMOUNT_PER_TX)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"1회 최대 충전 한도를 초과했습니다.");
 
-        if (req.getIdempotencyKey() == null || req.getIdempotencyKey().isBlank())
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "idempotencyKey가 필요합니다.");
+        if (req.getIdempotencyKey() == null || req.getIdempotencyKey().isBlank()){
+            req.setIdempotencyKey(UUID.randomUUID().toString());
+            log.info("[IDEMP] generated new idempotencyKey={}", req.getIdempotencyKey());
+        }
 
         // 멱등 선조회(같은 회원+키면 기존 결과 그대로 반환)..
         var existingOpt = paymentRepository.findByMemberAndIdempotencyKey(actor, req.getIdempotencyKey());
