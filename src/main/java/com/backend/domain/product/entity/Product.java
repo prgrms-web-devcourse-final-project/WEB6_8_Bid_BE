@@ -33,6 +33,9 @@ import static java.time.LocalDateTime.now;
         // 지역 목록 조회 (지역, 상태, 최신순)
         @Index(name = "idx_location_status_create", columnList = "location, status, create_date DESC")
 })
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "product_type")
+@DiscriminatorValue("STANDARD")  // Product 자체가 STANDARD
 @Getter
 @NoArgsConstructor
 public class Product extends BaseEntity {
