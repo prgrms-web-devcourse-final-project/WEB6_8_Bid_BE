@@ -5,10 +5,12 @@ import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.*;
 import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +22,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+@Primary
+@Service("standardProductService")
 @RequiredArgsConstructor
 public class StandardProductService implements ProductService {
     private final ProductImageService productImageService;
@@ -47,7 +50,7 @@ public class StandardProductService implements ProductService {
     }
 
     public Product saveProduct(Member actor, ProductCreateRequest request) {
-        Product product = new Product(
+        Product product = new StandardProduct(
                 request.name(),
                 request.description(),
                 ProductCategory.fromId(request.categoryId()),

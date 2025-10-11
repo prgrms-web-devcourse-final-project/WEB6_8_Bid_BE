@@ -14,7 +14,8 @@ import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.mapper.ProductMapper;
 import com.backend.domain.product.service.ProductSearchService;
-import com.backend.domain.product.service.StandardProductService;
+import com.backend.domain.product.service.ProductService;
+import com.backend.domain.product.service.ProductServiceFactory;
 import com.backend.global.page.dto.PageDto;
 import com.backend.global.response.RsData;
 import jakarta.validation.Valid;
@@ -32,21 +33,25 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class ApiV1ProductController implements ApiV1ProductControllerDocs {
-    private final StandardProductService productService;
+    private final ProductService productService;
     private final MemberService memberService;
     private final ProductMapper productMapper;
     private final ProductSearchService productSearchService;
+    private final ProductServiceFactory productServiceFactory;
 
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
     public RsData<ProductResponse> createProduct(
+            @RequestParam(defaultValue = "STANDARD") String productType,
             @RequestPart("request") @Valid ProductCreateRequest request,
             @RequestPart("images") List<MultipartFile> images,
             @AuthenticationPrincipal User user
     ) {
         Member actor = memberService.findMemberByEmail(user.getUsername());
-        Product product = productService.createProduct(actor, request, images);
+
+        ProductService service = productServiceFactory.getService(productType);
+        Product product = service.createProduct(actor, request, images);
 
         ProductResponse response = productMapper.toResponse(product);
         return RsData.created("상품이 등록되었습니다", response);

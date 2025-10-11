@@ -11,10 +11,7 @@ import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.review.entity.Review;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,10 +32,9 @@ import static java.time.LocalDateTime.now;
 })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "product_type")
-@DiscriminatorValue("STANDARD")  // Product 자체가 STANDARD
 @Getter
-@NoArgsConstructor
-public class Product extends BaseEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class Product extends BaseEntity {
 
     @Column(name = "product_name", nullable = false, length = 50)
     private String productName;
@@ -98,7 +94,7 @@ public class Product extends BaseEntity {
     private Review review = null;
 
 
-    public Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {
+    protected Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {
         this.productName = productName;
         this.description = description;
         this.category = category;
@@ -222,19 +218,14 @@ public class Product extends BaseEntity {
 
     // ======================================= other methods ======================================= //
     /**
-     * 테스트 전용 빌더
-     * - 프로덕션 코드에서는 사용 금지
-     * - ID를 포함한 모든 필드를 직접 설정 가능
-     * - 단위 테스트에서 목 데이터 생성용
+     * 테스트 전용 메서드
+     * 자식 클래스의 테스트 빌더에서만 사용
      */
-    @Builder(builderMethodName = "testBuilder", buildMethodName = "testBuild")
-    private Product(
-            Long id, String productName, String description, ProductCategory category,
-            Long initialPrice, Long currentPrice, LocalDateTime startTime,
-            LocalDateTime endTime, Integer duration, String status,
-            DeliveryMethod deliveryMethod, String location, Member seller
+    protected void initForTest(
+            String productName, String description, ProductCategory category,
+            Long initialPrice, Long currentPrice, LocalDateTime startTime, LocalDateTime endTime, Integer duration,
+            String status, DeliveryMethod deliveryMethod, String location, Member seller
     ) {
-        setId(id);
         this.productName = productName;
         this.description = description;
         this.category = category;

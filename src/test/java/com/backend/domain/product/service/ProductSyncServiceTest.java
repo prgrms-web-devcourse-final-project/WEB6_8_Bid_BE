@@ -1,12 +1,13 @@
 package com.backend.domain.product.service;
 
+import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.repository.jpa.ProductRepository;
-import com.backend.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -200,7 +201,7 @@ class ProductSyncServiceTest {
                 .nickname("판매자")
                 .build();
 
-        return Product.testBuilder()
+        return StandardProduct.testBuilder()
                 .id(id)
                 .productName("테스트 상품 " + id)
                 .description("설명")

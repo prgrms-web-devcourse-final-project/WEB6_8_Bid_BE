@@ -9,6 +9,7 @@ import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -23,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -65,7 +67,7 @@ class BidPayServiceTest {
         // 2) Product는 생성자 필수값이 많으니 "생성자"로 만든다.
         LocalDateTime start = LocalDateTime.now().minusHours(2); // 이미 시작
         Integer durationHrs = 1; // 1시간 경매 → 이미 종료로 간주
-        product = new Product(
+        product = new StandardProduct(
                 "테스트 상품",
                 "설명",
                 ProductCategory.values()[0],  // 프로젝트 실제 카테고리로 교체 가능
@@ -136,7 +138,7 @@ class BidPayServiceTest {
         // "경매 중" 상품 하나 더 만들어서 실패 유도
         LocalDateTime start = LocalDateTime.now().minusMinutes(10);
         Integer durationHrs = 2; // 아직 진행 중
-        Product biddingProduct = new Product(
+        Product biddingProduct = new StandardProduct(
                 "테스트 상품2",
                 "설명2",
                 ProductCategory.values()[0],

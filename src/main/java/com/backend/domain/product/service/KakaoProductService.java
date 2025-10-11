@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+@Service("kakaoProductService")
 @RequiredArgsConstructor
 public class KakaoProductService implements ProductService {
     private final ProductImageService productImageService;

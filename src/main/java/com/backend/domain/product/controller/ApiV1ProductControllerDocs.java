@@ -57,6 +57,7 @@ public interface ApiV1ProductControllerDocs {
                     content = @Content(schema = @Schema(implementation = RsData.class)))
     })
     RsData<ProductResponse> createProduct(
+            @Parameter(description = "상품 타입") @RequestParam(defaultValue = "STANDARD") String productType,
             @Parameter(description = "상품 등록 요청 정보", required = true) @RequestPart("request") @Valid ProductCreateRequest request,
             @Parameter(description = "상품 이미지", required = true) @RequestPart("images") List<MultipartFile> images,
             @Parameter(description = "로그인 회원") @AuthenticationPrincipal User user
