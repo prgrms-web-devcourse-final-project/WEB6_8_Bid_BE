@@ -1,26 +1,17 @@
 package com.backend.domain.product.controller;
 
-import com.backend.domain.member.entity.Member;
-import com.backend.domain.member.service.MemberService;
-import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.dto.response.*;
-import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
-import com.backend.domain.product.exception.ProductException;
-import com.backend.domain.product.mapper.ProductMapper;
-import com.backend.domain.product.service.ProductSearchService;
-import com.backend.domain.product.service.ProductService;
-import com.backend.domain.product.service.ProductServiceFactory;
+import com.backend.domain.product.facade.ProductFacade;
 import com.backend.global.page.dto.PageDto;
 import com.backend.global.response.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
@@ -33,12 +24,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class ApiV1ProductController implements ApiV1ProductControllerDocs {
-    private final ProductService productService;
-    private final MemberService memberService;
-    private final ProductMapper productMapper;
-    private final ProductSearchService productSearchService;
-    private final ProductServiceFactory productServiceFactory;
-
+    private final ProductFacade productFacade;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
@@ -48,12 +34,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestPart("images") List<MultipartFile> images,
             @AuthenticationPrincipal User user
     ) {
-        Member actor = memberService.findMemberByEmail(user.getUsername());
-
-        ProductService service = productServiceFactory.getService(productType);
-        Product product = service.createProduct(actor, request, images);
-
-        ProductResponse response = productMapper.toResponse(product);
+        ProductResponse response = productFacade.createProduct(productType, request, images, user);
         return RsData.created("상품이 등록되었습니다", response);
     }
 
@@ -70,9 +51,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
         ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery, status);
-        Page<Product> products = productService.findBySearchPaged(page, size, sort, search);
-
-        PageDto<ProductListItemDto> response = productMapper.toListResponse(products);
+        PageDto<ProductListItemDto> response = productFacade.getProducts(page, size, sort, search);
         return RsData.ok("상품 목록이 조회되었습니다", response);
     }
 
@@ -89,18 +68,14 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(required = false) ProductSearchSortType sort
     ) {
         ProductSearchDto search = new ProductSearchDto(keyword, category, location, isDelivery, status);
-        Page<ProductDocument> products = productSearchService.searchProducts(page, size, sort, search);
-
-        PageDto<ProductListItemDto> response = productMapper.toListResponseFromDocument(products);
+        PageDto<ProductListItemDto> response = productFacade.getProductsByElasticsearch(page, size, sort, search);
         return RsData.ok("상품 목록이 조회되었습니다", response);
     }
 
     @GetMapping("/{productId}")
     @Transactional(readOnly = true)
     public RsData<ProductResponse> getProduct(@PathVariable Long productId) {
-        Product product = productService.getProductById(productId);
-
-        ProductResponse response = productMapper.toResponse(product);
+        ProductResponse response = productFacade.getProduct(productId);
         return RsData.ok("상품이 조회되었습니다", response);
     }
 
@@ -113,14 +88,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestPart(value = "deleteImageIds", required = false) List<Long> deleteImageIds,
             @AuthenticationPrincipal User user
     ) {
-        Member actor = memberService.findMemberByEmail(user.getUsername());
-        Product product = productService.getProductById(productId);
-
-        product.checkActorCanModify(actor);
-
-        productService.modifyProduct(product, request, images, deleteImageIds);
-
-        ProductResponse response = productMapper.toResponse(product);
+        ProductResponse response = productFacade.modifyProduct(productId, request, images, deleteImageIds, user);
         return RsData.ok("상품이 수정되었습니다", response);
     }
 
@@ -130,12 +98,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @PathVariable Long productId,
             @AuthenticationPrincipal User user
     ) {
-        Member actor = memberService.findMemberByEmail(user.getUsername());
-        Product product = productService.getProductById(productId);
-
-        product.checkActorCanDelete(actor);
-
-        productService.deleteProduct(product);
+        productFacade.deleteProduct(productId, user);
 
         return RsData.ok("상품이 삭제되었습니다");
     }
@@ -149,10 +112,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
             @AuthenticationPrincipal User user
     ) {
-        Member actor = memberService.findMemberByEmail(user.getUsername());
-        Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
-
-        PageDto<MyProductListItemDto> response = productMapper.toMyListResponse(products);
+        PageDto<MyProductListItemDto> response = productFacade.getMyProducts(page, size, sort, status, user);
         return RsData.ok("내 상품 목록이 조회되었습니다", response);
     }
 
@@ -165,11 +125,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
             @RequestParam(defaultValue = "SELLING") SaleStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort
     ) {
-        Member actor = memberService.findById(memberId).orElseThrow(ProductException::memberNotFound);
-
-        Page<Product> products = productService.findByMemberPaged(page, size, sort, actor, status);
-
-        PageDto<ProductListByMemberItemDto> response = productMapper.toListByMemberResponse(products);
+        PageDto<ProductListByMemberItemDto> response = productFacade.getProductsByMember(memberId, page, size, sort, status);
         return RsData.ok("%d번 회원 상품 목록이 조회되었습니다".formatted(memberId), response);
     }
 
@@ -179,6 +135,6 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     @PostMapping("/reload-analyzers")
 //    @PreAuthorize("hasRole('ADMIN')")
     public RsData<ReloadAnalyzersResponse> reloadSearchAnalyzers() {
-        return productSearchService.reloadSearchAnalyzers();
+        return productFacade.reloadSearchAnalyzers();
     }
 }
