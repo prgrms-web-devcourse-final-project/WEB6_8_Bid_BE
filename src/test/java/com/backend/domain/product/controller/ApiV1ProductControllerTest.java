@@ -10,7 +10,7 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.enums.SaleStatus;
-import com.backend.domain.product.service.ProductService;
+import com.backend.domain.product.service.StandardProductService;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -50,7 +50,7 @@ class ApiV1ProductControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private ProductService productService;
+    private StandardProductService productService;
 
     @Autowired
     private MemberRepository memberRepository;

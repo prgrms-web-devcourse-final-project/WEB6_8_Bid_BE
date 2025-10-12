@@ -5,7 +5,6 @@ import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.product.repository.jpa.ProductImageRepository;
 import com.backend.domain.product.repository.jpa.ProductRepository;
@@ -30,7 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ProductServiceTest {
+class StandardProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
@@ -48,7 +47,7 @@ class ProductServiceTest {
     private ProductImageService productImageService;
 
     @InjectMocks
-    private ProductService productService;
+    private StandardProductService productService;
 
     // ======================================= createProduct 테스트 ======================================= //
     @Test
@@ -191,8 +190,6 @@ class ProductServiceTest {
         List<Long> deleteImageIds = List.of(1L, 2L);
 
         given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
-        given(mockProduct.getProductName()).willReturn("다른 이름");
-        given(mockProduct.getDescription()).willReturn("다른 설명");
 
         // when
         Product result = productService.modifyProduct(mockProduct, request, images, deleteImageIds);
@@ -213,7 +210,6 @@ class ProductServiceTest {
         ProductModifyRequest request = createValidModifyRequest();
 
         given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
-        given(mockProduct.getProductName()).willReturn("다른 이름");
 
         // when
         Product result = productService.modifyProduct(mockProduct, request, null, null);
@@ -275,7 +271,6 @@ class ProductServiceTest {
         List<MultipartFile> images = createValidImages();
 
         given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
-        given(mockProduct.getProductName()).willReturn("다른 이름");
 
         // ProductImageService 에서 예외 발생
         doThrow(ProductException.imageMaxCountExceeded())
@@ -288,46 +283,6 @@ class ProductServiceTest {
 
         verify(mockProduct).modify(any(ProductModifyRequest.class));
         verify(productImageService).validateAndModifyImages(mockProduct, images, null);
-    }
-
-    @Test
-    @DisplayName("상품 수정 검증 - 변경되지 않은 필드들은 null로 반환")
-    void validateModifyRequest_NullForUnchangedFields() {
-        // given
-        String existingName = "기존 상품명";
-        String existingDescription = "기존 설명";
-
-        Product mockProduct = mock(Product.class);
-        given(mockProduct.getStartTime()).willReturn(LocalDateTime.now().plusHours(1));
-        given(mockProduct.getProductName()).willReturn(existingName);
-        given(mockProduct.getDescription()).willReturn(existingDescription);
-        given(mockProduct.getCategory()).willReturn(ProductCategory.DIGITAL_ELECTRONICS);
-        given(mockProduct.getInitialPrice()).willReturn(1000L);
-        given(mockProduct.getDeliveryMethod()).willReturn(DeliveryMethod.DELIVERY);
-        given(mockProduct.getLocation()).willReturn("서울");
-
-        // 동일한 값으로 요청
-        ProductModifyRequest request = new ProductModifyRequest(
-                existingName, // 동일한 이름
-                existingDescription, // 동일한 설명
-                1, // 동일한 카테고리
-                1000L, // 동일한 가격
-                LocalDateTime.now().plusDays(1),
-                "24시간",
-                DeliveryMethod.DELIVERY, // 동일한 배송 방법
-                "서울" // 동일한 위치
-        );
-
-        // when
-        ProductModifyRequest result = productService.validateModifyRequest(mockProduct, request);
-
-        // then - 변경되지 않은 필드들은 null
-        assertThat(result.name()).isNull();
-        assertThat(result.description()).isNull();
-        assertThat(result.categoryId()).isNull();
-        assertThat(result.initialPrice()).isNull();
-        assertThat(result.deliveryMethod()).isNull();
-        assertThat(result.location()).isNull();
     }
 
     // ======================================= deleteProduct 테스트 ======================================= //
