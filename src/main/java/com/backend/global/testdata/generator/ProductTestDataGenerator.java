@@ -4,7 +4,7 @@ import com.backend.domain.member.entity.Member;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.DeliveryMethod;
-import com.backend.domain.product.service.ProductService;
+import com.backend.domain.product.service.StandardProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -22,7 +22,7 @@ import java.util.Locale;
 @Slf4j
 public class ProductTestDataGenerator {
     
-    private final ProductService productService;
+    private final StandardProductService productService;
     private final Faker faker = new Faker(new Locale("ko"));
     
     public List<Product> generate(int count, List<Member> sellers) {

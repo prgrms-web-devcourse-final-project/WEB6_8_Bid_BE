@@ -11,10 +11,7 @@ import com.backend.domain.product.exception.ProductException;
 import com.backend.domain.review.entity.Review;
 import com.backend.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,9 +30,11 @@ import static java.time.LocalDateTime.now;
         // 지역 목록 조회 (지역, 상태, 최신순)
         @Index(name = "idx_location_status_create", columnList = "location, status, create_date DESC")
 })
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "product_type")
 @Getter
-@NoArgsConstructor
-public class Product extends BaseEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class Product extends BaseEntity {
 
     @Column(name = "product_name", nullable = false, length = 50)
     private String productName;
@@ -95,7 +94,7 @@ public class Product extends BaseEntity {
     private Review review = null;
 
 
-    public Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {
+    protected Product(String productName, String description, ProductCategory category, Long initialPrice, LocalDateTime startTime, Integer duration, DeliveryMethod deliveryMethod, String location, Member seller) {
         this.productName = productName;
         this.description = description;
         this.category = category;
@@ -115,22 +114,17 @@ public class Product extends BaseEntity {
         }
     }
 
-    /**
-     * 상품 정보 수정
-     * - null이 아닌 필드만 업데이트
-     * - 경매 시작 전에만 수정 가능 (호출 전에 검증 필요)
-     *
-     * @param validatedRequest 검증된 수정 요청 (변경할 필드만 non-null)
-     */
-    public void modify(ProductModifyRequest validatedRequest) {
-        if (validatedRequest.name() != null) this.productName = validatedRequest.name();
-        if (validatedRequest.description() != null) this.description = validatedRequest.description();
-        if (validatedRequest.categoryId() != null) this.category = ProductCategory.fromId(validatedRequest.categoryId());
-        if (validatedRequest.initialPrice() != null) this.initialPrice = validatedRequest.initialPrice();
-        if (validatedRequest.auctionStartTime() != null) this.startTime = validatedRequest.auctionStartTime();
-        if (validatedRequest.auctionDuration() != null) this.duration = AuctionDuration.fromValue(validatedRequest.auctionDuration());
-        if (validatedRequest.deliveryMethod() != null) this.deliveryMethod = validatedRequest.deliveryMethod();
-        if (validatedRequest.location() != null) this.location = validatedRequest.location();
+    // 상품 정보 수정
+    public void modify(ProductModifyRequest request) {
+        this.productName = request.name();
+        this.description = request.description();
+        this.category = ProductCategory.fromId(request.categoryId());
+        this.initialPrice = request.initialPrice();
+        this.startTime = request.auctionStartTime();
+        this.duration = AuctionDuration.fromValue(request.auctionDuration());
+        this.endTime = this.startTime.plusHours(this.duration);
+        this.deliveryMethod = request.deliveryMethod();
+        this.location = request.location();
     }
 
     // ======================================= image methods ======================================= //
@@ -224,19 +218,14 @@ public class Product extends BaseEntity {
 
     // ======================================= other methods ======================================= //
     /**
-     * 테스트 전용 빌더
-     * - 프로덕션 코드에서는 사용 금지
-     * - ID를 포함한 모든 필드를 직접 설정 가능
-     * - 단위 테스트에서 목 데이터 생성용
+     * 테스트 전용 메서드
+     * 자식 클래스의 테스트 빌더에서만 사용
      */
-    @Builder(builderMethodName = "testBuilder", buildMethodName = "testBuild")
-    private Product(
-            Long id, String productName, String description, ProductCategory category,
-            Long initialPrice, Long currentPrice, LocalDateTime startTime,
-            LocalDateTime endTime, Integer duration, String status,
-            DeliveryMethod deliveryMethod, String location, Member seller
+    protected void initForTest(
+            String productName, String description, ProductCategory category,
+            Long initialPrice, Long currentPrice, LocalDateTime startTime, LocalDateTime endTime, Integer duration,
+            String status, DeliveryMethod deliveryMethod, String location, Member seller
     ) {
-        setId(id);
         this.productName = productName;
         this.description = description;
         this.category = category;

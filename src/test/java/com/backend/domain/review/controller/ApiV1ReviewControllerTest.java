@@ -3,6 +3,7 @@ package com.backend.domain.review.controller;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -70,7 +71,7 @@ class ApiV1ReviewControllerTest {
         testUser = memberRepository.save(Member.builder().email("test@example.com").password("password").nickname("testuser").build());
         anotherUser = memberRepository.save(Member.builder().email("another@user.com").password("pw").nickname("another").build());
         Member seller = memberRepository.save(Member.builder().email("seller@example.com").password("password").nickname("seller").build());
-        testProduct = productRepository.save(Product.testBuilder()
+        testProduct = productRepository.save(StandardProduct.testBuilder()
                 .seller(seller)
                 .productName("Test Product")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)

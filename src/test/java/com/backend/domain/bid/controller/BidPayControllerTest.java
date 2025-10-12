@@ -8,6 +8,7 @@ import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
@@ -26,7 +27,8 @@ import java.time.LocalDateTime;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false) // JWT 등 보안 필터 비활성화(단순화)
@@ -63,7 +65,7 @@ class BidPayControllerTest {
         // 2) 상품: 낙찰 상태 + 최고가 7,000
         LocalDateTime start = LocalDateTime.now().minusHours(2);
         int duration = 1;
-        product = new Product(
+        product = new StandardProduct(
                 "테스트 상품",
                 "설명",
                 ProductCategory.values()[0],

@@ -5,18 +5,13 @@ import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.dto.request.ProductCreateRequest;
 import com.backend.domain.product.dto.request.ProductModifyRequest;
 import com.backend.domain.product.entity.Product;
-import com.backend.domain.product.enums.*;
+import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.enums.SaleStatus;
 import com.backend.domain.product.exception.ProductException;
-import com.backend.domain.product.repository.jpa.ProductRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,12 +22,7 @@ import java.util.Optional;
  * - 권한 검증 및 비즈니스 규칙 적용
  */
 @Service
-@RequiredArgsConstructor
-public class ProductService {
-    private final ProductImageService productImageService;
-    private final ProductRepository productRepository;
-    private final ProductSyncService productSyncService;
-
+public interface ProductService {
     // ======================================= create methods ======================================= //
     /**
      * 새로운 상품 생성
@@ -46,37 +36,7 @@ public class ProductService {
      * @return 생성된 상품 엔티티
      * @throws ProductException 직거래 시 위치 미입력, 이미지 검증 실패 등
      */
-    @Transactional
-    public Product createProduct(Member actor, ProductCreateRequest request, List<MultipartFile> images) {
-        // location 검증
-        validateLocation(request.location(), request.deliveryMethod());
-
-        // Product 생성 및 저장
-        Product savedProduct = saveProduct(actor, request);
-
-        // 이미지 검증 및 저장
-        productImageService.validateAndCreateImages(savedProduct, images);
-
-        // Elasticsearch 동기화
-        productSyncService.syncProductCreation(savedProduct);
-
-        return savedProduct;
-    }
-
-    public Product saveProduct(Member actor, ProductCreateRequest request) {
-        Product product = new Product(
-                request.name(),
-                request.description(),
-                ProductCategory.fromId(request.categoryId()),
-                request.initialPrice(),
-                request.auctionStartTime(),
-                AuctionDuration.fromValue(request.auctionDuration()),
-                request.deliveryMethod(),
-                request.location(),
-                actor
-        );
-        return productRepository.save(product);
-    }
+    Product createProduct(Member actor, ProductCreateRequest request, List<MultipartFile> images);
 
     // ======================================= find/get methods ======================================= //
     /**
@@ -90,13 +50,9 @@ public class ProductService {
      * @param search 검색 조건 (keyword, category, location, isDelivery, status)
      * @return 페이징된 상품 목록
      */
-    @Transactional(readOnly = true)
-    public Page<Product> findBySearchPaged(
+    Page<Product> findBySearchPaged(
             int page, int size, ProductSearchSortType sort, ProductSearchDto search
-    ) {
-        Pageable pageable = getPageable(page, size, sort);
-        return productRepository.findBySearchPaged(pageable, search);
-    }
+    );
 
     /**
      * 특정 회원의 상품 목록 조회 (페이징)
@@ -107,40 +63,14 @@ public class ProductService {
      * @param actor 조회할 회원
      * @param status 판매 상태 (SELLING, SOLD, FAILED)
      */
-    @Transactional(readOnly = true)
-    public Page<Product> findByMemberPaged(
+    Page<Product> findByMemberPaged(
             int page, int size, ProductSearchSortType sort, Member actor, SaleStatus status
-    ) {
-        Pageable pageable = getPageable(page, size, sort);
-        return productRepository.findByMemberPaged(pageable, actor.getId(), SaleStatus.fromSaleStatus(status));
-    }
+    );
 
-    /**
-     * Pageable 객체 생성 및 검증
-     * - page: 1 이상 (기본값: 1)
-     * - size: 1~100 (기본값: 20)
-     * - sort: ProductSearchSortType을 Spring Data Sort로 변환
-     */
-    private Pageable getPageable(int page, int size, ProductSearchSortType sort) {
-        page = (page > 0) ? page : 1;
-        size = (size > 0 && size <= 100) ? size : 20;
-        return PageRequest.of(page - 1, size, sort.toSort());
-    }
+    Optional<Product> findById(Long productId);
 
-    public Optional<Product> findById(Long productId) {
-        return productRepository.findById(productId);
-    }
-
-    public Product getProductById(Long productId) {
+    default Product getProductById(Long productId) {
         return findById(productId).orElseThrow(ProductException::notFound);
-    }
-
-    public Optional<Product> findLatest() {
-        return productRepository.findFirstByOrderByIdDesc();
-    }
-
-    public long count() {
-        return productRepository.count();
     }
 
     // ======================================= modify/delete methods ======================================= //
@@ -157,22 +87,7 @@ public class ProductService {
      * @return 수정된 상품
      * @throws ProductException 경매 시작 후 수정 시도, 이미지 검증 실패 등
      */
-    @Transactional
-    public Product modifyProduct(Product product, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds) {
-        // 수정 요청 검증
-        ProductModifyRequest validatedRequest = validateModifyRequest(product, request);
-
-        // Product 수정
-        product.modify(validatedRequest);
-
-        // 이미지 검증 및 수정
-        productImageService.validateAndModifyImages(product, images, deleteImageIds);
-
-        // Elasticsearch 동기화
-        productSyncService.syncProductUpdate(product);
-
-        return product;
-    }
+    Product modifyProduct(Product product, ProductModifyRequest request, List<MultipartFile> images, List<Long> deleteImageIds);
 
     /**
      * 상품 삭제
@@ -183,76 +98,5 @@ public class ProductService {
      * @param product 삭제할 상품
      * @throws ProductException 경매 시작 후 삭제 시도
      */
-    @Transactional
-    public void deleteProduct(Product product) {
-        // 삭제 권한 검증
-        if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw ProductException.auctionDeleteForbidden();
-        }
-
-        // 이미지 및 Product 삭제
-        productImageService.deleteAllProductImages(product);
-        productRepository.delete(product);
-
-        // Elasticsearch 동기화
-        productSyncService.syncProductDeletion(product.getId());
-    }
-
-    // ======================================= validation methods ======================================= //
-    /**
-     * 배송 방법에 따른 위치 정보 검증
-     * - 직거래 또는 직거래+택배 선택 시 위치 필수
-     *
-     * @throws ProductException 위치 정보가 없을 경우
-     */
-    private void validateLocation(String location, DeliveryMethod deliveryMethod) {
-        if (deliveryMethod == DeliveryMethod.TRADE || deliveryMethod == DeliveryMethod.BOTH) {
-            if (location == null || location.isBlank()) {
-                throw ProductException.locationRequired();
-            }
-        }
-    }
-
-    /**
-     * 상품 수정 요청 검증
-     * - 경매 시작 후 수정 불가 검증
-     * - 배송 방법에 따른 위치 정보 검증
-     * - 변경되지 않은 필드는 null로 설정 (불필요한 업데이트 방지)
-     *
-     * @param product 기존 상품 정보
-     * @param request 수정 요청 정보
-     * @return 검증 및 최적화된 수정 요청 객체
-     * @throws ProductException 경매 시작 후 수정 시도, 위치 정보 누락 등
-     */
-    public ProductModifyRequest validateModifyRequest(Product product, ProductModifyRequest request) {
-        // 경매 시작 후 수정 불가
-        if (product.getStartTime().isBefore(LocalDateTime.now())) {
-            throw ProductException.auctionModifyForbidden();
-        }
-
-        // 배송 방법 변경 시 위치 정보 검증
-        validateLocation(request.location(), request.deliveryMethod());
-
-        // 각 필드의 변경 여부 확인
-        // 기존 값과 동일한 경우 null로 설정 (업데이트 스킵)
-        String newTitle = request.name();
-        String newDescription = request.description();
-        Integer newCategoryId = request.categoryId();
-        Long newInitialPrice = request.initialPrice();
-        LocalDateTime newAuctionStartTime = request.auctionStartTime();
-        String newAuctionDuration = request.auctionDuration();
-        DeliveryMethod newDeliveryMethod = request.deliveryMethod();
-        String newLocation = request.location();
-
-        if (newTitle != null && newTitle.equals(product.getProductName())) newTitle = null;
-        if (newDescription != null && newDescription.equals(product.getDescription())) newDescription = null;
-        if (newCategoryId != null && ProductCategory.fromId(newCategoryId).equals(product.getCategory())) newCategoryId = null;
-        if (newInitialPrice != null && newInitialPrice.equals(product.getInitialPrice())) newInitialPrice = null;
-        if (newAuctionStartTime != null && newAuctionStartTime.equals(product.getStartTime())) newAuctionStartTime = null;
-        if (newAuctionDuration != null && AuctionDuration.fromValue(newAuctionDuration).equals(product.getDuration())) newAuctionDuration = null;
-        if (newDeliveryMethod != null && newDeliveryMethod.equals(product.getDeliveryMethod())) newDeliveryMethod = null;
-        if (newLocation != null && newLocation.equals(product.getLocation())) newLocation = null;
-
-        return new ProductModifyRequest(newTitle, newDescription, newCategoryId, newInitialPrice, newAuctionStartTime, newAuctionDuration, newDeliveryMethod, newLocation);
-    }
+    void deleteProduct(Product product);
 }

@@ -3,18 +3,19 @@ package com.backend.domain.cash.service;
 import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
-import com.backend.domain.cash.enums.CashTxType;
-import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.dto.response.CashResponse;
 import com.backend.domain.cash.dto.response.CashTransactionResponse;
 import com.backend.domain.cash.dto.response.CashTransactionsResponse;
 import com.backend.domain.cash.entity.Cash;
 import com.backend.domain.cash.entity.CashTransaction;
+import com.backend.domain.cash.enums.CashTxType;
+import com.backend.domain.cash.enums.RelatedType;
 import com.backend.domain.cash.repository.CashRepository;
 import com.backend.domain.cash.repository.CashTransactionRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import jakarta.persistence.EntityManager;
@@ -210,7 +211,7 @@ class CashServiceTest {
         Cash myCash = cashRepository.save(Cash.builder().member(me).balance(10_000L).build());
 
         // 상품 생성(생성자 정책에 맞춰 값 채움)
-        Product product = new Product(
+        Product product = new StandardProduct(
                 "테스트상품2", "desc",
                 ProductCategory.values()[0],
                 1_000L,

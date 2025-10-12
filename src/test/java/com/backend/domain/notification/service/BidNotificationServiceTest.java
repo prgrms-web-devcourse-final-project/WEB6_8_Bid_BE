@@ -5,6 +5,7 @@ import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.notification.entity.Notification;
 import com.backend.domain.notification.repository.NotificationRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.websocket.service.WebSocketService;
@@ -205,7 +206,7 @@ class BidNotificationServiceTest {
                 .build();
         memberRepository.save(seller);
         
-        Product product = new Product(
+        Product product = new StandardProduct(
                 "테스트 상품",
                 "테스트 상품 설명",
                 DIGITAL_ELECTRONICS,

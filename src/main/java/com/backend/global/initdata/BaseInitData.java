@@ -18,6 +18,7 @@ import com.backend.domain.payment.enums.PaymentStatus;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.repository.PaymentRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.domain.product.service.ProductSyncService;
 import lombok.RequiredArgsConstructor;
@@ -87,7 +88,7 @@ public class BaseInitData {
                 .nickname("판매자")
                 .build());
 
-        Product product1 = productRepository.save(new Product(
+        Product product1 = productRepository.save(new StandardProduct(
                 "iPhone 15 Pro",
                 "최신 iPhone 15 Pro 새상품입니다.",
                 com.backend.domain.product.enums.ProductCategory.DIGITAL_ELECTRONICS,
@@ -99,7 +100,7 @@ public class BaseInitData {
                 seller
         ));
 
-        Product product2 = productRepository.save(new Product(
+        Product product2 = productRepository.save(new StandardProduct(
                 "MacBook Pro M3",
                 "MacBook Pro 14인치 M3 칩셋 모델입니다.",
                 com.backend.domain.product.enums.ProductCategory.DIGITAL_ELECTRONICS,
@@ -111,7 +112,7 @@ public class BaseInitData {
                 seller
         ));
 
-        Product product3 = productRepository.save(new Product(
+        Product product3 = productRepository.save(new StandardProduct(
                 "AirPods Pro 2세대",
                 "Apple AirPods Pro 2세대 노이즈캔슬링 이어폰입니다.",
                 com.backend.domain.product.enums.ProductCategory.DIGITAL_ELECTRONICS,
