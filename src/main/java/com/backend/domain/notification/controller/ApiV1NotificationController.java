@@ -90,7 +90,9 @@ public class ApiV1NotificationController {
     // ======================================= helper methods ======================================= //
     private Long getCurrentMemberId(User user) {
         if (user != null) {
-            return Long.parseLong(user.getUsername());
+            Member member = memberRepository.findByEmail(user.getUsername())
+                    .orElseThrow(() -> new RuntimeException("멤버를 찾을 수 없습니다."));
+            return member.getId();
         } else {
             // 테스트용: 인증이 없으면 첫 번째 사용자 사용
             Member member = memberRepository.findAll().stream().findFirst()
