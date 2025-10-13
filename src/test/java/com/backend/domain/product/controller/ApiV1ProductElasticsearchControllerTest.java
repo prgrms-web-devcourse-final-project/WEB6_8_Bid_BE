@@ -7,12 +7,14 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.service.ProductSearchService;
+import com.backend.global.redis.TestRedisConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.data.elasticsearch.repositories.enabled=true",
         "spring.autoconfigure.exclude="  // 빈 값으로 오버라이드
 })
+@Import(TestRedisConfiguration.class)
 class ApiV1ProductElasticsearchControllerTest {
     @Autowired
     private MockMvc mvc;

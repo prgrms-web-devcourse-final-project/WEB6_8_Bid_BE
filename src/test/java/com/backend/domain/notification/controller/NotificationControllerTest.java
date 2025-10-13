@@ -7,6 +7,7 @@ import com.backend.domain.notification.repository.NotificationRepository;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @ActiveProfiles("test")
 @WithMockUser
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 class NotificationControllerTest {
 
     @Autowired

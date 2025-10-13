@@ -8,6 +8,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 class NotificationQueueServiceTest {
 
     @Autowired

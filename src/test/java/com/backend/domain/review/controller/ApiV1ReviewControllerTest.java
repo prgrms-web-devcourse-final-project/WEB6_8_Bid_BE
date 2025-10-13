@@ -12,6 +12,7 @@ import com.backend.domain.review.dto.ReviewRequest;
 import com.backend.domain.review.entity.Review;
 import com.backend.domain.review.repository.ReviewRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 @Transactional
 class ApiV1ReviewControllerTest {
 
