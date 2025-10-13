@@ -293,7 +293,7 @@ public class BaseInitData {
 
         products.add(createProduct(members.get(2), "샤넬 클래식백", null,
                 ProductCategory.FASHION_CLOTHING, 3500000L, now.plusHours(48), 48,
-                DeliveryMethod.DELIVERY, null, "https://i.postimg.cc/tRDZfRHQ/tesla.jpg"));
+                DeliveryMethod.DELIVERY, null, "https://i.postimg.cc/Lsdnfnj6/chanel.jpg"));
 
         products.add(createProduct(members.get(3), "테슬라 모델3 2021년식", "저렴하게 판매합니다",
                 ProductCategory.AUTOMOTIVE, 35000000L, now.plusHours(72), 48,
