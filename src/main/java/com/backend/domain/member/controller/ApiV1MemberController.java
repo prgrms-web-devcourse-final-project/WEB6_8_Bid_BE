@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,13 @@ import java.time.LocalDateTime;
 @Tag(name = "Member", description = "회원 관련 API")
 public class ApiV1MemberController {
     private final MemberService memberService;
+
+    @Value("${app.cookie.domain:}")
+    private String cookieDomain;
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+    @Value("${app.cookie.sameSite:Lax}")
+    private String cookieSameSite;
 
     @Operation(summary = "회원가입 API", description = "이메일 비밀번호를 받아 회원가입")
     @PostMapping("/auth/signup")
@@ -114,18 +122,26 @@ public class ApiV1MemberController {
     // 로그인 성공 후 토큰을 안전한 쿠키로 내려줌..
     private void writeAuthCookies(HttpServletResponse res, LoginResponseDto dto) {
         // access 60분, refresh 7일
-        ResponseCookie access = ResponseCookie.from("ACCESS_TOKEN", dto.accessToken())
-                .httpOnly(true).secure(false)
-                .sameSite("Lax").path("/")
-                .maxAge(Duration.ofMinutes(60))
-                .build();
-        ResponseCookie refresh = ResponseCookie.from("REFRESH_TOKEN", dto.refreshToken())
-                .httpOnly(true).secure(false)
-                .sameSite("Lax").path("/")
-                .maxAge(Duration.ofDays(7))
-                .build();
+        ResponseCookie.ResponseCookieBuilder  accessBuilder = ResponseCookie.from("ACCESS_TOKEN", dto.accessToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ofMinutes(60));
 
-        res.addHeader(HttpHeaders.SET_COOKIE, access.toString());
-        res.addHeader(HttpHeaders.SET_COOKIE, refresh.toString());
+        ResponseCookie.ResponseCookieBuilder refreshBuilder = ResponseCookie.from("REFRESH_TOKEN", dto.refreshToken())
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path("/")
+                .maxAge(Duration.ofDays(7));
+
+        if (cookieDomain != null && !cookieDomain.isBlank()) {
+            accessBuilder.domain(cookieDomain);
+            refreshBuilder.domain(cookieDomain);
+        }
+
+        res.addHeader(HttpHeaders.SET_COOKIE, accessBuilder.build().toString());
+        res.addHeader(HttpHeaders.SET_COOKIE, refreshBuilder.build().toString());
     }
 }

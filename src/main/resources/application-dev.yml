@@ -24,3 +24,8 @@ file:
 testdata:
   generation:
     enabled: true
+app:
+  cookie:
+    domain: ""          # 설정 안 함(호스트 전용)
+    secure: false
+    sameSite: Lax

@@ -230,7 +230,7 @@ class ApiV1PaymentControllerTest {
                 .willReturn(TossIssueBillingKeyResponse.builder()
                         .billingKey("BILL-XYZ")
                         .provider("toss")
-                        .cardBrand("SHINHAN")
+                        .brand("SHINHAN")
                         .last4("****-****-****-1234")
                         .expMonth(12)
                         .expYear(2030)
