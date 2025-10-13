@@ -2,6 +2,7 @@ package com.backend.domain.review.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.member.service.MemberService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.domain.review.dto.ReviewRequest;
@@ -22,6 +23,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MemberRepository memberRepository;
     private final ProductRepository productRepository;
+    private final MemberService memberService;
 
     public ReviewResponse createReview(Long memberId, ReviewRequest request) {
         Member member = memberRepository.findById(memberId)
@@ -42,6 +44,8 @@ public class ReviewService {
                 .build();
 
         Review savedReview = reviewRepository.save(review);
+
+        createReviewCredit(product.getSeller(), request.isSatisfied());
         return ReviewResponse.from(savedReview);
     }
 
@@ -55,12 +59,19 @@ public class ReviewService {
     public ReviewResponse updateReview(Long memberId, Long reviewId, ReviewRequest request) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(ReviewException::reviewNotFound);
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ReviewException(RsStatus.MEMBER_NOT_FOUND));
+
+        Product product = productRepository.findById(request.productId())
+                .orElseThrow(() -> new ReviewException(RsStatus.PRODUCT_NOT_FOUND));
 
         if (!review.getReviewer().getId().equals(memberId)) {
             throw ReviewException.accessDenied();
         }
 
         review.update(request.comment(), request.isSatisfied());
+
+        updateReviewCredit(review, product.getSeller(), request.isSatisfied());
         return ReviewResponse.from(review);
     }
 
@@ -73,5 +84,21 @@ public class ReviewService {
         }
 
         reviewRepository.delete(review);
+    }
+
+    public void createReviewCredit(Member member, boolean isSatisfied) {
+        if (isSatisfied) {
+            memberService.updateCreditScore(member, 1);
+        }
+    }
+
+    public void updateReviewCredit(Review review, Member member, boolean isSatisfied) {
+        if (review.getIsSatisfied() != isSatisfied) {
+            if (isSatisfied) {
+                memberService.updateCreditScore(member, 1);
+            } else {
+                memberService.updateCreditScore(member, -1);
+            }
+        }
     }
 }
