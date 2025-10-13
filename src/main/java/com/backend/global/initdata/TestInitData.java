@@ -124,22 +124,19 @@ public class TestInitData {
         Product product9 = productService.saveProduct(member4, requestDto9);
         productImageService.createProductImage(product9, "/image9_1.jpg");
 
-        // 입찰 생성은 별도 트랜잭션으로 분리
-        self.createBids(product4.getId(), product9.getId(), member1.getId(), member2.getId());
+        // 입찰 생성 (분산락 없이)
+        createBidsWithoutLock(product4, product9, member1, member2);
     }
 
-    @Transactional
-    public void createBids(Long product4Id, Long product9Id, Long member1Id, Long member2Id) {
-        // 경매 진행
-        bidService.createBid(product4Id, member1Id, new BidRequestDto(1200000L));
-        bidService.createBid(product4Id, member2Id, new BidRequestDto(1300000L));
+    // 분산락 없이 입찰 생성
+    private void createBidsWithoutLock(Product product4, Product product9, Member member1, Member member2) {
 
-        bidService.createBid(product9Id, member1Id, new BidRequestDto(900000L));
+        bidService.createBidInternal(product4.getId(), member1.getId(), new BidRequestDto(1200000L));
+        bidService.createBidInternal(product4.getId(), member2.getId(), new BidRequestDto(1300000L));
 
-        // 낙찰 처리
-        productService.findById(product9Id).ifPresent(product -> {
-            product.setStatus("낙찰");
-            product.setEndTime(LocalDateTime.now());
-        });
+        bidService.createBidInternal(product9.getId(), member1.getId(), new BidRequestDto(900000L));
+
+        product9.setStatus("낙찰");
+        product9.setEndTime(LocalDateTime.now());
     }
 }
