@@ -2,12 +2,17 @@ package com.backend.domain.product.repository;
 
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
-import com.backend.domain.product.enums.*;
+import com.backend.domain.product.enums.AuctionStatus;
+import com.backend.domain.product.enums.DeliveryMethod;
+import com.backend.domain.product.enums.ProductCategory;
+import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
+import com.backend.global.redis.TestRedisConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.data.elasticsearch.repositories.enabled=true",
         "spring.autoconfigure.exclude="  // 빈 값으로 오버라이드
 })
+@Import(TestRedisConfiguration.class)
 class ProductElasticRepositoryTest {
     @Autowired
     private ProductElasticRepository productElasticRepository;

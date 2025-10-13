@@ -5,6 +5,7 @@ import com.backend.domain.board.dto.request.BoardWriteRequest;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @WithMockUser
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 class ApiV1BoardControllerTest {
 
     @Autowired

@@ -8,6 +8,7 @@ import com.backend.domain.payment.dto.response.PaymentMethodResponse;
 import com.backend.domain.payment.repository.PaymentMethodRepository;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 class ApiV1PaymentMethodControllerTest {
 
     @Autowired

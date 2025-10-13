@@ -8,6 +8,7 @@ import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.websocket.service.WebSocketService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.verify;
 @ActiveProfiles("test")
 @Transactional
 @MockitoSettings
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 class BidNotificationServiceTest {
 
     @Autowired
