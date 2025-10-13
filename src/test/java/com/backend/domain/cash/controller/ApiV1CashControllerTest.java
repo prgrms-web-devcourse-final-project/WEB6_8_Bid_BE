@@ -88,11 +88,11 @@ class ApiV1CashControllerTest {
         mvc.perform(get("/api/v1/cash"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.memberId", is(me.getId().intValue())))
-                .andExpect(jsonPath("$.cashId", is(myCash.getId().intValue())))
-                .andExpect(jsonPath("$.balance", is(10_000)))
-                .andExpect(jsonPath("$.createDate", notNullValue()))
-                .andExpect(jsonPath("$.modifyDate", notNullValue()));
+                .andExpect(jsonPath("$.data.memberId", is(me.getId().intValue())))
+                .andExpect(jsonPath("$.data.cashId", is(myCash.getId().intValue())))
+                .andExpect(jsonPath("$.data.balance", is(10_000)))
+                .andExpect(jsonPath("$.data.createDate", notNullValue()))
+                .andExpect(jsonPath("$.data.modifyDate", notNullValue()));
     }
 
     @Test
@@ -113,23 +113,23 @@ class ApiV1CashControllerTest {
                         .param("size", "20"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page", is(1)))
-                .andExpect(jsonPath("$.size", is(20)))
-                .andExpect(jsonPath("$.total", is(2)))
-                .andExpect(jsonPath("$.items", hasSize(2)))
+                .andExpect(jsonPath("$.data.page", is(1)))
+                .andExpect(jsonPath("$.data.size", is(20)))
+                .andExpect(jsonPath("$.data.total", is(2)))
+                .andExpect(jsonPath("$.data.items", hasSize(2)))
                 // 최신(id DESC) → 출금(7000) 먼저
-                .andExpect(jsonPath("$.items[0].type", is("WITHDRAW")))
-                .andExpect(jsonPath("$.items[0].amount", is(3_000)))
-                .andExpect(jsonPath("$.items[0].balanceAfter", is(7_000)))
-                .andExpect(jsonPath("$.items[0].related.type", is("PAYMENT")))
-                .andExpect(jsonPath("$.items[0].related.id", is(102)))
+                .andExpect(jsonPath("$.data.items[0].type", is("WITHDRAW")))
+                .andExpect(jsonPath("$.data.items[0].amount", is(3_000)))
+                .andExpect(jsonPath("$.data.items[0].balanceAfter", is(7_000)))
+                .andExpect(jsonPath("$.data.items[0].related.type", is("PAYMENT")))
+                .andExpect(jsonPath("$.data.items[0].related.id", is(102)))
 
                 // 그 다음 입금(10000)
-                .andExpect(jsonPath("$.items[1].type", is("DEPOSIT")))
-                .andExpect(jsonPath("$.items[1].amount", is(10_000)))
-                .andExpect(jsonPath("$.items[1].balanceAfter", is(10_000)))
-                .andExpect(jsonPath("$.items[1].related.type", is("PAYMENT")))
-                .andExpect(jsonPath("$.items[1].related.id", is(101)));
+                .andExpect(jsonPath("$.data.items[1].type", is("DEPOSIT")))
+                .andExpect(jsonPath("$.data.items[1].amount", is(10_000)))
+                .andExpect(jsonPath("$.data.items[1].balanceAfter", is(10_000)))
+                .andExpect(jsonPath("$.data.items[1].related.type", is("PAYMENT")))
+                .andExpect(jsonPath("$.data.items[1].related.id", is(101)));
     }
 
     @Test
@@ -146,16 +146,16 @@ class ApiV1CashControllerTest {
         mvc.perform(get("/api/v1/cash/transactions/{id}", txWithdraw.getId()))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId", is(txWithdraw.getId().intValue())))
-                .andExpect(jsonPath("$.cashId", is(myCash.getId().intValue())))
-                .andExpect(jsonPath("$.type", is("WITHDRAW")))
-                .andExpect(jsonPath("$.amount", is(3_000)))
-                .andExpect(jsonPath("$.balanceAfter", is(7_000)))
-                .andExpect(jsonPath("$.createdAt", notNullValue()))
+                .andExpect(jsonPath("$.data.transactionId", is(txWithdraw.getId().intValue())))
+                .andExpect(jsonPath("$.data.cashId", is(myCash.getId().intValue())))
+                .andExpect(jsonPath("$.data.type", is("WITHDRAW")))
+                .andExpect(jsonPath("$.data.amount", is(3_000)))
+                .andExpect(jsonPath("$.data.balanceAfter", is(7_000)))
+                .andExpect(jsonPath("$.data.createdAt", notNullValue()))
                 // Related + Links (PAYMENT면 paymentDetail 링크 생성)
-                .andExpect(jsonPath("$.related.type", is("PAYMENT")))
-                .andExpect(jsonPath("$.related.id", is(102)))
-                .andExpect(jsonPath("$.related.links.paymentDetail", is("/api/v1/payments/me/102")));
+                .andExpect(jsonPath("$.data.related.type", is("PAYMENT")))
+                .andExpect(jsonPath("$.data.related.id", is(102)))
+                .andExpect(jsonPath("$.data.related.links.paymentDetail", is("/api/v1/payments/me/102")));
     }
 
     @Test

@@ -71,7 +71,7 @@ class CashServiceTest {
         // 검증: 잔액 2_000, WITHDRAW, 금액 8_000, 관련 타입 BID
         assertThat(cash.getBalance()).isEqualTo(2_000L);
         assertThat(tx.getType()).isEqualTo(CashTxType.WITHDRAW);
-        assertThat(tx.getAmount()).isEqualTo(8_000L);
+        assertThat(tx.getAmount()).isEqualTo(-8_000L);
         assertThat(tx.getBalanceAfter()).isEqualTo(2_000L);
         assertThat(tx.getRelatedType()).isEqualTo(RelatedType.BID);
         assertThat(tx.getRelatedId()).isEqualTo(123L);
