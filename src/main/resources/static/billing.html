@@ -3,36 +3,21 @@
 <title>Toss Billing Auth</title>
 <script src="https://js.tosspayments.com/v1"></script>
 
-<label>API Base</label>
-<input id="base" value="http://localhost:8080/api/v1" style="width:420px"><br>
-<label>Bearer Token</label>
-<input id="token" style="width:420px"><br>
-<button id="btn">빌링키 발급(카드 등록)</button>
+<button id="pay">결제하기</button>
 
 <script>
-    const clientKey = 'test_ck_Z1aOwX7K8myXN7zQk1dP8yQxzvNP'; // ← 토스 clientKey(테스트)
-    const toss = TossPayments(clientKey);
+    document.getElementById('pay').onclick = async () => {
+      // ★ 로그인 후 쿠키로 인증되므로 credentials: 'include'
+      const r = await fetch('/api/v1/payments/toss/billing-auth-params', { credentials: 'include' });
+      if (!r.ok) { alert('인증 필요'); return; }
+      const body = await r.json();
+      const p = body.data || body;
 
-   async function getMyId(base, token) {
-      const resp = await fetch(base + '/members/me', {
-        headers: { Authorization: 'Bearer ' + token }
-      }).then(r => r.json());
-      // RsData 포맷 방어
-      const me = resp?.data ?? resp;
-      return me?.id;
-      }
-
-
-  document.getElementById('btn').onclick = async () => {
-    const base  = document.getElementById('base').value.trim();
-    const token = document.getElementById('token').value.trim();
-
-    const memberId    = await getMyId(base, token);
-    const customerKey = `user-${memberId}`;      // ★ 서버와 동일 규칙
-
-    const successUrl = location.origin + '/payments/toss/billing-success.html';
-    const failUrl    = location.origin + '/payments/toss/billing-fail.html';
-
-    toss.requestBillingAuth('카드', { customerKey, successUrl, failUrl });
-  };
+      const toss = TossPayments(p.clientKey);
+      toss.requestBillingAuth('카드', {
+        customerKey: p.customerKey,   // 서버가 계산해 준 값
+        successUrl:  p.successUrl,    // 예: http://localhost:8080/payments/toss/billing-success.html
+        failUrl:     p.failUrl
+      });
+    };
 </script>

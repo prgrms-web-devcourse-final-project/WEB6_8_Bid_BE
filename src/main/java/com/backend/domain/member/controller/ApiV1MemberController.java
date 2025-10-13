@@ -5,14 +5,18 @@ import com.backend.domain.member.service.MemberService;
 import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Controller
@@ -32,9 +36,10 @@ public class ApiV1MemberController {
 
     @Operation(summary = "로그인 API", description = "이메일과 비밀번호를 받아 로그인 처리 후 토큰 발급")
     @PostMapping("/auth/login")
-    public ResponseEntity<RsData<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
+    public ResponseEntity<RsData<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto loginRequestDto,
+                                                          HttpServletResponse response) {
         RsData<LoginResponseDto> loginResponse = memberService.login(loginRequestDto);
-
+        writeAuthCookies(response, loginResponse.data());
         return ResponseEntity.status(loginResponse.statusCode()).body(loginResponse);
     }
 
@@ -104,5 +109,23 @@ public class ApiV1MemberController {
         System.out.println("인증이름" + authentication.getName());
         RsData<Void> withdrawResult = memberService.withdraw(authentication.getName());
         return ResponseEntity.status(withdrawResult.statusCode()).body(withdrawResult);
+    }
+
+    // 로그인 성공 후 토큰을 안전한 쿠키로 내려줌..
+    private void writeAuthCookies(HttpServletResponse res, LoginResponseDto dto) {
+        // access 60분, refresh 7일
+        ResponseCookie access = ResponseCookie.from("ACCESS_TOKEN", dto.accessToken())
+                .httpOnly(true).secure(false)
+                .sameSite("Lax").path("/")
+                .maxAge(Duration.ofMinutes(60))
+                .build();
+        ResponseCookie refresh = ResponseCookie.from("REFRESH_TOKEN", dto.refreshToken())
+                .httpOnly(true).secure(false)
+                .sameSite("Lax").path("/")
+                .maxAge(Duration.ofDays(7))
+                .build();
+
+        res.addHeader(HttpHeaders.SET_COOKIE, access.toString());
+        res.addHeader(HttpHeaders.SET_COOKIE, refresh.toString());
     }
 }
