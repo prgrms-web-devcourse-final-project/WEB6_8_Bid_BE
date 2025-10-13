@@ -173,4 +173,10 @@ public class MemberService {
         memberRepository.delete(member);
         return new RsData<>("200-5", "회원 탈퇴가 완료되었습니다.", null);
     }
+
+    public void updateCreditScore(Member member, int creditScore) {
+        int newCreditScore = member.getCreditScore() + creditScore;
+        member.updateCreditScore(newCreditScore);
+        memberRepository.save(member);
+    }
 }

@@ -58,6 +58,10 @@ public class Member extends BaseEntity {
         this.address = address;
     }
 
+    public void updateCreditScore(int creditScore) {
+        this.creditScore = creditScore;
+    }
+
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
 
