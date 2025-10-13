@@ -12,6 +12,7 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.event.helper.ProductChangeTracker;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.exception.ServiceException;
+import com.backend.global.lock.DistributedLock;
 import com.backend.global.response.RsData;
 import com.backend.global.websocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
@@ -26,12 +27,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class BidService {
     private final BidRepository bidRepository;
@@ -40,20 +39,15 @@ public class BidService {
     private final WebSocketService webSocketService;
     private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;
-    private final Map<Long, Object> productLocks = new ConcurrentHashMap<>();
 
     // ======================================= create methods ======================================= //
+    @DistributedLock(key = "'product:' + #productId", waitTime = 10, leaseTime = 5)
     public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request) {
-        // 상품별 락 객체 가져오기 (없으면 생성)
-        Object lock = productLocks.computeIfAbsent(productId, k -> new Object());
-
-        // 동시성 제어: 같은 상품에 대한 입찰은 순차적으로 처리
-        synchronized (lock) {
-            return createBidInternal(productId, bidderId, request);
-        }
+        return createBidInternal(productId, bidderId, request);
     }
 
-    private RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
+    @Transactional
+    public RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
         // Product/Member 조회
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> ServiceException.notFound("존재하지 않는 상품입니다."));
