@@ -774,7 +774,7 @@ class ApiV1ProductControllerTest {
                 ).andDo(print());
 
         Member actor = memberRepository.findByEmail("user1@example.com").get();
-        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, SaleStatus.SELLING);
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.LATEST, actor, null);
 
         // then
         resultActions
@@ -870,7 +870,7 @@ class ApiV1ProductControllerTest {
                 .andDo(print());
 
         Member actor = memberRepository.findByEmail("user1@example.com").get();
-        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, SaleStatus.SELLING);
+        Page<Product> productPage = productService.findByMemberPaged(1, 20, ProductSearchSortType.POPULAR, actor, null);
 
         // then
         resultActions

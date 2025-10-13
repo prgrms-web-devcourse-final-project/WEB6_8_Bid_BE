@@ -108,7 +108,7 @@ public class ApiV1ProductController implements ApiV1ProductControllerDocs {
     public RsData<PageDto<MyProductListItemDto>> getMyProducts(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "SELLING") SaleStatus status,
+            @RequestParam(required = false) SaleStatus status,
             @RequestParam(defaultValue = "LATEST") ProductSearchSortType sort,
             @AuthenticationPrincipal User user
     ) {
