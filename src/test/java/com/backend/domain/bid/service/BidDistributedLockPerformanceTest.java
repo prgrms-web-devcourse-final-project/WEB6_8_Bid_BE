@@ -7,11 +7,11 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.repository.ProductRepository;
-import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.response.RsData;
 import org.junit.jupiter.api.AfterEach;
@@ -39,8 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 분산락 성능 및 정합성 검증 테스트
  */
 @SpringBootTest
-@ActiveProfiles("test")
-@Import({TestRedisConfiguration.class, TestElasticsearchConfiguration.class})
+@ActiveProfiles("bidtest")
+@Import({TestRedisConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BidDistributedLockPerformanceTest {
 
@@ -86,7 +86,7 @@ class BidDistributedLockPerformanceTest {
                 .toList();
         memberRepository.saveAll(testBidders);
 
-        testProduct = Product.testBuilder()
+        testProduct = StandardProduct.testBuilder()
                 .productName("성능테스트상품")
                 .description("분산락 성능 테스트용 상품")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)

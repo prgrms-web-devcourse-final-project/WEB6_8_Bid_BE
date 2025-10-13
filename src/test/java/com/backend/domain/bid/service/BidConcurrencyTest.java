@@ -7,11 +7,11 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.repository.ProductRepository;
-import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.response.RsData;
 import org.junit.jupiter.api.AfterEach;
@@ -43,8 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Scenario 3: 락 타임아웃 시나리오 검증
  */
 @SpringBootTest
-@ActiveProfiles("test")
-@Import({TestRedisConfiguration.class, TestElasticsearchConfiguration.class})
+@ActiveProfiles("bidtest")
+@Import({TestRedisConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BidConcurrencyTest {
 
@@ -91,7 +91,7 @@ class BidConcurrencyTest {
         memberRepository.saveAll(testBidders);
 
         // 테스트용 상품 생성
-        testProduct = Product.testBuilder()
+        testProduct = StandardProduct.testBuilder()
                 .productName("동시성테스트상품")
                 .description("분산락 테스트용 상품")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)
@@ -108,7 +108,7 @@ class BidConcurrencyTest {
         productRepository.save(testProduct);
 
         // 두 번째 테스트용 상품 생성 (독립성 테스트용)
-        testProduct2 = Product.testBuilder()
+        testProduct2 = StandardProduct.testBuilder()
                 .productName("동시성테스트상품2")
                 .description("분산락 독립성 테스트용 상품")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)

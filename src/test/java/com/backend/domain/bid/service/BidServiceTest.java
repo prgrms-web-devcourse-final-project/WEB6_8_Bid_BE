@@ -9,12 +9,12 @@ import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
-import com.backend.domain.product.repository.ProductRepository;
-import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
+import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.exception.ServiceException;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.response.RsData;
@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("bidtest")
-@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
+@Import({TestRedisConfiguration.class})
 class BidServiceTest {
 
     @Autowired
@@ -125,7 +125,7 @@ class BidServiceTest {
     }
 
     private void createTestProducts() {
-        activeProduct = Product.testBuilder()
+        activeProduct = StandardProduct.testBuilder()
                 .productName("테스트상품1")
                 .description("테스트용 상품입니다")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)
@@ -141,7 +141,7 @@ class BidServiceTest {
                 .testBuild();
         productRepository.save(activeProduct);
 
-        productWithBids = Product.testBuilder()
+        productWithBids = StandardProduct.testBuilder()
                 .productName("입찰있는상품")
                 .description("이미 입찰이 있는 상품입니다")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)

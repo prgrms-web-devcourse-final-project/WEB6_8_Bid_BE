@@ -4,11 +4,11 @@ import com.backend.domain.bid.dto.BidRequestDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.entity.Product;
+import com.backend.domain.product.entity.StandardProduct;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.repository.jpa.ProductRepository;
-import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("bidtest")
 @WithMockUser
-@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
+@Import({TestRedisConfiguration.class})
 class ApiV1BidControllerTest {
 
     @Autowired
@@ -117,7 +117,7 @@ class ApiV1BidControllerTest {
     private void createTestProducts() {
         Member seller = memberRepository.findByNickname("테스트판매자").orElseThrow();
 
-        Product product = Product.testBuilder()
+        Product product = StandardProduct.testBuilder()
                 .productName("테스트상품1")
                 .description("테스트용 상품입니다")
                 .category(ProductCategory.DIGITAL_ELECTRONICS)
