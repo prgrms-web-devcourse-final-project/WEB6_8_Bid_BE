@@ -121,8 +121,9 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         }
 
         // 배송 가능 여부 필터
-        if (search.isDelivery() != null && search.isDelivery()) {
-            builder.and(product.deliveryMethod.in(DeliveryMethod.DELIVERY, DeliveryMethod.BOTH));
+        if (search.isDelivery() != null) {
+            if (search.isDelivery()) builder.and(product.deliveryMethod.in(DeliveryMethod.DELIVERY, DeliveryMethod.BOTH));
+            else builder.and(product.deliveryMethod.in(DeliveryMethod.TRADE));
         }
 
         // 경매 상태 필터 (BIDDING이 default)
