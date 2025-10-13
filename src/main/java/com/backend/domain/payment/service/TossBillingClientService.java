@@ -90,7 +90,7 @@ public class TossBillingClientService {
             return TossIssueBillingKeyResponse.builder()
                     .billingKey(billingKey)
                     .cardBrand(cardBrand)
-                    .cardNumber(cardNumber)
+                    .last4(cardNumber)
                     .expMonth(expMonth)
                     .expYear(expYear)
                     .build();
