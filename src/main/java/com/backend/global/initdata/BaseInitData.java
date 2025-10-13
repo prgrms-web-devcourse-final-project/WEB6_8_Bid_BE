@@ -44,8 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-//@Profile("dev")
-@Profile("!test")
+@Profile("dev")
 @Component
 @RequiredArgsConstructor
 public class BaseInitData {
@@ -78,9 +77,9 @@ public class BaseInitData {
     @Transactional
     public void work1() {
         // 이미 데이터가 있으면 건너뛰기
-//        if (memberRepository.count() > 0) {
-//            return;
-//        }
+        if (memberRepository.count() > 0) {
+            return;
+        }
 
         // ========== 1. 회원 생성 (10명) ==========
         List<Member> members = createMembers();
