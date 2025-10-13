@@ -92,6 +92,7 @@ public class ApiV1PaymentController {
 
         return RsData.ok("빌링키가 발급되었습니다.", data);
     }
+
     @GetMapping("/toss/billing-auth-params")
     @Operation(
             summary = "토스 카드등록(빌링) 팝업 파라미터 조회",

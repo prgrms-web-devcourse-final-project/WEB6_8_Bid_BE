@@ -262,7 +262,7 @@ class PaymentMethodServiceTest {
 
             assertThatThrownBy(() -> paymentMethodService.create(1L, req))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("CARD는 brand, last4, expMonth, expYear가 필요합니다.");
+                    .hasMessageContaining("CARD는 brand, last4가 필요합니다. (expMonth/expYear는 선택)");
         }
 
         @Test

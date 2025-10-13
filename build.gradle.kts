@@ -70,6 +70,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("com.github.codemonstur:embedded-redis:1.4.2")
     implementation("net.datafaker:datafaker:2.1.0")
+    testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock:4.1.4")
 }
 
 tasks.withType<Test> {
