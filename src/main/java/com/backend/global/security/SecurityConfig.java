@@ -53,7 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/*/test-data/**").permitAll()
 
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()   // 임시 허용 authenticated()로 고칠 것
                 )
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .csrf(AbstractHttpConfigurer::disable)
