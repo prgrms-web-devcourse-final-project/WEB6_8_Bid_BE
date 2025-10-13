@@ -77,6 +77,13 @@ public class PaymentMethodService {
                 if (isBlank(req.getBrand()) || isBlank(req.getLast4())){
                     throw new IllegalArgumentException("CARD는 brand, last4가 필요합니다. (expMonth/expYear는 선택)");
                 }
+
+                String normalizedLast4 = req.getLast4().replaceAll("\\D", "");
+                if (normalizedLast4.length() < 4) {
+                    throw new IllegalArgumentException("last4는 카드번호 끝 4자리여야 합니다.");
+                }
+                last4 = normalizedLast4.substring(normalizedLast4.length() - 4);
+
                 // 카드 필드 채우기..
                 brand = req.getBrand();
                 last4 = req.getLast4();
@@ -105,6 +112,13 @@ public class PaymentMethodService {
             }
         }
 
+        String provider = req.getProvider();
+        if (provider == null || provider.isBlank()) {
+            provider = "toss";
+        } else {
+            provider = provider.trim().toLowerCase();
+        }
+
         PaymentMethod entity = PaymentMethod.builder()
                 .member(member)
                 .methodType(type)
@@ -120,7 +134,7 @@ public class PaymentMethodService {
                 .bankCode(bankCode)
                 .bankName(bankName)
                 .acctLast4(acctLast4)
-                .provider( nvlBlankToNull(req.getProvider()) )
+                .provider(provider)
                 .active(true)
                 .deleted(false)
                 .build();

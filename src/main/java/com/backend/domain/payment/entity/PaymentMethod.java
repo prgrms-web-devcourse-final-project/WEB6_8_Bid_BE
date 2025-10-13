@@ -59,7 +59,7 @@ public class PaymentMethod extends BaseEntity {
     private String acctLast4;                                          // 계좌번호 끝 4자리(예: 5678)..
 
     @Column(length = 32, nullable = false)
-    private String provider;                                          // 어떤 PG를 통해 결제하는지(예: "toss", "iamport")..
+    private String provider;                                          // 어떤 PG를 통해 결제하는지(예: "toss")..
 
     @Column(nullable = false)
     @Builder.Default

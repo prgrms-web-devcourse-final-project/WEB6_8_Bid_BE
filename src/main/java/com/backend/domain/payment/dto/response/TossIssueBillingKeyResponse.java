@@ -13,7 +13,7 @@ public class TossIssueBillingKeyResponse {
     private String provider;   // "toss"
 
     @Schema(description = "카드 브랜드/발급사", example = "SHINHAN")
-    private String cardBrand;  // 선택: 스냅샷에 쓰려면
+    private String brand;  // 선택: 스냅샷에 쓰려면
 
     @Schema(description = "카드 끝 4자리", example = "1234")
     private String last4; // 선택

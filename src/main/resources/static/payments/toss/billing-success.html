@@ -36,8 +36,11 @@
         log(`✓ 교환 성공 → billingKey=${billingKey}`);
 
         // 카드 정보(있으면) 보조로 사용
-        const brand   = d.cardBrand ?? null;
-        const last4   = d.cardNumber ? String(d.cardNumber).slice(-4) : null;
+        const brand   = d.brand ?? d.cardBrand ?? null;
+        const rawLast4 = d.last4 ?? d.cardNumber ?? null;
+        const last4   = rawLast4
+            ? String(rawLast4).replace(/\D/g, '').slice(-4)  // 숫자만 남기고 끝 4자리
+            : null;
         const expMon  = d.expMonth ?? null;
         const expYear = d.expYear  ?? null;
 

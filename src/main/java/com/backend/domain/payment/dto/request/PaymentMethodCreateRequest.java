@@ -29,6 +29,5 @@ public class PaymentMethodCreateRequest {
     private String bankName;    // 예: KB국민은행
     private String acctLast4;   // "5678"
 
-    @NotBlank
-    private String provider;    // "toss", "iamport" 등..
+    private String provider;    // "toss"
 }
