@@ -106,8 +106,7 @@ public class ApiV1PaymentMethodController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "결제 수단 수정", description = "CARD 수정: alias, isDefault, brand, last4, expMonth, expYear만 보내고 bankCode, bankName, acctLast4는 삭제\n\n" +
-            "BANK 수정: alias, isDefault, bankCode(선택), bankName, acctLast4만 보내고 brand, last4, expMonth, expYear는 삭제")
+    @Operation(summary = "결제 수단 수정", description = "수정 시에는 alias, isDefault만 반영합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공",
                     content = @Content(schema = @Schema(implementation = RsData.class))),

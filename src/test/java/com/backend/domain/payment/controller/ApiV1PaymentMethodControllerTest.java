@@ -150,10 +150,6 @@ class ApiV1PaymentMethodControllerTest {
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setAlias("경조/여행 전용");
         req.setIsDefault(true);
-        req.setBrand("SHINHAN");
-        req.setLast4("2222");
-        req.setExpMonth(5);
-        req.setExpYear(2035);
 
         mvc.perform(put("/api/v1/paymentMethods/{id}", saved.getId())
                         .header("Authorization", bearer("user1@example.com"))
@@ -212,9 +208,6 @@ class ApiV1PaymentMethodControllerTest {
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setAlias("월급통장");
         req.setIsDefault(false);
-        req.setBankCode("088");
-        req.setBankName("신한");
-        req.setAcctLast4("9999");
 
         mvc.perform(put("/api/v1/paymentMethods/{id}", saved.getId())
                         .header("Authorization", bearer("user1@example.com"))
