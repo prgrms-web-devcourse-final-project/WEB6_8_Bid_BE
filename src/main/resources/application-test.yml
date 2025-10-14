@@ -25,7 +25,7 @@ spring:
       ddl-auto: create
 logging:
   level:
-    org.hibernate.orm.jdbc.bind: TRACE
+    org.springframework: DEBUG
     org.hibernate.orm.jdbc.extract: TRACE
     org.springframework.transaction.interceptor: TRACE
     com.back: DEBUG

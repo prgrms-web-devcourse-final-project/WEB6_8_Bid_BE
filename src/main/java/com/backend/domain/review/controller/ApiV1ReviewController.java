@@ -13,6 +13,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/reviews")
 @RequiredArgsConstructor
@@ -36,6 +38,12 @@ public class ApiV1ReviewController {
     public ResponseEntity<RsData<ReviewResponse>> getReview(@PathVariable Long reviewId) {
         ReviewResponse response = reviewService.getReview(reviewId);
         return ResponseEntity.ok(RsData.ok("리뷰를 성공적으로 조회했습니다.", response));
+    }
+
+    @GetMapping("/products/{productId}")
+    public ResponseEntity<RsData<List<ReviewResponse>>> getReviewsByProductId(@PathVariable Long productId) {
+        List<ReviewResponse> responses = reviewService.getReviewsByProductId(productId);
+        return ResponseEntity.ok(RsData.ok("리뷰를 성공적으로 조회했습니다.", responses));
     }
 
     @PutMapping("/{reviewId}")

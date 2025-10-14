@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,10 +34,6 @@ public class ReviewService {
 
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new ReviewException(RsStatus.PRODUCT_NOT_FOUND));
-
-        reviewRepository.findByProductId(product.getId()).ifPresent(review -> {
-            throw ReviewException.alreadyExists();
-        });
 
         Review review = Review.builder()
                 .reviewer(member)
@@ -54,6 +53,14 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(ReviewException::reviewNotFound);
         return ReviewResponse.from(review);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getReviewsByProductId(Long productId) {
+        List<Review> reviews = reviewRepository.findAllByProductId(productId);
+        return reviews.stream()
+                .map(ReviewResponse::from)
+                .collect(Collectors.toList());
     }
 
     public ReviewResponse updateReview(Long memberId, Long reviewId, ReviewRequest request) {
