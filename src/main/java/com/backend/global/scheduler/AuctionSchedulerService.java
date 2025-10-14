@@ -1,7 +1,9 @@
 package com.backend.global.scheduler;
 
+import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.notification.service.AuctionNotificationService;
+import com.backend.domain.notification.service.BidNotificationService;
 import com.backend.domain.product.entity.Product;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.event.helper.ProductChangeTracker;
@@ -26,6 +28,7 @@ public class AuctionSchedulerService {
     private final BidRepository bidRepository;
     private final WebSocketService webSocketService;
     private final AuctionNotificationService auctionNotificationService;
+    private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;
 
     //  매분마다 실행되어 종료된 경매들을 확인하고 낙찰 처리
@@ -118,15 +121,18 @@ public class AuctionSchedulerService {
                 log.info("상품 ID: {}, 낙찰가: {}원으로 낙찰 처리되었습니다.", 
                     product.getId(), highestBidPrice);
                 
-                // 구독자들에게 낙찰 알림 전송
+                // 구독자들에게 낙찰 알림 전송 (브로드캐스트)
                 webSocketService.broadcastAuctionEnd(product.getId(), true, highestBidPrice);
+                
+                // 개인 알림 전송
+                sendAuctionEndNotifications(product, highestBidPrice);
                 
             } else {
                 // 입찰이 없었던 경우 - 유찰 처리
                 updateProduct(product, AuctionStatus.FAILED, null);
                 log.info("상품 ID: {}, 입찰이 없어 유찰 처리되었습니다.", product.getId());
                 
-                // 구독자들에게 유찰 알림 전송
+                // 구독자들에게 유찰 알림 전송 (브로드캐스트)
                 webSocketService.broadcastAuctionEnd(product.getId(), false, 0L);
             }
             
@@ -135,6 +141,41 @@ public class AuctionSchedulerService {
         } catch (Exception e) {
             log.error("경매 종료 처리 중 오류 발생. 상품 ID: {}, 오류: {}", 
                 product.getId(), e.getMessage(), e);
+        }
+    }
+
+    // 경매 종료 시 개인 알림 전송
+    private void sendAuctionEndNotifications(Product product, Long finalPrice) {
+        try {
+            List<Bid> bids = bidRepository.findAllBidsByProductOrderByPriceDesc(product.getId());
+
+            if (bids.isEmpty()) {
+                return;
+            }
+
+            // 낙찰자
+            Bid winningBid = bids.get(0);
+            
+            // 낙찰자에게 낙찰 알림
+            bidNotificationService.notifyAuctionWon(winningBid.getMember().getId(), product, finalPrice);
+            
+            // 나머지 입찰자들에게 낙찰 실패 알림
+            for (int i = 1; i < bids.size(); i++) {
+                Bid losingBid = bids.get(i);
+                bidNotificationService.notifyAuctionLost(
+                    losingBid.getMember().getId(), 
+                    product, 
+                    finalPrice, 
+                    losingBid.getBidPrice()
+                );
+            }
+            
+            log.info("상품 ID: {}에 대한 경매 종료 개인 알림 전송 완료. 낙찰자: {}, 탈락자: {}명",
+                    product.getId(), winningBid.getMember().getId(), bids.size() - 1);
+                    
+        } catch (Exception e) {
+            log.error("경매 종료 개인 알림 전송 중 오류 발생. 상품 ID: {}, 오류: {}",
+                    product.getId(), e.getMessage(), e);
         }
     }
 

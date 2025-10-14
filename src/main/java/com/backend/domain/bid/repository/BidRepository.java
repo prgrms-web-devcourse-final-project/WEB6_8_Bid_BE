@@ -61,4 +61,8 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             ORDER BY b.createDate DESC
             """)
     List<Bid> findWinningBids(@Param("memberId") Long memberId);
+
+    // 특정 상품의 모든 입찰 내역 (입찰가 내림차순)
+    @Query("SELECT b FROM Bid b JOIN FETCH b.member WHERE b.product.id = :productId AND b.status = 'BIDDING' ORDER BY b.bidPrice DESC")
+    List<Bid> findAllBidsByProductOrderByPriceDesc(@Param("productId") Long productId);
 }
