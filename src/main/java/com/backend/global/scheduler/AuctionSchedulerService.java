@@ -1,5 +1,6 @@
 package com.backend.global.scheduler;
 
+import com.backend.domain.bid.entity.Bid;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.notification.service.AuctionNotificationService;
 import com.backend.domain.notification.service.BidNotificationService;
@@ -146,32 +147,31 @@ public class AuctionSchedulerService {
     // 경매 종료 시 개인 알림 전송
     private void sendAuctionEndNotifications(Product product, Long finalPrice) {
         try {
-            // 이 상품에 입찰한 모든 사람들 조회
-            List<Object[]> bidders = entityManager.createQuery(
-                    "SELECT b.member.id, b.bidPrice FROM Bid b WHERE b.product.id = :productId AND b.status = 'BIDDING' ORDER BY b.bidPrice DESC",
-                    Object[].class)
-                    .setParameter("productId", product.getId())
-                    .getResultList();
+            List<Bid> bids = bidRepository.findAllBidsByProductOrderByPriceDesc(product.getId());
 
-            if (bidders.isEmpty()) {
+            if (bids.isEmpty()) {
                 return;
             }
 
-            // 최고 입찰자 (낙찰자)
-            Long winnerId = (Long) bidders.get(0)[0];
+            // 낙찰자
+            Bid winningBid = bids.get(0);
             
             // 낙찰자에게 낙찰 알림
-            bidNotificationService.notifyAuctionWon(winnerId, product, finalPrice);
+            bidNotificationService.notifyAuctionWon(winningBid.getMember().getId(), product, finalPrice);
             
             // 나머지 입찰자들에게 낙찰 실패 알림
-            for (int i = 1; i < bidders.size(); i++) {
-                Long loserId = (Long) bidders.get(i)[0];
-                Long loserBidPrice = ((Number) bidders.get(i)[1]).longValue();
-                bidNotificationService.notifyAuctionLost(loserId, product, finalPrice, loserBidPrice);
+            for (int i = 1; i < bids.size(); i++) {
+                Bid losingBid = bids.get(i);
+                bidNotificationService.notifyAuctionLost(
+                    losingBid.getMember().getId(), 
+                    product, 
+                    finalPrice, 
+                    losingBid.getBidPrice()
+                );
             }
             
             log.info("상품 ID: {}에 대한 경매 종료 개인 알림 전송 완료. 낙찰자: {}, 탈락자: {}명",
-                    product.getId(), winnerId, bidders.size() - 1);
+                    product.getId(), winningBid.getMember().getId(), bids.size() - 1);
                     
         } catch (Exception e) {
             log.error("경매 종료 개인 알림 전송 중 오류 발생. 상품 ID: {}, 오류: {}",
