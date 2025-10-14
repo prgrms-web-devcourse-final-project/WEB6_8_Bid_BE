@@ -25,11 +25,11 @@ public class PaymentMethod extends BaseEntity {
 
     // 결제수단의 종류(CARD/BANK)...
     @Enumerated(EnumType.STRING)
-    @Column(length = 16, nullable = false)
+    @Column(length = 16, nullable = false, updatable = false)
     private PaymentMethodType methodType;                                    // 카드인지, 계좌인지..
 
     // 공통 정보..
-    @Column(length = 200)
+    @Column(length = 200, updatable = false)
     private String token;                                              // PG에서 받은 토큰(필수 아님)..
 
     @Column(length = 100)
@@ -39,7 +39,7 @@ public class PaymentMethod extends BaseEntity {
     private Boolean isDefault;                                         // 내가 주로 쓰는 결제수단(true/false)..
 
     // 카드 전용 정보..
-    @Column(length = 50)
+    @Column(length = 50, updatable = false)
     private String brand;                                              // 카드 브랜드/발급사(예: SHINHAN)..
 
     @Column(length = 4, updatable = false)
@@ -58,7 +58,7 @@ public class PaymentMethod extends BaseEntity {
     @Column(length = 4, updatable = false)
     private String acctLast4;                                          // 계좌번호 끝 4자리(예: 5678)..
 
-    @Column(length = 32, nullable = false)
+    @Column(length = 32, nullable = false, updatable = false)
     private String provider;                                          // 어떤 PG를 통해 결제하는지(예: "toss")..
 
     @Column(nullable = false)
