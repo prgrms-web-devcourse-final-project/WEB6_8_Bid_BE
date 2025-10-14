@@ -432,11 +432,6 @@ class PaymentMethodServiceTest {
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setAlias("경조/여행 전용");
         req.setIsDefault(true);
-        req.setBrand("SHINHAN");
-        req.setLast4("2222");
-        req.setExpMonth(5);
-        req.setExpYear(2035);
-        // BANK 필드 미전달 (또는 null)
 
         // when
         PaymentMethodResponse res = paymentMethodService.edit(1L, 10L, req);
@@ -462,7 +457,6 @@ class PaymentMethodServiceTest {
         when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
-        req.setBankName("KB"); // 교차 타입 값
 
         assertThatThrownBy(() -> paymentMethodService.edit(1L, 10L, req))
                 .isInstanceOf(ResponseStatusException.class)
@@ -481,8 +475,6 @@ class PaymentMethodServiceTest {
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setAlias("새 별칭");
-        req.setBankName("   "); // 공백 → null 정규화
-        req.setBankCode("");     // 빈문자 → null 정규화
 
         PaymentMethodResponse res = paymentMethodService.edit(1L, 10L, req);
 
@@ -543,9 +535,6 @@ class PaymentMethodServiceTest {
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setAlias("월급통장");
         req.setIsDefault(false);
-        req.setBankCode("088");
-        req.setBankName("신한");
-        req.setAcctLast4("9999");
 
         PaymentMethodResponse res = paymentMethodService.edit(1L, 11L, req);
 
@@ -568,7 +557,6 @@ class PaymentMethodServiceTest {
         when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(11L, member)).thenReturn(Optional.of(entity));
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
-        req.setBrand("VISA"); // 교차 타입 값
 
         assertThatThrownBy(() -> paymentMethodService.edit(1L, 11L, req))
                 .isInstanceOf(ResponseStatusException.class)
@@ -587,8 +575,6 @@ class PaymentMethodServiceTest {
 
         PaymentMethodEditRequest req = new PaymentMethodEditRequest();
         req.setAlias("새 통장");
-        req.setBrand("   "); // 공백 → null 정규화
-        req.setLast4("");    // 빈문자 → null 정규화
 
         PaymentMethodResponse res = paymentMethodService.edit(1L, 11L, req);
 
