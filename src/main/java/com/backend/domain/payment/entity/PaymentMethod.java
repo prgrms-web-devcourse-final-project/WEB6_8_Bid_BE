@@ -42,7 +42,7 @@ public class PaymentMethod extends BaseEntity {
     @Column(length = 50)
     private String brand;                                              // 카드 브랜드/발급사(예: SHINHAN)..
 
-    @Column(length = 4)
+    @Column(length = 4, updatable = false)
     private String last4;                                              // 카드번호 끝 4자리(예: 1234)..
 
     private Integer expMonth;                                          // 유효기간(월) 1~12..
@@ -55,7 +55,7 @@ public class PaymentMethod extends BaseEntity {
     @Column(length = 50)
     private String bankName;                                           // 은행 이름(예: KB국민은행)..
 
-    @Column(length = 4)
+    @Column(length = 4, updatable = false)
     private String acctLast4;                                          // 계좌번호 끝 4자리(예: 5678)..
 
     @Column(length = 32, nullable = false)
