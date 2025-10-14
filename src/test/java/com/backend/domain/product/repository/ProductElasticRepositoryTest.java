@@ -7,7 +7,9 @@ import com.backend.domain.product.enums.DeliveryMethod;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.enums.ProductSearchSortType;
 import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
+import com.backend.domain.product.service.ProductSyncService;
 import com.backend.global.redis.TestRedisConfiguration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductElasticRepositoryTest {
     @Autowired
     private ProductElasticRepository productElasticRepository;
+
+    @Autowired
+    private ProductSyncService productSyncService;
+
+    @BeforeEach
+    void setUp() {
+        // Elasticsearch 인덱스 초기화
+        productElasticRepository.deleteAll();
+
+        // 테스트 데이터 재인덱싱
+        productSyncService.indexAllProducts();
+    }
 
     @Test
     @DisplayName("키워드로 상품 검색")
