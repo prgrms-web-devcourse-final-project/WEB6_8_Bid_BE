@@ -246,7 +246,7 @@ class ApiV1PaymentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.billingKey", is("BILL-XYZ")))
                 .andExpect(jsonPath("$.data.provider", is("toss")))
-                .andExpect(jsonPath("$.data.cardBrand", is("SHINHAN")));
+                .andExpect(jsonPath("$.data.brand", is("SHINHAN")));
     }
 
     // 6) 인증 없으면 401

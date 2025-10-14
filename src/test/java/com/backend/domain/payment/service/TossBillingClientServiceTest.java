@@ -54,7 +54,7 @@ class TossBillingClientServiceTest {
 
         var res = sut.issueBillingKey("user-1","AUTH-123");
         assertThat(res.getBillingKey()).isEqualTo("BILL-123");
-        assertThat(res.getCardBrand()).isEqualTo("SHINHAN");
+        assertThat(res.getBrand()).isEqualTo("SHINHAN");
         assertThat(res.getLast4()).isEqualTo("****-****-****-1234");
         assertThat(res.getExpMonth()).isEqualTo(12);
         assertThat(res.getExpYear()).isEqualTo(2030);

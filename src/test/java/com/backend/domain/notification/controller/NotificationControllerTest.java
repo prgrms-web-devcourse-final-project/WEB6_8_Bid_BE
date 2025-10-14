@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -35,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@WithMockUser
+@WithMockUser(username = "bidder1@example.com")
 @Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
 class NotificationControllerTest {
 
@@ -115,7 +114,6 @@ class NotificationControllerTest {
     @DisplayName("전체 알림 목록 조회 - 성공")
     void getNotifications_Success() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -135,7 +133,6 @@ class NotificationControllerTest {
     @DisplayName("읽지 않은 알림만 조회 - 성공")
     void getNotifications_UnreadOnly_Success() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .param("isRead", "false")
@@ -153,7 +150,6 @@ class NotificationControllerTest {
     @DisplayName("읽은 알림만 조회 - 성공")
     void getNotifications_ReadOnly_Success() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .param("isRead", "true")
@@ -170,7 +166,6 @@ class NotificationControllerTest {
     @DisplayName("페이징 처리 확인")
     void getNotifications_Paging_Success() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "2")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -188,7 +183,6 @@ class NotificationControllerTest {
         Long notificationId = unreadNotification1.getId();
 
         mockMvc.perform(put("/notifications/{id}/read", notificationId)
-                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -208,7 +202,6 @@ class NotificationControllerTest {
         Long nonExistentId = 999999L;
 
         mockMvc.perform(put("/notifications/{id}/read", nonExistentId)
-                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound())
@@ -220,7 +213,6 @@ class NotificationControllerTest {
     @DisplayName("모든 알림 읽음 처리 - 성공")
     void markAllAsRead_Success() throws Exception {
         mockMvc.perform(put("/notifications/read-all")
-                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -240,7 +232,6 @@ class NotificationControllerTest {
         notificationRepository.markAllAsRead(testMember.getId());
 
         mockMvc.perform(put("/notifications/read-all")
-                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -253,7 +244,6 @@ class NotificationControllerTest {
     @DisplayName("읽지 않은 알림 개수 조회 - 성공")
     void getUnreadCount_Success() throws Exception {
         mockMvc.perform(get("/notifications/unread-count")
-                        .with(user(String.valueOf(testMember.getId())))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -266,7 +256,6 @@ class NotificationControllerTest {
     @DisplayName("알림 응답 데이터 구조 검증")
     void getNotifications_ResponseStructure() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -285,7 +274,6 @@ class NotificationControllerTest {
     @DisplayName("알림 내용과 타입 검증")
     void getNotifications_ContentValidation() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -306,7 +294,6 @@ class NotificationControllerTest {
     @DisplayName("잘못된 페이지 파라미터")
     void getNotifications_InvalidPageParameter() throws Exception {
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "-1")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -334,7 +321,6 @@ class NotificationControllerTest {
 
         // 현재 테스트 멤버의 알림만 조회됨
         mockMvc.perform(get("/notifications")
-                        .with(user(String.valueOf(testMember.getId())))
                         .param("page", "0")
                         .param("size", "10")
                         .contentType(MediaType.APPLICATION_JSON))

@@ -1,14 +1,16 @@
 package com.backend.domain.product.controller;
 
-import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.product.document.ProductDocument;
 import com.backend.domain.product.dto.ProductSearchDto;
 import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.enums.ProductSearchSortType;
+import com.backend.domain.product.repository.elasticsearch.ProductElasticRepository;
 import com.backend.domain.product.service.ProductSearchService;
+import com.backend.domain.product.service.ProductSyncService;
 import com.backend.global.redis.TestRedisConfiguration;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +46,19 @@ class ApiV1ProductElasticsearchControllerTest {
     private ProductSearchService productSearchService;
 
     @Autowired
-    private MemberRepository memberRepository;
+    private ProductSyncService productSyncService;
+
+    @Autowired
+    private ProductElasticRepository productElasticRepository;
+
+    @BeforeEach
+    void setUp() {
+        // Elasticsearch 인덱스 초기화
+        productElasticRepository.deleteAll();
+
+        // 테스트 데이터 재인덱싱
+        productSyncService.indexAllProducts();
+    }
 
     @Test
     @DisplayName("상품 목록 조회")
