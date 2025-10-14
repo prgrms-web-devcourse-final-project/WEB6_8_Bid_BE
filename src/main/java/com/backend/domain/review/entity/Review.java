@@ -20,7 +20,7 @@ public class Review extends BaseEntity {
     @Column(name = "is_satisfied", nullable = false)
     private Boolean isSatisfied;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Product product;
 

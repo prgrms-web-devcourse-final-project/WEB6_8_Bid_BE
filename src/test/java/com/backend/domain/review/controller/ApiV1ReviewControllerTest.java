@@ -12,7 +12,6 @@ import com.backend.domain.review.dto.ReviewRequest;
 import com.backend.domain.review.entity.Review;
 import com.backend.domain.review.repository.ReviewRepository;
 import com.backend.global.elasticsearch.TestElasticsearchConfiguration;
-import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({TestElasticsearchConfiguration.class, TestRedisConfiguration.class})
+@Import({TestElasticsearchConfiguration.class, com.backend.global.redis.TestRedisConfig.class, com.backend.global.config.TestRedissonConfig.class})
 @Transactional
 class ApiV1ReviewControllerTest {
 
@@ -107,7 +106,7 @@ class ApiV1ReviewControllerTest {
                 .andExpect(jsonPath("$.data.isSatisfied").value(true));
 
         // DB 검증
-        Review review = reviewRepository.findByProductId(testProduct.getId()).orElseThrow();
+        Review review = reviewRepository.findAllByProductId(testProduct.getId()).get(0);
         assertThat(review.getComment()).isEqualTo("Great product!");
         assertThat(review.getReviewer().getId()).isEqualTo(testUser.getId());
     }
@@ -135,6 +134,36 @@ class ApiV1ReviewControllerTest {
                 .andExpect(jsonPath("$.data.reviewId").value(review.getId()))
                 .andExpect(jsonPath("$.data.comment").value("Existing review"))
                 .andExpect(jsonPath("$.data.reviewerNickname").value(testUser.getNickname()));
+    }
+
+    @Test
+    @DisplayName("상품 ID로 리뷰 목록 조회 성공")
+    void getReviewsByProductId_Success() throws Exception {
+        // Given
+        reviewRepository.save(Review.builder()
+                .reviewer(testUser)
+                .product(testProduct)
+                .comment("First review")
+                .isSatisfied(true)
+                .build());
+
+        reviewRepository.save(Review.builder()
+                .reviewer(anotherUser)
+                .product(testProduct)
+                .comment("Second review")
+                .isSatisfied(false)
+                .build());
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/reviews/products/{productId}", testProduct.getId())
+                        .header("Authorization", "Bearer " + testUserToken))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].comment").value("First review"))
+                .andExpect(jsonPath("$.data[1].comment").value("Second review"));
     }
 
     @Test
