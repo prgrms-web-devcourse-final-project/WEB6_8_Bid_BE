@@ -31,15 +31,16 @@ public class BidNotificationService {
             "bidAmount", bidAmount
         );
 
-        webSocketService.sendNotificationToUser(userId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // userId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
-            notificationQueueService.enqueueNotification(member, message, "BID_SUCCESS", product);
-        }
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
 
-        log.info("입찰 성공 알림 전송 - 사용자: {}, 상품: {}, 금액: {}", userId, product.getId(), bidAmount);
+            notificationQueueService.enqueueNotification(member, message, "BID_SUCCESS", product);
+            
+            log.info("입찰 성공 알림 전송 - 사용자: {} ({}), 상품: {}, 금액: {}", 
+                userId, member.getEmail(), product.getId(), bidAmount);
+        }
     }
 
     //  입찰 밀림 알림 (더 높은 입찰이 들어왔을 때)
@@ -55,15 +56,17 @@ public class BidNotificationService {
             "newHighestBid", newHighestBid
         );
 
-        webSocketService.sendNotificationToUser(userId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // userId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
+            
+            // DB 큐에도 저장
             notificationQueueService.enqueueNotification(member, message, "BID_OUTBID", product);
+            
+            log.info("입찰 밀림 알림 전송 - 사용자: {} ({}), 상품: {}", 
+                userId, member.getEmail(), product.getId());
         }
-
-        log.info("입찰 밀림 알림 전송 - 사용자: {}, 상품: {}", userId, product.getId());
     }
 
     // 경매 종료 - 낙찰 알림
@@ -78,15 +81,17 @@ public class BidNotificationService {
             "finalPrice", finalPrice
         );
 
-        webSocketService.sendNotificationToUser(winnerId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // winnerId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(winnerId).orElse(null);
         if (member != null) {
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
+            
+            // DB 큐에도 저장
             notificationQueueService.enqueueNotification(member, message, "AUCTION_WON", product);
+            
+            log.info("낙찰 알림 전송 - 사용자: {} ({}), 상품: {}, 낙찰가: {}", 
+                winnerId, member.getEmail(), product.getId(), finalPrice);
         }
-
-        log.info("낙찰 알림 전송 - 사용자: {}, 상품: {}, 낙찰가: {}", winnerId, product.getId(), finalPrice);
     }
 
     // 경매 종료 - 유찰 알림
@@ -102,14 +107,16 @@ public class BidNotificationService {
             "myBidAmount", myBidAmount
         );
 
-        webSocketService.sendNotificationToUser(userId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // userId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
+            
+            // DB 큐에도 저장
             notificationQueueService.enqueueNotification(member, message, "AUCTION_LOST", product);
+            
+            log.info("낙찰 실패 알림 전송 - 사용자: {} ({}), 상품: {}", 
+                userId, member.getEmail(), product.getId());
         }
-
-        log.info("낙찰 실패 알림 전송 - 사용자: {}, 상품: {}", userId, product.getId());
     }
 }

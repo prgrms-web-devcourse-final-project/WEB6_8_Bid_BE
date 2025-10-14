@@ -51,16 +51,16 @@ public class WebSocketService {
         sendToTopic("bid/" + productId, message);
     }
 
-    // 개인 알림 전송 (특정 사용자)
-    public void sendNotificationToUser(String userId, String message, Object data) {
+    // 개인 알림 전송 (특정 사용자) - 이메일 기반
+    public void sendNotificationToUser(String userEmail, String message, Object data) {
         WebSocketMessage webSocketMessage = WebSocketMessage.of(
                 WebSocketMessage.MessageType.NOTIFICATION,
                 "system",
                 message,
                 data
         );
-        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", webSocketMessage);
-        log.info("개인 알림 전송 - 사용자: {}, 메시지: {}", userId, message);
+        messagingTemplate.convertAndSendToUser(userEmail, "/queue/notifications", webSocketMessage);
+        log.info("개인 알림 전송 - 사용자: {}, 메시지: {}", userEmail, message);
     }
 
     // 경매 종료 알림 브로드캐스트

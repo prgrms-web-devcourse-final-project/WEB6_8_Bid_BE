@@ -57,6 +57,18 @@ public class BidService {
         // 유효성 검증
         validateBid(product, member, request.price());
 
+        Long previousHighestPrice = bidRepository.findHighestBidPrice(productId).orElse(null);
+
+        // 이전 최고 입찰자 확인 (입찰 밀림 알림용)
+        Bid previousHighestBid = null;
+        if (previousHighestPrice != null) {
+            List<Bid> recentBids = bidRepository.findNBids(productId, 10);
+            previousHighestBid = recentBids.stream()
+                    .filter(bid -> bid.getBidPrice().equals(previousHighestPrice))
+                    .findFirst()
+                    .orElse(null);
+        }
+
         // 입찰 생성 및 저장
         Bid savedBid = saveBid(product, member, request.price());
 
@@ -69,8 +81,18 @@ public class BidService {
         // 실시간 브로드캐스트
         webSocketService.broadcastBidUpdate(productId, bidResponse);
 
-        // 입찰 성공 알림
+        // 입찰 성공 알림 (현재 입찰자에게)
         bidNotificationService.notifyBidSuccess(bidderId, product, request.price());
+
+        // 입찰 밀림 알림 (이전 최고 입찰자에게)
+        if (previousHighestBid != null && !previousHighestBid.getMember().getId().equals(bidderId)) {
+            bidNotificationService.notifyBidOutbid(
+                    previousHighestBid.getMember().getId(),
+                    product,
+                    previousHighestBid.getBidPrice(),
+                    request.price()
+            );
+        }
 
         return RsData.created("입찰이 완료되었습니다.", bidResponse);
     }

@@ -20,9 +20,10 @@
         .bid-item:last-child { border-bottom: none; }
         .item-broadcast { color: #0056b3; } /* 실시간 브로드캐스트 (전체) */
         .item-personal { color: #8b0000; font-weight: bold; background-color: #ffe0e0; padding: 2px 5px; border-radius: 3px; }
-        input, button { padding: 8px 12px; margin: 5px; }
+        input, button, select { padding: 8px 12px; margin: 5px; }
         button { background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
         button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .status { padding: 5px 10px; margin: 5px; border-radius: 3px; }
         .connected { background: #d4edda; color: #155724; }
         .disconnected { background: #f8d7da; color: #721c24; }
@@ -33,17 +34,31 @@
     <h1>🔥 실시간 경매 테스트</h1>
 
     <div class="bid-section">
-        <h3>WebSocket 연결 설정</h3>
-        <span id="status" class="status disconnected">연결 안됨</span>
-        <button id="connect">연결</button>
-        <button id="disconnect">연결 해제</button>
-        <p><small>📢 서버에서 사용자 ID를 '1'로 가정하고 개인 알림을 보낸다고 가정합니다.</small></p>
+        <h3>1️⃣ 로그인</h3>
+        <select id="userSelect" style="width: 400px;">
+            <option value="">계정 선택...</option>
+            <option value="user1@example.com">user1 (전자기기왕) - 잔액: 500,000원</option>
+            <option value="user2@example.com">user2 (패션러버) - 잔액: 1,000,000원</option>
+            <option value="user3@example.com">user3 (스포츠매니아) - 잔액: 200,000원</option>
+            <option value="user4@example.com">user4 (책벌레) - 잔액: 500,000원</option>
+            <option value="user5@example.com">user5 (명품수집가) - 잔액: 1,000,000원</option>
+        </select>
+        <button id="loginBtn">로그인</button>
+        <p id="loginStatus" style="color: #666; margin: 5px;"></p>
     </div>
 
     <div class="bid-section">
-        <h3>테스트할 상품 선택</h3>
+        <h3>2️⃣ WebSocket 연결</h3>
+        <span id="status" class="status disconnected">연결 안됨</span>
+        <button id="connect" disabled>연결</button>
+        <button id="disconnect" disabled>연결 해제</button>
+        <p><small>📢 로그인 후 WebSocket 연결이 가능합니다!</small></p>
+    </div>
+
+    <div class="bid-section">
+        <h3>3️⃣ 테스트할 상품 선택</h3>
         <input type="number" id="productId" placeholder="상품 ID" value="1">
-        <button id="subscribe">이 상품 입찰 정보 및 개인 알림 구독</button>
+        <button id="subscribe" disabled>이 상품 입찰 정보 및 개인 알림 구독</button>
         <p>현재 구독 중: <span id="currentProduct">없음</span></p>
     </div>
 
@@ -58,8 +73,8 @@
 
     <div class="bid-form">
         <h3>🎯 입찰하기 (개인 알림 테스트)</h3>
-        <input type="number" id="bidAmount" placeholder="입찰 금액" step="100">
-        <button id="placeBid">입찰하기</button>
+        <input type="number" id="bidAmount" placeholder="입찰 금액" step="10000" disabled>
+        <button id="placeBid" disabled>입찰하기</button>
         <p><small>※ 입찰 시, 전체 브로드캐스트 및 **나에게만 오는 개인 알림**을 확인하세요.</small></p>
     </div>
 
@@ -74,24 +89,77 @@
 <script>
     let stompClient = null;
     let currentProductId = null;
-    let bidSubscription = null; // 상품 브로드캐스트 구독 (/topic/bid/{productId})
-    let notiSubscription = null; // 개인 알림 구독 (/user/queue/notifications)
-    const TEST_USER_ID = "1"; // 개인 알림 테스트를 위해 사용자 ID를 '1'로 가정
+    let bidSubscription = null;
+    let notiSubscription = null;
+    let jwtToken = null;
+
+    // 로그인 처리
+    async function login() {
+        const email = document.getElementById('userSelect').value;
+        if (!email) {
+            alert('계정을 선택해주세요!');
+            return;
+        }
+
+        document.getElementById('loginStatus').textContent = '로그인 중...';
+        
+        try {
+            const response = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: 'password123'
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                jwtToken = data.data.accessToken;
+                
+                document.getElementById('loginStatus').textContent = '✅ 로그인 성공! ' + email;
+                document.getElementById('loginStatus').style.color = '#155724';
+                document.getElementById('connect').disabled = false;
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('userSelect').disabled = true;
+                
+                addBidHistory('✅ 로그인 성공: ' + email, 'broadcast');
+            } else {
+                const error = await response.json();
+                document.getElementById('loginStatus').textContent = '❌ 로그인 실패: ' + error.msg;
+                document.getElementById('loginStatus').style.color = '#721c24';
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            document.getElementById('loginStatus').textContent = '❌ 로그인 오류: ' + error.message;
+            document.getElementById('loginStatus').style.color = '#721c24';
+        }
+    }
 
     // WebSocket 연결
     function connect() {
         if (stompClient && stompClient.connected) return;
+        if (!jwtToken) {
+            alert('먼저 로그인해주세요!');
+            return;
+        }
 
         const socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
 
-        stompClient.connect({ /* headers */ }, function(frame) {
+        // JWT 토큰과 함께 연결
+        stompClient.connect({
+            'Authorization': 'Bearer ' + jwtToken
+        }, function(frame) {
             console.log('Connected: ' + frame);
             document.getElementById('status').textContent = '연결됨';
             document.getElementById('status').className = 'status connected';
+            document.getElementById('disconnect').disabled = false;
+            document.getElementById('subscribe').disabled = false;
             addBidHistory('✅ WebSocket 연결 성공!', 'broadcast');
 
-            // 연결 성공 시 개인 알림 채널 구독은 항상 시도
             subscribeToNotifications();
 
         }, function(error) {
@@ -119,6 +187,10 @@
             document.getElementById('status').textContent = '연결 해제됨';
             document.getElementById('status').className = 'status disconnected';
             document.getElementById('currentProduct').textContent = '없음';
+            document.getElementById('disconnect').disabled = true;
+            document.getElementById('subscribe').disabled = true;
+            document.getElementById('bidAmount').disabled = true;
+            document.getElementById('placeBid').disabled = true;
             addBidHistory('🔌 WebSocket 연결 해제', 'broadcast');
         }
     }
@@ -153,12 +225,10 @@
             return;
         }
 
-        // 이전 상품 구독 해제
         if (bidSubscription) {
             bidSubscription.unsubscribe();
         }
 
-        // 새 상품 구독 시작
         bidSubscription = stompClient.subscribe('/topic/bid/' + productId, function(message) {
             console.log('=== 브로드캐스트 메시지 수신 ===');
             console.log('Message body:', message.body);
@@ -174,6 +244,8 @@
 
         currentProductId = productId;
         document.getElementById('currentProduct').textContent = '상품 ' + productId;
+        document.getElementById('bidAmount').disabled = false;
+        document.getElementById('placeBid').disabled = false;
         addBidHistory('📡 상품 ' + productId + ' 입찰 정보 구독 시작', 'broadcast');
     }
 
@@ -248,7 +320,7 @@
     }
 
     // REST API로 입찰하기
-    function placeBid() {
+    async function placeBid() {
         const productId = document.getElementById('productId').value;
         const bidAmount = document.getElementById('bidAmount').value;
 
@@ -257,38 +329,34 @@
             return;
         }
 
-        // JWT 필터에서 이 경로('/api/v1/bids/')는 검증을 건너뛰도록 설정되어 있으나,
-        // 서버에서 사용자 ID를 식별해야 개인 알림을 보낼 수 있습니다.
-        // 테스트를 위해 'test-token'이라는 임의의 토큰을 보냅니다.
-        const token = 'test-token';
+        if (!jwtToken) {
+            alert('먼저 로그인해주세요!');
+            return;
+        }
 
-        fetch('/api/v1/bids/products/' + productId, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // 서버는 이 토큰을 기반으로 현재 입찰자를 식별하고 개인 알림을 보냅니다.
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({
-                price: parseInt(bidAmount)
-            })
-        })
-            .then(response => {
-                if (response.ok) {
-                    addBidHistory('✅ 입찰 요청 전송: ' + bidAmount + '원 (응답 대기중)', 'broadcast');
-                    document.getElementById('bidAmount').value = '';
-                } else {
-                    response.json().then(data => {
-                        addBidHistory('❌ 입찰 요청 실패: ' + (data.msg || data.message), 'broadcast');
-                    }).catch(() => {
-                        addBidHistory('❌ 입찰 요청 실패 (서버 오류)', 'broadcast');
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                addBidHistory('❌ 입찰 요청 오류: ' + error.message, 'broadcast');
+        try {
+            const response = await fetch('/api/v1/bids/products/' + productId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + jwtToken
+                },
+                body: JSON.stringify({
+                    price: parseInt(bidAmount)
+                })
             });
+
+            if (response.ok) {
+                addBidHistory('✅ 입찰 요청 전송: ' + parseInt(bidAmount).toLocaleString() + '원', 'broadcast');
+                document.getElementById('bidAmount').value = '';
+            } else {
+                const data = await response.json();
+                addBidHistory('❌ 입찰 요청 실패: ' + (data.msg || data.message), 'broadcast');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            addBidHistory('❌ 입찰 요청 오류: ' + error.message, 'broadcast');
+        }
     }
 
     // 현재 입찰 정보 업데이트
@@ -322,6 +390,7 @@
     }
 
     // 이벤트 리스너
+    document.getElementById('loginBtn').addEventListener('click', login);
     document.getElementById('connect').addEventListener('click', connect);
     document.getElementById('disconnect').addEventListener('click', disconnect);
     document.getElementById('subscribe').addEventListener('click', subscribeToProduct);
@@ -336,9 +405,11 @@
 
     // 페이지 로드시 안내
     addBidHistory('🎯 실시간 경매 테스트 페이지입니다.', 'broadcast');
-    addBidHistory('1. 먼저 "연결" 버튼을 클릭하세요.', 'broadcast');
-    addBidHistory('2. 상품 ID를 입력하고 "구독" 버튼을 클릭하세요.', 'broadcast');
-    addBidHistory('3. 입찰 금액을 입력하고 "입찰하기" 버튼을 클릭하여 개인 알림을 확인하세요.', 'broadcast');
+    addBidHistory('1. 계정을 선택하고 "로그인" 버튼을 클릭하세요.', 'broadcast');
+    addBidHistory('2. "연결" 버튼을 클릭하여 WebSocket을 연결하세요.', 'broadcast');
+    addBidHistory('3. 상품 ID를 입력하고 "구독" 버튼을 클릭하세요.', 'broadcast');
+    addBidHistory('4. 입찰 금액을 입력하고 "입찰하기" 버튼을 클릭하여 개인 알림을 확인하세요.', 'broadcast');
+    addBidHistory('💡 창 2개를 열어서 다른 계정으로 테스트해보세요!', 'broadcast');
 </script>
 </body>
 </html>

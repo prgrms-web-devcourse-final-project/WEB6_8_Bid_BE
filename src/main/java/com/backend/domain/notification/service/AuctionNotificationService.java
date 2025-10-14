@@ -33,15 +33,17 @@ public class AuctionNotificationService {
             "endTime", product.getEndTime().toString()
         );
 
-        webSocketService.sendNotificationToUser(userId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // userId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
+            
+            // DB 큐에도 저장
             notificationQueueService.enqueueNotification(member, message, "AUCTION_START", product);
+            
+            log.info("경매 시작 알림 전송 - 사용자: {} ({}), 상품: {}", 
+                userId, member.getEmail(), product.getId());
         }
-
-        log.info("경매 시작 알림 전송 - 사용자: {}, 상품: {}", userId, product.getId());
     }
 
     // 경매 곧 종료 알림 (10분 전)
@@ -58,15 +60,17 @@ public class AuctionNotificationService {
             "endTime", product.getEndTime().toString()
         );
 
-        webSocketService.sendNotificationToUser(userId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // userId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
+            
+            // DB 큐에도 저장
             notificationQueueService.enqueueNotification(member, message, "AUCTION_ENDING_SOON", product);
+            
+            log.info("경매 종료 임박 알림 전송 - 사용자: {} ({}), 상품: {}, 남은 시간: {}분", 
+                userId, member.getEmail(), product.getId(), remainingMinutes);
         }
-
-        log.info("경매 종료 임박 알림 전송 - 사용자: {}, 상품: {}, 남은 시간: {}분", userId, product.getId(), remainingMinutes);
     }
 
     // 경매 종료 알림
@@ -84,14 +88,16 @@ public class AuctionNotificationService {
             "status", hasWinner ? "낙찰" : "유찰"
         );
 
-        webSocketService.sendNotificationToUser(userId.toString(), message, data);
-
-        // DB 큐에도 저장
+        // userId로 Member 조회 후 email로 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
+            webSocketService.sendNotificationToUser(member.getEmail(), message, data);
+            
+            // DB 큐에도 저장
             notificationQueueService.enqueueNotification(member, message, "AUCTION_END", product);
+            
+            log.info("경매 종료 알림 전송 - 사용자: {} ({}), 상품: {}, 결과: {}", 
+                userId, member.getEmail(), product.getId(), hasWinner ? "낙찰" : "유찰");
         }
-
-        log.info("경매 종료 알림 전송 - 사용자: {}, 상품: {}, 결과: {}", userId, product.getId(), hasWinner ? "낙찰" : "유찰");
     }
 }
