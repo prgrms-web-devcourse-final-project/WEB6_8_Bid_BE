@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestElasticsearchConfiguration.class)
+@Import({TestElasticsearchConfiguration.class, com.backend.global.redis.TestRedisConfig.class, com.backend.global.config.TestRedissonConfig.class})
 @Transactional
 class ApiV1ReviewControllerTest {
 
