@@ -37,6 +37,7 @@ public class MemberService {
                 .phoneNumber(memberSignUpRequestDto.phoneNumber())
                 .address(memberSignUpRequestDto.address())
                 .authority("ROLE_USER")
+                .creditScore(50)
                 .build();
 
         Member savedMember = memberRepository.save(member);
