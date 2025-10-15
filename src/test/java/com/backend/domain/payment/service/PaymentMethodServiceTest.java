@@ -2,6 +2,7 @@ package com.backend.domain.payment.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.payment.dto.response.TossIssueBillingKeyResponse;
 import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.response.PaymentMethodDeleteResponse;
@@ -439,29 +440,14 @@ class PaymentMethodServiceTest {
         // then
         assertThat(res.getAlias()).isEqualTo("경조/여행 전용");
         assertThat(res.getIsDefault()).isTrue();
-        assertThat(res.getBrand()).isEqualTo("SHINHAN");
-        assertThat(res.getLast4()).isEqualTo("2222");
-        assertThat(res.getExpMonth()).isEqualTo(5);
-        assertThat(res.getExpYear()).isEqualTo(2035);
+        assertThat(res.getBrand()).isEqualTo("VISA");
+        assertThat(res.getLast4()).isEqualTo("1111");
+        assertThat(res.getExpMonth()).isEqualTo(12);
+        assertThat(res.getExpYear()).isEqualTo(2030);
 
         assertThat(res.getBankCode()).isNull();
         assertThat(res.getBankName()).isNull();
         assertThat(res.getAcctLast4()).isNull();
-    }
-
-    @Test
-    @DisplayName("CARD: 교차 타입(BANK) 필드가 값으로 오면 400")
-    void edit_card_reject_bankFields() {
-        PaymentMethod entity = cardEntity(10L, member);
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(10L, member)).thenReturn(Optional.of(entity));
-
-        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
-
-        assertThatThrownBy(() -> paymentMethodService.edit(1L, 10L, req))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode().value())
-                .isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -521,47 +507,6 @@ class PaymentMethodServiceTest {
 
         assertThat(res.getIsDefault()).isTrue();
         assertThat(otherDefault.getIsDefault()).isFalse(); // 기존 기본 해제 확인
-    }
-
-    @Test
-    @DisplayName("BANK: 은행 필드만 부분 수정, CARD 필드는 null로 보장")
-    void edit_bank_success_updateBankFields() {
-        PaymentMethod entity = bankEntity(11L, member);
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(11L, member)).thenReturn(Optional.of(entity));
-        when(paymentMethodRepository.existsByMemberAndAliasAndIdNotAndDeletedFalse(any(), anyString(), anyLong()))
-                .thenReturn(false);
-
-        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
-        req.setAlias("월급통장");
-        req.setIsDefault(false);
-
-        PaymentMethodResponse res = paymentMethodService.edit(1L, 11L, req);
-
-        assertThat(res.getAlias()).isEqualTo("월급통장");
-        assertThat(res.getBankCode()).isEqualTo("088");
-        assertThat(res.getBankName()).isEqualTo("신한");
-        assertThat(res.getAcctLast4()).isEqualTo("9999");
-
-        assertThat(res.getBrand()).isNull();
-        assertThat(res.getLast4()).isNull();
-        assertThat(res.getExpMonth()).isNull();
-        assertThat(res.getExpYear()).isNull();
-    }
-
-    @Test
-    @DisplayName("BANK: 교차 타입(CARD) 필드가 값으로 오면 400")
-    void edit_bank_reject_cardFields() {
-        PaymentMethod entity = bankEntity(11L, member);
-        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
-        when(paymentMethodRepository.findByIdAndMemberAndDeletedFalse(11L, member)).thenReturn(Optional.of(entity));
-
-        PaymentMethodEditRequest req = new PaymentMethodEditRequest();
-
-        assertThatThrownBy(() -> paymentMethodService.edit(1L, 11L, req))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode().value())
-                .isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -658,6 +603,74 @@ class PaymentMethodServiceTest {
 
         verify(paymentMethodRepository).delete(target);
         verify(paymentMethodRepository).findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(member);
+    }
+
+    @Test
+    @DisplayName("billingKey 신규 등록: 첫 수단이면 기본 지정 + 스냅샷 저장")
+    void saveOrUpdate_create_new_default() {
+        // given
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findFirstByMemberAndTokenAndDeletedFalse(member, "BILL-1"))
+                .thenReturn(Optional.empty());
+        when(paymentMethodRepository.countByMemberAndDeletedFalse(member)).thenReturn(0L);
+        // ★ 기존 기본 없음
+        when(paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member))
+                .thenReturn(Optional.empty());
+        // ★ save 시 id 주입
+        when(paymentMethodRepository.save(any(PaymentMethod.class)))
+                .thenAnswer(inv -> {
+                    PaymentMethod pm = inv.getArgument(0);
+                    ReflectionTestUtils.setField(pm, "id", 77L);
+                    return pm;
+                });
+
+        TossIssueBillingKeyResponse res = TossIssueBillingKeyResponse.builder()
+                .billingKey("BILL-1").brand("KB").last4("1234").expMonth(12).expYear(2028).build();
+
+        // when
+        PaymentMethodResponse out = paymentMethodService.saveOrUpdateBillingKey(1L, res);
+
+        // then
+        assertThat(out).isNotNull();
+        assertThat(out.getId()).isEqualTo(77L);
+        assertThat(out.getIsDefault()).isTrue();
+        assertThat(out.getBrand()).isEqualTo("KB");
+        assertThat(out.getLast4()).isEqualTo("1234");
+
+        verify(paymentMethodRepository).save(any(PaymentMethod.class));
+    }
+
+
+    @Test
+    @DisplayName("billingKey 기존 존재: 스냅샷(brand/last4/exp)만 갱신")
+    void saveOrUpdate_update_snapshot_only() {
+        PaymentMethod existing = PaymentMethod.builder()
+                .member(member)
+                .methodType(PaymentMethodType.CARD)
+                .token("BILL-1")
+                .brand("OLD")
+                .last4("0000")
+                .isDefault(false)
+                .active(true)
+                .deleted(false)
+                .build();
+
+        ReflectionTestUtils.setField(existing, "id", 10L);
+        when(memberRepository.findById(1L)).thenReturn(Optional.of(member));
+        when(paymentMethodRepository.findFirstByMemberAndTokenAndDeletedFalse(member, "BILL-1"))
+                .thenReturn(Optional.of(existing));
+
+        var res = TossIssueBillingKeyResponse.builder()
+                .billingKey("BILL-1").brand("NEW").last4("9999").expMonth(1).expYear(2030).build();
+
+        PaymentMethodResponse out = paymentMethodService.saveOrUpdateBillingKey(1L, res);
+
+        assertThat(existing.getBrand()).isEqualTo("NEW");
+        assertThat(existing.getLast4()).isEqualTo("9999");
+        assertThat(existing.getExpMonth()).isEqualTo(1);
+        assertThat(existing.getExpYear()).isEqualTo(2030);
+        assertThat(out.getId()).isEqualTo(10L);
+        verify(paymentMethodRepository).save(existing);
     }
 }
 

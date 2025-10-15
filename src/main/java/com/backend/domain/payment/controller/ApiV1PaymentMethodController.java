@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Tag(name = "PaymentMethod", description = "결제 수단 관련 API")
 @RestController
 @RequiredArgsConstructor
@@ -170,35 +172,41 @@ public class ApiV1PaymentMethodController {
     ) {
         try {
             if (!"success".equalsIgnoreCase(result)) {
-                // 실패: FE로 실패 리다이렉트
-                String location = frontendBaseUrl + "/wallet?billing=fail";
-                return ResponseEntity.status(302).header("Location", location).build();
+                return redirect("/wallet?billing=fail&reason=result_not_success");
             }
-
-            // 파라미터 체크
             if (customerKey == null || authKey == null) {
-                String location = frontendBaseUrl + "/wallet?billing=fail&reason=missing_param";
-                return ResponseEntity.status(302).header("Location", location).build();
+                return redirect("/wallet?billing=fail&reason=missing_param");
             }
 
-            // 1) authKey → billingKey 교환(Confirm)
+            log.info("[TOSS CALLBACK] result={}, customerKey={}, authKey={}", result, customerKey, mask(authKey));
+
             TossIssueBillingKeyResponse confirm = tossBillingClientService.issueBillingKey(customerKey, authKey);
-
-            // 2) customerKey("user-123")에서 회원 ID 추출
             Long memberId = parseMemberIdFromCustomerKey(customerKey);
-
-            // 3) 결제수단 저장/업데이트 (brand/last4 등 스냅샷 포함)
             paymentMethodService.saveOrUpdateBillingKey(memberId, confirm);
 
-            // 4) 성공 → FE /wallet 으로 리다이렉트
-            String location = frontendBaseUrl + "/wallet";
-            return ResponseEntity.status(302).header("Location", location).build();
+            log.info("[TOSS CALLBACK] save success: billingKey={}, brand={}, last4={}",
+                    confirm.getBillingKey(), confirm.getBrand(), confirm.getLast4());
 
+            return redirect("/wallet"); // 성공은 깔끔하게 /wallet
+
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            log.warn("[TOSS CALLBACK] pg error: {}", e.getReason(), e);
+            return redirect("/wallet?billing=fail&reason=" + urlEnc(compact(e.getReason())));
         } catch (Exception e) {
-            String location = frontendBaseUrl + "/wallet?billing=fail&reason=server_error";
-            return ResponseEntity.status(302).header("Location", location).build();
+            log.error("[TOSS CALLBACK] server error", e);
+            return redirect("/wallet?billing=fail&reason=server_error");
         }
     }
+
+    // 아래 헬퍼들 추가
+    private ResponseEntity<Void> redirect(String pathAndQuery) {
+        String location = frontendBaseUrl + pathAndQuery;
+        return ResponseEntity.status(302).header("Location", location).build();
+    }
+    private static String compact(String s){ return s == null ? "error" : s.replaceAll("\\s+","_"); }
+    private static String urlEnc(String s){ return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8); }
+
+    private String mask(String s){ return (s==null||s.length()<6)?s:s.substring(0,3)+"***"+s.substring(s.length()-3); }
 
     private Long parseMemberIdFromCustomerKey(String customerKey) {
         if (customerKey != null && customerKey.startsWith("user-")) {
