@@ -191,7 +191,7 @@ public class ApiV1PaymentMethodController {
             paymentMethodService.saveOrUpdateBillingKey(memberId, confirm);
 
             // 4) 성공 → FE /wallet 으로 리다이렉트
-            String location = frontendBaseUrl + "/wallet?billing=success";
+            String location = frontendBaseUrl + "/wallet";
             return ResponseEntity.status(302).header("Location", location).build();
 
         } catch (Exception e) {
