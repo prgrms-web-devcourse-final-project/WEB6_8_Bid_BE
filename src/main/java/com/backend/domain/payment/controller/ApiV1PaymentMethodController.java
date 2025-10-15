@@ -2,13 +2,15 @@ package com.backend.domain.payment.controller;
 
 
 import com.backend.domain.member.entity.Member;
-import com.backend.domain.member.repository.MemberRepository;
 import com.backend.domain.member.service.MemberService;
 import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.response.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.request.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.response.PaymentMethodResponse;
+import com.backend.domain.payment.dto.response.TossConfirmResultResponse;
+import com.backend.domain.payment.dto.response.TossIssueBillingKeyResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
+import com.backend.domain.payment.service.TossBillingClientService;
 import com.backend.global.response.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,6 +39,10 @@ public class ApiV1PaymentMethodController {
 
     private final MemberService memberService;
     private final PaymentMethodService paymentMethodService;
+    private final TossBillingClientService tossBillingClientService;
+
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
 
     // 공통: 인증 사용자(Member) 가져오기..
     private Member getActor(User user) {
@@ -154,5 +161,49 @@ public class ApiV1PaymentMethodController {
         return RsData.ok("결제수단이 삭제되었습니다.", data);
     }
 
+    // Toss success/fail 리다이렉트가 도달하는 콜백
+    @GetMapping("/toss/confirm-callback")
+    public ResponseEntity<Void> confirmCallback(
+            @RequestParam(required = false) String customerKey,
+            @RequestParam(required = false) String authKey,
+            @RequestParam(required = false, defaultValue = "") String result
+    ) {
+        try {
+            if (!"success".equalsIgnoreCase(result)) {
+                // 실패: FE로 실패 리다이렉트
+                String location = frontendBaseUrl + "/wallet?billing=fail";
+                return ResponseEntity.status(302).header("Location", location).build();
+            }
 
+            // 파라미터 체크
+            if (customerKey == null || authKey == null) {
+                String location = frontendBaseUrl + "/wallet?billing=fail&reason=missing_param";
+                return ResponseEntity.status(302).header("Location", location).build();
+            }
+
+            // 1) authKey → billingKey 교환(Confirm)
+            TossIssueBillingKeyResponse confirm = tossBillingClientService.issueBillingKey(customerKey, authKey);
+
+            // 2) customerKey("user-123")에서 회원 ID 추출
+            Long memberId = parseMemberIdFromCustomerKey(customerKey);
+
+            // 3) 결제수단 저장/업데이트 (brand/last4 등 스냅샷 포함)
+            paymentMethodService.saveOrUpdateBillingKey(memberId, confirm);
+
+            // 4) 성공 → FE /wallet 으로 리다이렉트
+            String location = frontendBaseUrl + "/wallet?billing=success";
+            return ResponseEntity.status(302).header("Location", location).build();
+
+        } catch (Exception e) {
+            String location = frontendBaseUrl + "/wallet?billing=fail&reason=server_error";
+            return ResponseEntity.status(302).header("Location", location).build();
+        }
+    }
+
+    private Long parseMemberIdFromCustomerKey(String customerKey) {
+        if (customerKey != null && customerKey.startsWith("user-")) {
+            return Long.parseLong(customerKey.substring("user-".length()));
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid customerKey");
+    }
 }

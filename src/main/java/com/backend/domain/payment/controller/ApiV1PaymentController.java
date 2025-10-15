@@ -39,6 +39,9 @@ public class ApiV1PaymentController {
     @Value("${pg.toss.clientKey}")
     private String tossClientKey;
 
+    @Value("${app.backend.base-url}")
+    private String backendBaseUrl;
+
     private final MemberService memberService;
     private final PaymentService paymentService;
     private final TossBillingClientService tossBillingClientService;
@@ -120,11 +123,16 @@ public class ApiV1PaymentController {
         String origin = req.getScheme() + "://" + req.getServerName()
                 + ((req.getServerPort()==80 || req.getServerPort()==443) ? "" : ":" + req.getServerPort());
 
+        String base = (backendBaseUrl != null && !backendBaseUrl.isBlank()) ? backendBaseUrl : origin;
+
+        String success = base + "/api/v1/paymentMethods/toss/confirm-callback?result=success";
+        String fail    = base + "/api/v1/paymentMethods/toss/confirm-callback?result=fail";
+
         TossBillingAuthParamsResponse data = new TossBillingAuthParamsResponse(
                 tossClientKey,
                 customerKey,
-                origin + "/payments/toss/billing-success.html",
-                origin + "/payments/toss/billing-fail.html"
+                success,
+                fail
         );
         return RsData.ok("ok", data);
     }

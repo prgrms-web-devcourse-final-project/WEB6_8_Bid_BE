@@ -49,22 +49,6 @@
         const alias = document.getElementById('alias').value || '내 카드';
         const isDefault = document.getElementById('isDefault').checked;
 
-        const r2 = await fetch('/api/v1/paymentMethods', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            provider: 'toss',        // ★ 서버가 기대하는 값
-            type: 'CARD',
-            alias: alias,
-            isDefault: isDefault,
-            token: billingKey,       // ★ billingKey를 token으로 저장
-            brand: brand,            // ★ cardBrand → brand
-            last4: last4,
-            expMonth: expMon,
-            expYear: expYear
-          })
-        });
         const res2 = await r2.json();
         if (!r2.ok) throw new Error(`저장 실패: ${r2.status} ${res2.msg || ''}`);
 
