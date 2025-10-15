@@ -171,7 +171,8 @@ public class ApiV1PaymentMethodController {
             @RequestParam(required = false, defaultValue = "") String result
     ) {
         try {
-            if (!"success".equalsIgnoreCase(result)) {
+            String res = (result == null) ? "" : result.toLowerCase();
+            if (!res.startsWith("success")) {
                 return redirect("/wallet?billing=fail&reason=result_not_success");
             }
             if (customerKey == null || authKey == null) {
