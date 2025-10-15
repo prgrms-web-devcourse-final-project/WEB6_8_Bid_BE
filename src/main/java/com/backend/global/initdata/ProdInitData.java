@@ -51,9 +51,9 @@ public class ProdInitData {
         }
 
         Product product = productRepository.findById(24L).get();
-        if (product.getEndTime().isAfter(LocalDateTime.of(2025, 10, 16, 0, 9, 59))) {
+        if (product.getEndTime().isBefore(LocalDateTime.of(2025, 10, 16, 0, 25, 59))) {
             return;
         }
-        product.setEndTime(LocalDateTime.of(2025, 10, 16, 0, 9, 59));
+        product.setEndTime(LocalDateTime.of(2025, 10, 16, 0, 15, 59));
     }
 }
