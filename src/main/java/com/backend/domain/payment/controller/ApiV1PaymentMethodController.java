@@ -7,7 +7,7 @@ import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.response.PaymentMethodDeleteResponse;
 import com.backend.domain.payment.dto.request.PaymentMethodEditRequest;
 import com.backend.domain.payment.dto.response.PaymentMethodResponse;
-import com.backend.domain.payment.dto.response.TossConfirmResultResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import com.backend.domain.payment.dto.response.TossIssueBillingKeyResponse;
 import com.backend.domain.payment.service.PaymentMethodService;
 import com.backend.domain.payment.service.TossBillingClientService;
@@ -166,20 +166,24 @@ public class ApiV1PaymentMethodController {
     // Toss success/fail 리다이렉트가 도달하는 콜백
     @GetMapping("/toss/confirm-callback")
     public ResponseEntity<Void> confirmCallback(
+            HttpServletRequest request,
             @RequestParam(required = false) String customerKey,
             @RequestParam(required = false) String authKey,
             @RequestParam(required = false, defaultValue = "") String result
     ) {
         try {
-            String res = (result == null) ? "" : result.toLowerCase();
-            if (!res.startsWith("success")) {
+            String normalized = (result == null) ? "" : result;
+            int q = normalized.indexOf('?');
+            if (q >= 0) normalized = normalized.substring(0, q);
+
+            if (!"success".equalsIgnoreCase(normalized)) {
                 return redirect("/wallet?billing=fail&reason=result_not_success");
             }
             if (customerKey == null || authKey == null) {
                 return redirect("/wallet?billing=fail&reason=missing_param");
             }
 
-            log.info("[TOSS CALLBACK] result={}, customerKey={}, authKey={}", result, customerKey, mask(authKey));
+            log.info("[TOSS CALLBACK] rawQuery={}, customerKey={}, authKey(mask)={}", request.getQueryString(), customerKey, mask(authKey));
 
             TossIssueBillingKeyResponse confirm = tossBillingClientService.issueBillingKey(customerKey, authKey);
             Long memberId = parseMemberIdFromCustomerKey(customerKey);
@@ -188,7 +192,8 @@ public class ApiV1PaymentMethodController {
             log.info("[TOSS CALLBACK] save success: billingKey={}, brand={}, last4={}",
                     confirm.getBillingKey(), confirm.getBrand(), confirm.getLast4());
 
-            return redirect("/wallet"); // 성공은 깔끔하게 /wallet
+            String redirectTo = extractRedirectTo(request.getQueryString());
+            return redirect(redirectTo != null ? redirectTo : "/wallet");
 
         } catch (org.springframework.web.server.ResponseStatusException e) {
             log.warn("[TOSS CALLBACK] pg error: {}", e.getReason(), e);
@@ -208,6 +213,17 @@ public class ApiV1PaymentMethodController {
     private static String urlEnc(String s){ return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8); }
 
     private String mask(String s){ return (s==null||s.length()<6)?s:s.substring(0,3)+"***"+s.substring(s.length()-3); }
+
+    private String extractRedirectTo(String qs) {
+        if (qs == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("redirectTo=([^&]+)")
+                .matcher(qs);
+        if (m.find()) {
+            return java.net.URLDecoder.decode(m.group(1), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return null;
+    }
 
     private Long parseMemberIdFromCustomerKey(String customerKey) {
         if (customerKey != null && customerKey.startsWith("user-")) {
