@@ -32,13 +32,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
+                .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // 정적 리소스(/static, /public, /resources, /META-INF/resources)..
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-
-                        // 토스 리다이렉트용 정적 페이지..
-                        .requestMatchers("/billing.html", "/payments/**", "/toss/**").permitAll()
 
                         // 공개 API - 루트, 파비콘, h2-console, actuator health
                         .requestMatchers("/", "/favicon.ico", "/h2-console/**", "/actuator/health").permitAll()
@@ -48,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/*/products", "/api/*/products/{productId:\\d+}", "/api/*/products/es",
                                 "/api/*/products/members/{memberId:\\d+}",
-                                "/api/v1/members/{memberId:\\d+}").permitAll()
+                                "/api/v1/members/{memberId:\\d+}", "/api/v1/paymentMethods/toss/confirm-callback").permitAll()
                         .requestMatchers("/api/v1/products/reload-analyzers").permitAll() // 관리자 기능 도입 시 ROLE 인증 추가
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/*/test-data/**").permitAll()
@@ -56,7 +54,6 @@ public class SecurityConfig {
                         .anyRequest().permitAll()   // 임시 허용 authenticated()로 고칠 것
                 )
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
-                .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
