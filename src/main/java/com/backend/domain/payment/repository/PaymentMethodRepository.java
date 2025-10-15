@@ -29,4 +29,8 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, Lo
 
     // 기본 수단을 삭제했을 때 가장 최근에 만든 다른 결제수단을 자동으로 기본으로 승계..
     Optional<PaymentMethod> findFirstByMemberAndDeletedFalseOrderByCreateDateDesc(Member member);
+
+    // 해당 회원의 결제수단들 중에서, 삭제되지 않았고(token 일치)한 레코드 하나를 찾아 반환(없으면 empty) — 가장 먼저 찾은 1건만..
+    Optional<PaymentMethod> findFirstByMemberAndTokenAndDeletedFalse(Member member, String token);
+
 }

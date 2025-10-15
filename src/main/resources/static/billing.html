@@ -13,10 +13,12 @@
       const body = await r.json();
       const p = body.data || body;
 
+      // 서버가 내려준 clientKey/customerKey/successUrl/failUrl 사용
       const toss = TossPayments(p.clientKey);
       toss.requestBillingAuth('카드', {
-        customerKey: p.customerKey,   // 서버가 계산해 준 값
-        successUrl:  p.successUrl,    // 예: http://localhost:8080/payments/toss/billing-success.html
+        customerKey: p.customerKey,
+        // 백엔드 콜백 URL로 이동 → 서버가 Confirm&저장 → FE /wallet로 302 리다이렉트
+        successUrl:  p.successUrl,
         failUrl:     p.failUrl
       });
     };

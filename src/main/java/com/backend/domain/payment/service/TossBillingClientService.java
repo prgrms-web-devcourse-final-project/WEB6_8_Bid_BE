@@ -62,35 +62,43 @@ public class TossBillingClientService {
             String billingKey = (String) resp.get("billingKey"); // 카드 토큰..
             Map<?, ?> card = (Map<?, ?>) resp.get("card");
 
-            String cardNumber = null;
             String cardBrand  = null;
+            String last4      = null;
             Integer expMonth  = null;
             Integer expYear   = null;
 
             if (card != null) {
                 // 번호(마스킹일 수 있음) → 마지막 4자리 추출에 사용
-                Object number = card.get("number");
-                cardNumber = number == null ? null : number.toString();
-
-                // 브랜드/발급사
-                // 환경에 따라 company/issuerCode 중 하나가 내려옵니다.
-                Object company = card.get("company");
+                Object company    = card.get("company");
                 Object issuerCode = card.get("issuerCode");
                 cardBrand = company != null ? company.toString()
                         : issuerCode != null ? issuerCode.toString()
                         : null;
 
+                // 브랜드/발급사
+                // 환경에 따라 company/issuerCode 중 하나가 내려옵니다.
+                Object number = card.get("number"); // "1234-****-****-5678" 등
+                if (number != null) {
+                    String digits = number.toString().replaceAll("\\D", "");
+                    if (digits.length() >= 4) last4 = digits.substring(digits.length() - 4);
+                }
+
                 // 만료월/만료년 (키명이 expire* 또는 expiry* 로 다를 수 있음)
                 expMonth = parseInt(card.get("expireMonth"), card.get("expiryMonth"));
                 expYear  = parseInt(card.get("expireYear"),  card.get("expiryYear"));
+                if (expYear != null && expYear < 100) expYear = 2000 + expYear;
             }
 
             log.info("[ISSUE] customerKey={}, authKey={}, billingKey={}", customerKey, authKey, billingKey);
 
+            if (billingKey == null) {
+                throw new IllegalStateException("Toss 응답에 billingKey가 없습니다.");
+            }
+
             return TossIssueBillingKeyResponse.builder()
                     .billingKey(billingKey)
                     .brand(cardBrand)
-                    .last4(cardNumber)
+                    .last4(last4)
                     .expMonth(expMonth)
                     .expYear(expYear)
                     .build();

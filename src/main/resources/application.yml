@@ -43,6 +43,13 @@ pg:
     clientKey: ${PG_TOSS_CLIENT_KEY}
     secretKey: ${PG_TOSS_SECRET_KEY}
 
+app:
+  frontend:
+    base-url: https://www.bid-market.shop
+  backend:
+    base-url: https://api.bid-market.shop
+
+
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 management:

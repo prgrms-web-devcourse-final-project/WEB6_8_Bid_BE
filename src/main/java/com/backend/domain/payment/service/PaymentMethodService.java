@@ -2,6 +2,7 @@ package com.backend.domain.payment.service;
 
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
+import com.backend.domain.payment.dto.response.TossIssueBillingKeyResponse;
 import com.backend.domain.payment.enums.PaymentMethodType;
 import com.backend.domain.payment.dto.request.PaymentMethodCreateRequest;
 import com.backend.domain.payment.dto.response.PaymentMethodDeleteResponse;
@@ -242,6 +243,70 @@ public class PaymentMethodService {
                 .wasDefault(wasDefault)
                 .newDefaultId(newDefaultId)
                 .build();
+    }
+
+    @Transactional
+    public PaymentMethodResponse saveOrUpdateBillingKey(Long memberId, TossIssueBillingKeyResponse res) {
+        // 0) 파라미터 검증
+        if (res == null || res.getBillingKey() == null || res.getBillingKey().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "유효하지 않은 billingKey 응답입니다.");
+        }
+
+        // 1) 회원 조회
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원이 존재하지 않습니다."));
+
+        // 2) 기존 billingKey 보유 수단 조회(있으면 업데이트, 없으면 생성)
+        PaymentMethod pm = paymentMethodRepository
+                .findFirstByMemberAndTokenAndDeletedFalse(member, res.getBillingKey())
+                .orElse(null);
+
+        // 공통 스냅샷 값 정리
+        String brand = res.getBrand();
+        String last4 = res.getLast4();
+        if (last4 != null) {
+            String digits = last4.replaceAll("\\D", "");
+            if (digits.length() >= 4) last4 = digits.substring(digits.length() - 4);
+            else last4 = null;
+        }
+        Integer expMonth = res.getExpMonth();
+        Integer expYear  = res.getExpYear();
+
+        if (pm == null) {
+            // 첫 등록이면 기본수단으로 지정
+            boolean shouldBeDefault = paymentMethodRepository.countByMemberAndDeletedFalse(member) == 0;
+
+            pm = PaymentMethod.builder()
+                    .member(member)
+                    .methodType(PaymentMethodType.CARD)
+                    .provider("toss")
+                    .token(res.getBillingKey())   // ⬅ billingKey 저장 (결제에 쓰는 token)
+                    .alias(null)                  // 필요하면 FE에서 별칭 입력받아 수정 가능
+                    .isDefault(shouldBeDefault)
+                    .brand(brand)
+                    .last4(last4)
+                    .expMonth(expMonth)
+                    .expYear(expYear)
+                    .active(true)
+                    .deleted(false)
+                    .build();
+
+            // 기존 기본 해제는 shouldBeDefault일 때만
+            if (shouldBeDefault) {
+                paymentMethodRepository.findFirstByMemberAndIsDefaultTrueAndDeletedFalse(member)
+                        .ifPresent(old -> old.setIsDefault(false));
+            }
+        } else {
+            // 기존 수단 스냅샷 갱신
+            pm.setBrand(brand);
+            pm.setLast4(last4);
+            pm.setExpMonth(expMonth);
+            pm.setExpYear(expYear);
+            pm.setActive(true);
+        }
+
+        paymentMethodRepository.save(pm);
+        return toResponse(pm);
     }
 
     //엔티티 → 응답 DTO 매핑..
