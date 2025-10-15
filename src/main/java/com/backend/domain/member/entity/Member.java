@@ -45,7 +45,7 @@ public class Member extends BaseEntity {
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     private String refreshToken;
 
-    private int creditScore;
+    private int creditScore = 50;
 
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
