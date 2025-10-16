@@ -31,7 +31,7 @@ public class BidNotificationService {
             "bidAmount", bidAmount
         );
 
-        // userId로 Member 조회 후 email로 전송
+        // userId로 Member 조회 후 알림 전송
         Member member = memberRepository.findById(userId).orElse(null);
         if (member != null) {
             webSocketService.sendNotificationToUser(member.getEmail(), message, data);

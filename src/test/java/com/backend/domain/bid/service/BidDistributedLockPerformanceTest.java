@@ -145,7 +145,7 @@ class BidDistributedLockPerformanceTest {
 
         for (int i = 0; i < numberOfThreads; i++) {
             final int index = i;
-            final Long bidPrice = 1000000L + (i + 1) * 100L;
+            final Long bidPrice = 1000100L;
             
             executorService.submit(() -> {
                 try {
