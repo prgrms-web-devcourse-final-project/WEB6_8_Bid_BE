@@ -70,7 +70,7 @@ class BidNotificationServiceTest {
 
         // Then
         verify(webSocketService, times(1)).sendNotificationToUser(
-                eq(member.getId().toString()), 
+                eq(member.getEmail()), 
                 contains("입찰했습니다"), 
                 any()
         );
@@ -79,7 +79,7 @@ class BidNotificationServiceTest {
         assertThat(notifications).hasSize(1);
         
         Notification savedNotification = notifications.get(0);
-        assertThat(savedNotification.getMember().getId()).isEqualTo(member.getId());
+        assertThat(savedNotification.getMember().getEmail()).isEqualTo(member.getEmail());
         assertThat(savedNotification.getProduct().getId()).isEqualTo(product.getId());
         assertThat(savedNotification.getNotificationType()).isEqualTo("BID_SUCCESS");
         assertThat(savedNotification.getMessage()).contains(product.getProductName());
@@ -101,7 +101,7 @@ class BidNotificationServiceTest {
 
         // Then
         verify(webSocketService, times(1)).sendNotificationToUser(
-                eq(member.getId().toString()), 
+                eq(member.getEmail()), 
                 contains("밀렸습니다"), 
                 any()
         );
@@ -127,7 +127,7 @@ class BidNotificationServiceTest {
 
         // Then
         verify(webSocketService, times(1)).sendNotificationToUser(
-                eq(member.getId().toString()), 
+                eq(member.getEmail()), 
                 contains("낙찰받았습니다"), 
                 any()
         );
@@ -154,7 +154,7 @@ class BidNotificationServiceTest {
 
         // Then
         verify(webSocketService, times(1)).sendNotificationToUser(
-                eq(member.getId().toString()), 
+                eq(member.getEmail()), 
                 contains("경매가 종료되었습니다"), 
                 any()
         );
@@ -178,7 +178,8 @@ class BidNotificationServiceTest {
         bidNotificationService.notifyBidSuccess(invalidUserId, product, bidAmount);
 
         // Then
-        verify(webSocketService, times(1)).sendNotificationToUser(any(), any(), any());
+        // member가 null이므로 sendNotificationToUser가 호출되지 않아야 함
+        verify(webSocketService, times(0)).sendNotificationToUser(any(), any(), any());
         
         List<Notification> notifications = notificationRepository.findAll();
         assertThat(notifications).isEmpty();
