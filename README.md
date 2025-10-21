@@ -101,3 +101,5 @@
   - Redis (Docker)
   - Elasticsearch (Docker)
   - Spring Boot App (Docker)
+- **AWS S3**
+    - 이미지 저장소
