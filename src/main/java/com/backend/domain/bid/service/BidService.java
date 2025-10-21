@@ -2,7 +2,6 @@ package com.backend.domain.bid.service;
 
 import com.backend.domain.bid.dto.*;
 import com.backend.domain.bid.entity.Bid;
-import com.backend.domain.bid.enums.BidStatus;
 import com.backend.domain.bid.repository.BidRepository;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.repository.MemberRepository;
@@ -12,14 +11,16 @@ import com.backend.domain.product.enums.AuctionStatus;
 import com.backend.domain.product.event.helper.ProductChangeTracker;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.exception.ServiceException;
-import com.backend.global.lock.DistributedLock;
 import com.backend.global.response.RsData;
 import com.backend.global.websocket.service.WebSocketService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,72 +40,28 @@ public class BidService {
     private final WebSocketService webSocketService;
     private final BidNotificationService bidNotificationService;
     private final ApplicationEventPublisher eventPublisher;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     // ======================================= create methods ======================================= //
-    @DistributedLock(key = "'product:' + #productId", waitTime = 10, leaseTime = 5)
     public RsData<BidResponseDto> createBid(Long productId, Long bidderId, BidRequestDto request) {
-        return createBidInternal(productId, bidderId, request);
-    }
+        try {
+            // 1. 입찰 요청 DTO 생성
+            BidMessageDto messageDto = new BidMessageDto(productId, bidderId, request.price());
 
-    @Transactional
-    public RsData<BidResponseDto> createBidInternal(Long productId, Long bidderId, BidRequestDto request) {
-        // Product/Member 조회
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> ServiceException.notFound("존재하지 않는 상품입니다."));
-        Member member = memberRepository.findById(bidderId)
-                .orElseThrow(() -> ServiceException.notFound("존재하지 않는 사용자입니다."));
+            // 2. DTO를 JSON 문자열로 직렬화
+            String messageJson = objectMapper.writeValueAsString(messageDto);
 
-        // 유효성 검증
-        validateBid(product, member, request.price());
+            // 3. Redis List에 입찰 요청 추가
+            redisTemplate.opsForList().rightPush("bid_queue", messageJson);
 
-        Long previousHighestPrice = bidRepository.findHighestBidPrice(productId).orElse(null);
+            // 4. 사용자에게 "요청 접수됨" 응답
+            return RsData.of("202", "입찰 요청이 성공적으로 접수되었습니다.", null);
 
-        // 이전 최고 입찰자 확인 (입찰 밀림 알림용)
-        Bid previousHighestBid = null;
-        if (previousHighestPrice != null) {
-            List<Bid> recentBids = bidRepository.findNBids(productId, 10);
-            previousHighestBid = recentBids.stream()
-                    .filter(bid -> bid.getBidPrice().equals(previousHighestPrice))
-                    .findFirst()
-                    .orElse(null);
+        } catch (JsonProcessingException e) {
+            // 로깅 추가
+            return RsData.of("500", "입찰 요청을 처리하는 중 오류가 발생했습니다.", null);
         }
-
-        // 입찰 생성 및 저장
-        Bid savedBid = saveBid(product, member, request.price());
-
-        // 상품 업데이트
-        updateProduct(product, savedBid, request.price());
-
-        // 응답 생성
-        BidResponseDto bidResponse = createBidResponse(savedBid);
-
-        // 실시간 브로드캐스트
-        webSocketService.broadcastBidUpdate(productId, bidResponse);
-
-        // 입찰 성공 알림 (현재 입찰자에게)
-        bidNotificationService.notifyBidSuccess(bidderId, product, request.price());
-
-        // 입찰 밀림 알림 (이전 최고 입찰자에게)
-        if (previousHighestBid != null && !previousHighestBid.getMember().getId().equals(bidderId)) {
-            bidNotificationService.notifyBidOutbid(
-                    previousHighestBid.getMember().getId(),
-                    product,
-                    previousHighestBid.getBidPrice(),
-                    request.price()
-            );
-        }
-
-        return RsData.created("입찰이 완료되었습니다.", bidResponse);
-    }
-
-    private Bid saveBid(Product product, Member member, Long bidPrice) {
-        Bid bid = Bid.builder()
-                .bidPrice(bidPrice)
-                .status(BidStatus.BIDDING)
-                .product(product)
-                .member(member)
-                .build();
-        return bidRepository.save(bid);
     }
 
     // ======================================= find/get methods ======================================= //

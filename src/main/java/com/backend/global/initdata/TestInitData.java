@@ -1,7 +1,7 @@
 package com.backend.global.initdata;
 
-import com.backend.domain.bid.dto.BidRequestDto;
-import com.backend.domain.bid.service.BidService;
+import com.backend.domain.bid.dto.BidMessageDto;
+import com.backend.domain.bid.service.BidConsumerService;
 import com.backend.domain.member.dto.MemberSignUpRequestDto;
 import com.backend.domain.member.entity.Member;
 import com.backend.domain.member.service.MemberService;
@@ -33,7 +33,7 @@ public class TestInitData {
     private final StandardProductService productService;
     private final ProductImageService productImageService;
     private final MemberService memberService;
-    private final BidService bidService;
+    private final BidConsumerService bidConsumerService;
     private final ProductSyncService productSyncService;
 
     @Bean
@@ -124,17 +124,15 @@ public class TestInitData {
         Product product9 = productService.saveProduct(member4, requestDto9);
         productImageService.createProductImage(product9, "/image9_1.jpg");
 
-        // 입찰 생성 (분산락 없이)
-        createBidsWithoutLock(product4, product9, member1, member2);
+        // 입찰 생성
+        createBids(product4, product9, member1, member2);
     }
 
-    // 분산락 없이 입찰 생성
-    private void createBidsWithoutLock(Product product4, Product product9, Member member1, Member member2) {
+    private void createBids(Product product4, Product product9, Member member1, Member member2) {
+        bidConsumerService.processBid(new BidMessageDto(product4.getId(), member1.getId(), 1200000L));
+        bidConsumerService.processBid(new BidMessageDto(product4.getId(), member2.getId(), 1300000L));
 
-        bidService.createBidInternal(product4.getId(), member1.getId(), new BidRequestDto(1200000L));
-        bidService.createBidInternal(product4.getId(), member2.getId(), new BidRequestDto(1300000L));
-
-        bidService.createBidInternal(product9.getId(), member1.getId(), new BidRequestDto(900000L));
+        bidConsumerService.processBid(new BidMessageDto(product9.getId(), member1.getId(), 900000L));
 
         product9.setStatus("낙찰");
         product9.setEndTime(LocalDateTime.now());

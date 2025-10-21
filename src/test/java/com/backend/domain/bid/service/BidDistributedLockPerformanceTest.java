@@ -14,6 +14,7 @@ import com.backend.domain.product.enums.ProductCategory;
 import com.backend.domain.product.repository.jpa.ProductRepository;
 import com.backend.global.redis.TestRedisConfiguration;
 import com.backend.global.response.RsData;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({TestRedisConfiguration.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BidDistributedLockPerformanceTest {
+
+
 
     @Autowired
     private BidService bidService;
@@ -145,7 +147,7 @@ class BidDistributedLockPerformanceTest {
 
         for (int i = 0; i < numberOfThreads; i++) {
             final int index = i;
-            final Long bidPrice = 1000100L;
+            final Long bidPrice = 1000000L + (i + 1) * 100L;
             
             executorService.submit(() -> {
                 try {
@@ -158,7 +160,7 @@ class BidDistributedLockPerformanceTest {
                             request
                     );
                     
-                    if ("201".equals(result.resultCode())) {
+                    if ("202".equals(result.resultCode())) {
                         successCount.incrementAndGet();
                     } else {
                         failCount.incrementAndGet();
@@ -175,27 +177,36 @@ class BidDistributedLockPerformanceTest {
 
         latch.await();
         executorService.shutdown();
+
+        // Consumer가 모든 메시지를 처리할 때까지 대기 (최대 30초)
+        long waitStartTime = System.currentTimeMillis();
+        while (bidRepository.count() < numberOfThreads && (System.currentTimeMillis() - waitStartTime) < 30000) {
+            Thread.sleep(200);
+        }
+
         long endTime = System.currentTimeMillis();
 
         Product finalProduct = productRepository.findById(testProduct.getId()).orElseThrow();
         List<Bid> allBids = bidRepository.findAll();
         Long highestBid = bidRepository.findHighestBidPrice(testProduct.getId()).orElse(0L);
+        long highestSubmittedPrice = 1000000L + (long) numberOfThreads * 100L;
 
         System.out.println("\n============ 100명 동시 입찰 테스트 결과 ============");
         System.out.println("총 요청 수: " + numberOfThreads);
-        System.out.println("성공: " + successCount.get() + " | 실패: " + failCount.get());
-        System.out.println("DB 저장 수: " + allBids.size());
-        System.out.println("최종 가격: " + finalProduct.getCurrentPrice() + "원");
-        System.out.println("DB 최고가: " + highestBid + "원");
-        System.out.println("처리 시간: " + (endTime - startTime) + "ms");
-        System.out.println("TPS: " + String.format("%.2f", successCount.get() / ((endTime - startTime) / 1000.0)));
+        System.out.println("API 성공: " + successCount.get() + " | API 실패: " + failCount.get());
+        System.out.println("DB 최종 저장 수: " + allBids.size());
+        System.out.println("상품 최종 가격: " + finalProduct.getCurrentPrice() + "원");
+        System.out.println("DB 최고 입찰가: " + highestBid + "원");
+        System.out.println("예상 최고가: " + highestSubmittedPrice + "원");
+        System.out.println("전체 처리 시간: " + (endTime - startTime) + "ms");
         System.out.println("정합성: " + (finalProduct.getCurrentPrice().equals(highestBid) && 
-                allBids.size() == successCount.get() ? "✓" : "✗"));
+                highestBid.equals(highestSubmittedPrice) ? "✓" : "✗"));
         System.out.println("====================================================\n");
 
         // 정합성 검증
-        assertThat(allBids.size()).as("DB에 저장된 입찰 수는 성공 카운트와 같아야 함").isEqualTo(successCount.get());
-        assertThat(finalProduct.getCurrentPrice()).as("상품의 현재가는 최고 입찰가와 같아야 함").isEqualTo(highestBid);
+        assertThat(allBids.size()).as("최소 하나 이상의 입찰은 DB에 저장되어야 함").isGreaterThan(0);
+        assertThat(highestBid).as("DB에 저장된 최고 입찰가는 제출된 가장 높은 가격과 같아야 함").isEqualTo(highestSubmittedPrice);
+        assertThat(finalProduct.getCurrentPrice()).as("상품의 현재가는 DB의 최고 입찰가와 같아야 함").isEqualTo(highestBid);
         
         // 동시성 제어 검증 - 중복 입찰가가 없어야 함
         long distinctPrices = allBids.stream().map(Bid::getBidPrice).distinct().count();

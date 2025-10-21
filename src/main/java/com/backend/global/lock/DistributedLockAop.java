@@ -12,10 +12,13 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
+import org.springframework.core.annotation.Order;
+
 /**
  * @DistributedLock 선언 시 수행되는 Aop class
  */
 @Aspect
+@Order(1) // 트랜잭션 AOP보다 높은 우선순위를 부여
 @Component
 @RequiredArgsConstructor
 @Slf4j
