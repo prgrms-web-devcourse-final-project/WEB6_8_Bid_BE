@@ -1,5 +1,7 @@
 version: "3.8"
+
 services:
+  # 기본 k6 서비스
   k6:
     image: grafana/k6:latest
     container_name: k6-load-test
@@ -9,4 +11,85 @@ services:
       - ./results:/results
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      - BASE_URL=http://host.docker.internal:8080
+      - PRODUCT_ID=${PRODUCT_ID:-1}
+      - BASE_PRICE=${BASE_PRICE:-1000000}
+      - PRICE_INCREMENT=${PRICE_INCREMENT:-100}
+      - USE_AUTH=${USE_AUTH:-false}
+      - DETAILED_LOG=${DETAILED_LOG:-false}
+    command: run ${TEST_SCRIPT:-bid-concurrent-test.js}
+
+  # 1000명 동시 입찰 테스트 전용
+  bid-test:
+    image: grafana/k6:latest
+    container_name: k6-bid-test
+    working_dir: /scripts
+    volumes:
+      - ./:/scripts
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - BASE_URL=http://host.docker.internal:8080
+      - PRODUCT_ID=${PRODUCT_ID:-1}
+      - BASE_PRICE=${BASE_PRICE:-1000000}
+      - PRICE_INCREMENT=${PRICE_INCREMENT:-100}
+      - USE_AUTH=${USE_AUTH:-false}
+      - DETAILED_LOG=${DETAILED_LOG:-false}
+    command: run bid-concurrent-test.js
+
+  # 상품 조회 테스트
+  product-test:
+    image: grafana/k6:latest
+    container_name: k6-product-test
+    working_dir: /scripts
+    volumes:
+      - ./:/scripts
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: run getProducts-test.js
+
+  # Elasticsearch 검색 테스트
+  search-test:
+    image: grafana/k6:latest
+    container_name: k6-search-test
+    working_dir: /scripts
+    volumes:
+      - ./:/scripts
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: run getProductsByElasticsearch-test.js
+
+  # 모든 테스트 순차 실행
+  all-tests:
+    image: grafana/k6:latest
+    container_name: k6-all-tests
+    working_dir: /scripts
+    volumes:
+      - ./:/scripts
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    entrypoint: /bin/sh
+    command: |
+      -c "
+      echo '🏁 Starting all performance tests...'
+      echo '================================='
+      echo '1/3 Running bid concurrent test...'
+      k6 run bid-concurrent-test.js
+      echo '================================='
+      echo '2/3 Running products API test...'
+      k6 run getProducts-test.js  
+      echo '================================='
+      echo '3/3 Running Elasticsearch test...'
+      k6 run getProductsByElasticsearch-test.js
+      echo '================================='
+      echo '✅ All tests completed!'
+      "
+
+# 결과 저장용 볼륨
+volumes:
+  results:
