@@ -48,6 +48,13 @@ app:
     base-url: https://www.bid-market.shop
   backend:
     base-url: https://api.bid-market.shop
+  fastapi:
+    base-url: http://localhost:8000  # FastAPI 서버 기본 URL
+    timeout:
+      connect: 10   # 연결 타임아웃 (초)
+      read: 30       # 읽기 타임아웃 (초)
+    retry:
+      max-attempts: 3  # 최대 재시도 횟수
 
 
 springdoc:
